@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>osu! web player</title>
+    </head>
+
+    <body>
+        <script src="vendor/teleport.js"></script>
+        <script type="text/javascript">
+            window.onload = function() {
+                require('teleport/packages').register({
+                    'owp': {
+                        path: '.',
+                        directories: {
+                            'lib': '/src/'
+                        }
+                    },
+
+                    'vendor': {
+                        path: '.',
+                        directories: {
+                            'lib': '/'
+                        }
+                    }
+                });
+
+                require.main('./index');
+            };
+        </script>
+    </body>
+</html>
