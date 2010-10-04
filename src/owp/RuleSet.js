@@ -22,40 +22,44 @@ exports.$ = (function () {
         },
 
         /*
-         * {
-         *     visibility: 'before', 'appearing', 'during', 'disappearing', or 'after',
-         *     progress: 0 .. 1
-         * }
+         * 'before', 'appearing', 'during', 'disappearing', or 'after'
          */
-        getObjectStateAtTime: function (object, time) {
+        getObjectVisibilityAtTime: function (object, time) {
             var appearTime    = this.getObjectAppearTime(object);
             var startTime     = this.getObjectStartTime(object);
             var endTime       = this.getObjectEndTime(object);
             var disappearTime = this.getObjectDisappearTime(object);
 
-            var visibility, progress;
+            if (time < appearTime) {
+                return 'before';
+            } else if (time < startTime) {
+                return 'appearing';
+            } else if (time < endTime) {
+                return 'during';
+            } else if (time <= disappearTime) {
+                return 'disappearing';
+            } else {
+                return 'after';
+            }
+        },
+
+        getObjectApproachProgress: function (object, time) {
+            var appearTime    = this.getObjectAppearTime(object);
+            var startTime     = this.getObjectStartTime(object);
+            var endTime       = this.getObjectEndTime(object);
+            var disappearTime = this.getObjectDisappearTime(object);
 
             if (time < appearTime) {
-                visibility = 'before';
-                progress = 0;
+                return 0;
             } else if (time < startTime) {
-                visibility = 'appearing';
-                progress = (time - appearTime) / (startTime - appearTime);
+                return (time - appearTime) / (startTime - appearTime);
             } else if (time < endTime) {
-                visibility = 'during';
-                progress = (time - startTime) / (endTime - startTime);
+                return 1;
             } else if (time <= disappearTime) {
-                visibility = 'disappearing';
-                progress = (time - endTime) / (disappearTime - endTime);
+                return -((time - endTime) / (disappearTime - endTime));
             } else {
-                visibility = 'after';
-                progress = 0;
+                return 0;
             }
-
-            return {
-                visibility: visibility,
-                progress: progress
-            };
         }
     };
 

@@ -11,20 +11,20 @@ exports.$ = (function () {
         getVisibleObjects: function (time) {
             // TODO wu.js?  .filter?
             var i, visibleObjects = [ ];
-            var objectState;
+            var objectVisibility;
 
             for (i = 0; i < this.objects.length; ++i) {
-                objectState = this.map.ruleSet.getObjectStateAtTime(this.objects[i], time);
+                objectVisibility = this.map.ruleSet.getObjectVisibilityAtTime(this.objects[i], time);
 
                 // Optimization; stop scanning if we're after visible objects
-                if (objectState.visibility === 'after') {
+                if (objectVisibility === 'after') {
                     // TODO Allow this optimization
                     //break;
                 }
 
-                if (objectState.visibility === 'during' ||
-                    objectState.visibility === 'appearing' ||
-                    objectState.visibility === 'disappearing') {
+                if (objectVisibility === 'during' ||
+                    objectVisibility === 'appearing' ||
+                    objectVisibility === 'disappearing') {
                     visibleObjects.push(this.objects[i]);
                 }
             }
