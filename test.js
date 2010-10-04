@@ -4,6 +4,7 @@
 
     var tests = [
         'owp/MapState',
+        'owp/MapFileReader',
         'owp/RuleSet'
     ];
 
