@@ -1,7 +1,10 @@
 exports.$ = (function () {
-    var HitObject = require('HitCircle').$;
+    var HitObject = require('owp/HitObject').$;
 
-    var HitCircle = function () {
+    var HitCircle = function (time, x, y) {
+        this.time = time;
+        this.x = x;
+        this.y = y;
     };
 
     HitCircle.prototype = new HitObject();

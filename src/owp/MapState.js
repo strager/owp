@@ -18,7 +18,8 @@ exports.$ = (function () {
 
                 // Optimization; stop scanning if we're after visible objects
                 if (objectState === 'after') {
-                    break;
+                    // TODO Allow this optimization
+                    //break;
                 }
 
                 if (objectState === 'during' || objectState === 'appearing' || objectState === 'disappearing') {
