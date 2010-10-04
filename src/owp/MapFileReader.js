@@ -1,6 +1,6 @@
 exports.$ = (function () {
     var MapFileReader = {
-        read: function (data) {
+        parseString: function (data) {
             function trim(string) {
                 return string.replace(/^\s+|\s+$/g, '');
             }

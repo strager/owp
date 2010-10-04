@@ -2,8 +2,8 @@
     var assert = require('assert');
     var MapFileReader = require('owp/MapFileReader').$;
 
-    exports.testReadSectionlessData = function () {
-        var data = MapFileReader.read('osu file format v2\n\nfoobar');
+    exports.testParseSectionlessData = function () {
+        var data = MapFileReader.parseString('osu file format v2\n\nfoobar');
 
         assert.deepEqual([
             'osu file format v2',
@@ -11,8 +11,8 @@
         ], data.global.lines);
     };
 
-    exports.testReadSection = function () {
-        var data = MapFileReader.read('[Section]\nabc: def\n[Test\n]same section\n[Test] again\nyay');
+    exports.testParseSection = function () {
+        var data = MapFileReader.parseString('[Section]\nabc: def\n[Test\n]same section\n[Test] again\nyay');
 
         assert.deepEqual([
             'abc: def',
@@ -23,8 +23,8 @@
         ], data.Section.lines);
     };
 
-    exports.testReadSections = function () {
-        var data = MapFileReader.read('[Section A]\na data\n[Section B]\nb data\n');
+    exports.testParseSections = function () {
+        var data = MapFileReader.parseString('[Section A]\na data\n[Section B]\nb data\n');
 
         assert.deepEqual([
             'a data'
@@ -35,8 +35,8 @@
         ], data['Section B'].lines);
     };
 
-    exports.testReadValues = function () {
-        var data = MapFileReader.read('a: b\nc:d\n  e :f : :: :F ');
+    exports.testParseValues = function () {
+        var data = MapFileReader.parseString('a: b\nc:d\n  e :f : :: :F ');
 
         assert.deepEqual({
             a: 'b',
@@ -45,8 +45,8 @@
         }, data.global.values);
     };
 
-    exports.testReadLists = function () {
-        var data = MapFileReader.read('1,2,3\n4:2,5,6,8\n   2,1, ');
+    exports.testParseLists = function () {
+        var data = MapFileReader.parseString('1,2,3\n4:2,5,6,8\n   2,1, ');
 
         assert.deepEqual([
             [ '1', '2', '3' ],
