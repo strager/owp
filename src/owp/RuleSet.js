@@ -6,28 +6,45 @@ exports.$ = (function () {
 
     RuleSet.prototype = {
         getObjectAppearTime: function (object) {
-            return object.time - this.appearTime;
+            return this.getObjectStartTime(object) - this.appearTime;
         },
 
         getObjectDisappearTime: function (object) {
-            return object.time + this.disappearTime;
+            return this.getObjectEndTime(object) + this.disappearTime;
         },
 
-        // Returns 'before', 'during', or 'after'
-        getObjectStateAtTime: function (object, time) {
-            var appearTime = this.getObjectAppearTime(object);
+        getObjectStartTime: function (object) {
+            return object.time;
+        },
 
-            if (appearTime > time) {
+        getObjectEndTime: function (object) {
+            return this.getObjectStartTime(object) + (object.duration || 0);
+        },
+
+        // Returns 'before', 'appearing', 'during', 'disappearing', or 'after'
+        getObjectStateAtTime: function (object, time) {
+            var appearTime    = this.getObjectAppearTime(object);
+            var startTime     = this.getObjectStartTime(object);
+            var endTime       = this.getObjectEndTime(object);
+            var disappearTime = this.getObjectDisappearTime(object);
+
+            if (time < appearTime) {
                 return 'before';
             }
 
-            var disappearTime = this.getObjectDisappearTime(object);
-
-            if (disappearTime < time) {
-                return 'after';
+            if (time < startTime) {
+                return 'appearing';
             }
 
-            return 'during';
+            if (time < endTime) {
+                return 'during';
+            }
+
+            if (time <= disappearTime) {
+                return 'disappearing';
+            }
+
+            return 'after';
         }
     };
 

@@ -21,7 +21,7 @@ exports.$ = (function () {
                     break;
                 }
 
-                if (objectState === 'during') {
+                if (objectState === 'during' || objectState === 'appearing' || objectState === 'disappearing') {
                     visibleObjects.push(this.objects[i]);
                 }
             }
