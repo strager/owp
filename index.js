@@ -1,3 +1,4 @@
+/*global console: true, window: true */
 (function () {
     var $ = require('vendor/jquery').$;
 

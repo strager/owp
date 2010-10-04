@@ -3,6 +3,7 @@
     require.paths.unshift(__dirname + '/src');
 
     var tests = [
+        'owp/MapState'
     ];
 
     var i;
