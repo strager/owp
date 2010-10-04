@@ -1,7 +1,6 @@
 exports.$ = (function () {
-    var Map = function (ruleSet) {
+    var Map = function () {
         this.objects = [ ];
-        this.ruleSet = ruleSet;
     };
 
     return Map;

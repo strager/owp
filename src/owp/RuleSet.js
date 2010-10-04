@@ -4,6 +4,14 @@ exports.$ = (function () {
         this.disappearTime = 50;
     };
 
+    RuleSet.fromSettings = function (settings) {
+        var ruleSet = new RuleSet();
+
+        // TODO
+
+        return ruleSet;
+    };
+
     RuleSet.prototype = {
         getObjectAppearTime: function (object) {
             return this.getObjectStartTime(object) - this.appearTime;

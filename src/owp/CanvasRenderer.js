@@ -25,7 +25,7 @@ exports.$ = (function () {
             var i;
 
             for (i = 0; i < objects.length; ++i) {
-                this.renderObject(objects[i], mapState.map.ruleSet, skin, time);
+                this.renderObject(objects[i], mapState.ruleSet, skin, time);
             }
         },
 

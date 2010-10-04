@@ -5,6 +5,7 @@
     var RuleSet = require('owp/RuleSet').$;
     var Map = require('owp/Map').$;
     var MapState = require('owp/MapState').$;
+    var MapInfo = require('owp/MapInfo').$;
     var HitCircle = require('owp/HitCircle').$;
     var Skin = require('owp/Skin').$;
 
@@ -19,14 +20,16 @@
     ruleSet.appearTime = 1000;
     ruleSet.disappearTime = 100;
 
-    var map = new Map(ruleSet);
+    var map = new Map();
     var i;
 
     for (i = 0; i < 20; ++i) {
         map.objects.push(new HitCircle(i * 1000, Math.random() * 640, Math.random() * 480));
     }
 
-    var mapState = new MapState(map);
+    var mapInfo = new MapInfo(ruleSet, map);
+
+    var mapState = MapState.fromMapInfo(mapInfo);
     var skin = new Skin('skin');
 
     $(function () {

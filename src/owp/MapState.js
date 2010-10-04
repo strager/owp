@@ -1,10 +1,14 @@
 exports.$ = (function () {
-    var MapState = function (map) {
-        this.map = map;
-        this.objects = map.objects.sort(function (a, b) {
+    var MapState = function (ruleSet, objects) {
+        this.ruleSet = ruleSet;
+        this.objects = objects.sort(function (a, b) {
             // Sort objects by time ascending
             return a.time > b.time ? 1 : a.time < b.time ? -1 : 0;
         });
+    };
+
+    MapState.fromMapInfo = function (mapInfo) {
+        return new MapState(mapInfo.ruleSet, mapInfo.map.objects);
     };
 
     MapState.prototype = {
@@ -14,7 +18,7 @@ exports.$ = (function () {
             var objectVisibility;
 
             for (i = 0; i < this.objects.length; ++i) {
-                objectVisibility = this.map.ruleSet.getObjectVisibilityAtTime(this.objects[i], time);
+                objectVisibility = this.ruleSet.getObjectVisibilityAtTime(this.objects[i], time);
 
                 // Optimization; stop scanning if we're after visible objects
                 if (objectVisibility === 'after') {
