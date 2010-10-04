@@ -30,6 +30,7 @@
     var skin = new Skin('skin');
 
     $(function () {
+        // Init
         var canvas = document.createElement('canvas');
         canvas.width = 640;
         canvas.height = 480;
@@ -37,18 +38,46 @@
 
         var canvasRenderer = new CanvasRenderer(canvas.getContext('2d'));
 
-        var renderInterval = 20;
+        // Render loop logic
+        var shouldRender = true;
 
-        window.setTimeout(function render() {
+        function render() {
+            if (!shouldRender) {
+                return;
+            }
+
             var time = Math.round(audio.currentTime * 1000);
 
             canvasRenderer.beginRender();
             canvasRenderer.renderMap(mapState, skin, time);
             canvasRenderer.endRender();
 
-            window.setTimeout(render, renderInterval);
-        }, renderInterval);
+            var renderInterval = 20;
 
+            window.setTimeout(render, renderInterval);
+        }
+
+        render();
+
+        // Lower CPU usage when not active
+        function inactive() {
+            shouldRender = false;
+        }
+
+        function active() {
+            if (!shouldRender) {
+                shouldRender = true;
+                render();
+            }
+        }
+
+        $(window)
+            .focus(active)
+            .mousemove(active)
+            .keydown(active)
+            .blur(inactive);
+
+        // Start!
         audio.play();
     });
 }());
