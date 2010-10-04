@@ -56,7 +56,7 @@ exports.$ = (function () {
             } else if (time < endTime) {
                 return 1;
             } else if (time <= disappearTime) {
-                return -((time - endTime) / (disappearTime - endTime));
+                return ((time - endTime) / (disappearTime - endTime)) - 1;
             } else {
                 return 0;
             }

@@ -15,6 +15,9 @@
 
     // Make the map (TODO actual loading)
     var ruleSet = new RuleSet();
+    ruleSet.appearTime = 1000;
+    ruleSet.disappearTime = 100;
+
     var map = new Map(ruleSet);
     var i;
 
