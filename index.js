@@ -6,6 +6,7 @@
     var Map = require('owp/Map').$;
     var MapState = require('owp/MapState').$;
     var HitCircle = require('owp/HitCircle').$;
+    var Skin = require('owp/Skin').$;
 
     var audio = new window.Audio('assets/map.mp3');
 
@@ -26,6 +27,7 @@
     }
 
     var mapState = new MapState(map);
+    var skin = new Skin('skin');
 
     $(function () {
         var canvas = document.createElement('canvas');
@@ -41,7 +43,7 @@
             var time = Math.round(audio.currentTime * 1000);
 
             canvasRenderer.beginRender();
-            canvasRenderer.renderMap(mapState, time);
+            canvasRenderer.renderMap(mapState, skin, time);
             canvasRenderer.endRender();
 
             window.setTimeout(render, renderInterval);

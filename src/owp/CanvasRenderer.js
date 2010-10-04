@@ -20,65 +20,66 @@ exports.$ = (function () {
             c.restore();
         },
 
-        renderMap: function (mapState, time) {
+        renderMap: function (mapState, skin, time) {
             var objects = mapState.getVisibleObjects(time);
             var i;
 
             for (i = 0; i < objects.length; ++i) {
-                this.renderObject(objects[i], mapState.map.ruleSet, time);
+                this.renderObject(objects[i], mapState.map.ruleSet, skin, time);
             }
         },
 
-        renderHitCircle: function (hitCircle, progress, time) {
+        renderHitCircle: function (hitCircle, skin, progress, time) {
             var c = this.context;
 
             c.save();
             c.translate(hitCircle.x, hitCircle.y);
 
-            c.beginPath();
-            c.arc(0, 0, 16, 0, 2 * Math.PI, false);
-            c.fill();
-            c.stroke();
-            c.closePath();
+            // TODO Colouring
+            var hitCircleGraphic = skin.getGraphic('hitcircle');
+            var hitCircleFrame = 0;
+            c.drawImage(hitCircleGraphic[hitCircleFrame], -hitCircleGraphic[hitCircleFrame].width / 2, -hitCircleGraphic[hitCircleFrame].height / 2);
+
+            var hitCircleOverlayGraphic = skin.getGraphic('hitcircleoverlay');
+            var hitCircleOverlayFrame = 0;
+            c.drawImage(hitCircleOverlayGraphic[hitCircleOverlayFrame], -hitCircleOverlayGraphic[hitCircleOverlayFrame].width / 2, -hitCircleOverlayGraphic[hitCircleOverlayFrame].height / 2);
 
             c.restore();
         },
 
-        renderApproachCircle: function (progress, x, y) {
+        renderApproachCircle: function (skin, progress, x, y) {
             var c = this.context;
 
-            var radius = 16;
+            var radius = 1;
 
             if (progress > 0) {
-                radius += 24 * (1 - progress);
+                radius += (1 - progress);
             } else {
-                radius += 4 * (1 - -progress);
+                radius += (1 - (-progress)) / 4;
             }
 
             c.save();
             c.translate(x, y);
+            c.scale(radius, radius);
 
-            c.beginPath();
-            c.arc(0, 0, radius, 0, 2 * Math.PI, false);
-            c.stroke();
-            c.closePath();
+            // TODO Colouring
+            var approachCircleGraphic = skin.getGraphic('approachcircle');
+            var approachCircleFrame = 0;
+            c.drawImage(approachCircleGraphic[approachCircleFrame], -approachCircleGraphic[approachCircleFrame].width / 2, -approachCircleGraphic[approachCircleFrame].height / 2);
 
             c.restore();
         },
 
-        renderObject: function (object, ruleSet, time) {
+        renderObject: function (object, ruleSet, skin, time) {
             var c = this.context;
-
-            c.fillStyle = 'red';        // TODO
-            c.strokeStyle = 'black';    // TODO
 
             var approachProgress = ruleSet.getObjectApproachProgress(object, time);
 
             c.globalAlpha = Math.abs(approachProgress);
 
             if (object instanceof HitCircle) {
-                this.renderHitCircle(object, time);
-                this.renderApproachCircle(approachProgress, object.x, object.y);
+                this.renderHitCircle(object, skin, time);
+                this.renderApproachCircle(skin, approachProgress, object.x, object.y);
             } else {
                 throw 'Unknown hit object type';
             }
