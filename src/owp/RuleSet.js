@@ -21,30 +21,41 @@ exports.$ = (function () {
             return this.getObjectStartTime(object) + (object.duration || 0);
         },
 
-        // Returns 'before', 'appearing', 'during', 'disappearing', or 'after'
+        /*
+         * {
+         *     visibility: 'before', 'appearing', 'during', 'disappearing', or 'after',
+         *     progress: 0 .. 1
+         * }
+         */
         getObjectStateAtTime: function (object, time) {
             var appearTime    = this.getObjectAppearTime(object);
             var startTime     = this.getObjectStartTime(object);
             var endTime       = this.getObjectEndTime(object);
             var disappearTime = this.getObjectDisappearTime(object);
 
+            var visibility, progress;
+
             if (time < appearTime) {
-                return 'before';
+                visibility = 'before';
+                progress = 0;
+            } else if (time < startTime) {
+                visibility = 'appearing';
+                progress = (time - appearTime) / (startTime - appearTime);
+            } else if (time < endTime) {
+                visibility = 'during';
+                progress = (time - startTime) / (endTime - startTime);
+            } else if (time <= disappearTime) {
+                visibility = 'disappearing';
+                progress = (time - endTime) / (disappearTime - endTime);
+            } else {
+                visibility = 'after';
+                progress = 0;
             }
 
-            if (time < startTime) {
-                return 'appearing';
-            }
-
-            if (time < endTime) {
-                return 'during';
-            }
-
-            if (time <= disappearTime) {
-                return 'disappearing';
-            }
-
-            return 'after';
+            return {
+                visibility: visibility,
+                progress: progress
+            };
         }
     };
 

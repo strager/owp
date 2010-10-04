@@ -17,12 +17,14 @@ exports.$ = (function () {
                 objectState = this.map.ruleSet.getObjectStateAtTime(this.objects[i], time);
 
                 // Optimization; stop scanning if we're after visible objects
-                if (objectState === 'after') {
+                if (objectState.visibility === 'after') {
                     // TODO Allow this optimization
                     //break;
                 }
 
-                if (objectState === 'during' || objectState === 'appearing' || objectState === 'disappearing') {
+                if (objectState.visibility === 'during' ||
+                    objectState.visibility === 'appearing' ||
+                    objectState.visibility === 'disappearing') {
                     visibleObjects.push(this.objects[i]);
                 }
             }

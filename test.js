@@ -3,7 +3,8 @@
     require.paths.unshift(__dirname + '/src');
 
     var tests = [
-        'owp/MapState'
+        'owp/MapState',
+        'owp/RuleSet'
     ];
 
     var i;
