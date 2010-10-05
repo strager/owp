@@ -76,7 +76,7 @@ exports.$ = (function () {
                 var img = document.createElement('img');
                 img.src = this.root + '/' + name + '.png';
 
-                $(img).bind('load', function () {
+                $(img).one('load', function () {
                     loaded([ img ]);
                 });
 
@@ -85,7 +85,7 @@ exports.$ = (function () {
             case 'audio':
                 var audio = new window.Audio(this.root + '/' + name);
 
-                $(audio).bind('canplaythrough', function () {
+                $(audio).one('canplaythrough', function () {
                     loaded(audio);
                 });
 

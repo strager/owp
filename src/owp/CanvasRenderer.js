@@ -1,11 +1,12 @@
 exports.$ = (function () {
     var HitCircle = require('owp/HitCircle').$;
     var Cache = require('owp/Util/Cache').$;
+    var shaders = require('owp/canvasShaders');
 
     var CanvasRenderer = function (context) {
         this.context = context;
 
-        this.graphicsCache = new Cache();    // [ 'graphic-name', skin, filter ] => graphic
+        this.graphicsCache = new Cache();    // [ 'graphic-name', skin, shader, shaderData ] => graphic
     };
 
     CanvasRenderer.prototype = {
@@ -32,54 +33,19 @@ exports.$ = (function () {
             }
         },
 
-        filterImage: function (image, filter) {
-            // TODO Move elsewhere
-            // TODO Make shader functions/classes instead
-
-            var newCanvas = document.createElement('canvas');
-            newCanvas.width = image.width;
-            newCanvas.height = image.height;
-
-            var newContext = newCanvas.getContext('2d');
-
-            newContext.globalCompositeOperation = 'copy';
-            newContext.drawImage(image, 0, 0);
-
-            var imageData = newContext.getImageData(0, 0, newCanvas.width, newCanvas.height);
-
-            var i;
-
-            if (filter instanceof Array) {
-                // [ r, g, b ]
-                for (i = 0; i < imageData.width * imageData.height; ++i) {
-                    imageData.data[i * 4 + 0] *= filter[0] / 256;
-                    imageData.data[i * 4 + 1] *= filter[1] / 256;
-                    imageData.data[i * 4 + 2] *= filter[2] / 256;
-                }
-            } else {
-                throw 'Unknown filter ' + filter;
-            }
-
-            newContext.putImageData(imageData, 0, 0);
-
-            return newCanvas;
-        },
-
-        getFilteredGraphic: function (skin, graphicName, filter) {
-            // TODO Move elsewhere ?
-
+        getShadedGraphic: function (skin, graphicName, shader, shaderData) {
             var renderer = this;
-            var key = [ graphicName, skin, filter ];
+            var key = [ graphicName, skin, shader, shaderData ];
 
             return renderer.graphicsCache.get(key, function () {
                 skin.getGraphic(graphicName, function (images) {
-                    var filteredImages = [ ], i;
+                    var shadedImages = [ ], i;
 
                     for (i = 0; i < images.length; ++i) {
-                        filteredImages.push(renderer.filterImage(images[i], filter));
+                        shadedImages.push(shaders.applyShaderToImage(shader, shaderData, images[i]));
                     }
 
-                    renderer.graphicsCache.set(key, filteredImages);
+                    renderer.graphicsCache.set(key, shadedImages);
                 });
             });
         },
@@ -90,7 +56,7 @@ exports.$ = (function () {
             c.save();
             c.translate(hitCircle.x, hitCircle.y);
 
-            var hitCircleGraphic = this.getFilteredGraphic(skin, 'hitcircle', hitCircle.combo.color);
+            var hitCircleGraphic = this.getShadedGraphic(skin, 'hitcircle', shaders.multiplyByColor, hitCircle.combo.color);
             var hitCircleFrame = 0;
 
             if (hitCircleGraphic) {
@@ -122,7 +88,7 @@ exports.$ = (function () {
             c.translate(hitObject.x, hitObject.y);
             c.scale(radius, radius);
 
-            var approachCircleGraphic = this.getFilteredGraphic(skin, 'approachcircle', hitObject.combo.color);
+            var approachCircleGraphic = this.getShadedGraphic(skin, 'approachcircle', shaders.multiplyByColor, hitObject.combo.color);
             var approachCircleFrame = 0;
 
             if (approachCircleGraphic) {
