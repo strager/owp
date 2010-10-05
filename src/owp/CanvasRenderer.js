@@ -38,11 +38,17 @@ exports.$ = (function () {
             // TODO Colouring
             var hitCircleGraphic = skin.getGraphic('hitcircle');
             var hitCircleFrame = 0;
-            c.drawImage(hitCircleGraphic[hitCircleFrame], -hitCircleGraphic[hitCircleFrame].width / 2, -hitCircleGraphic[hitCircleFrame].height / 2);
+
+            if (hitCircleGraphic) {
+                c.drawImage(hitCircleGraphic[hitCircleFrame], -hitCircleGraphic[hitCircleFrame].width / 2, -hitCircleGraphic[hitCircleFrame].height / 2);
+            }
 
             var hitCircleOverlayGraphic = skin.getGraphic('hitcircleoverlay');
             var hitCircleOverlayFrame = 0;
-            c.drawImage(hitCircleOverlayGraphic[hitCircleOverlayFrame], -hitCircleOverlayGraphic[hitCircleOverlayFrame].width / 2, -hitCircleOverlayGraphic[hitCircleOverlayFrame].height / 2);
+
+            if (hitCircleOverlayGraphic) {
+                c.drawImage(hitCircleOverlayGraphic[hitCircleOverlayFrame], -hitCircleOverlayGraphic[hitCircleOverlayFrame].width / 2, -hitCircleOverlayGraphic[hitCircleOverlayFrame].height / 2);
+            }
 
             c.restore();
         },
@@ -65,7 +71,10 @@ exports.$ = (function () {
             // TODO Colouring
             var approachCircleGraphic = skin.getGraphic('approachcircle');
             var approachCircleFrame = 0;
-            c.drawImage(approachCircleGraphic[approachCircleFrame], -approachCircleGraphic[approachCircleFrame].width / 2, -approachCircleGraphic[approachCircleFrame].height / 2);
+
+            if (approachCircleGraphic) {
+                c.drawImage(approachCircleGraphic[approachCircleFrame], -approachCircleGraphic[approachCircleFrame].width / 2, -approachCircleGraphic[approachCircleFrame].height / 2);
+            }
 
             c.restore();
         },

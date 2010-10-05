@@ -5,30 +5,21 @@
     var RuleSet = require('owp/RuleSet').$;
     var Map = require('owp/Map').$;
     var MapState = require('owp/MapState').$;
-    var MapInfo = require('owp/MapInfo').$;
-    var MapFileReader = require('owp/MapFileReader').$;
     var HitCircle = require('owp/HitCircle').$;
     var Skin = require('owp/Skin').$;
+    var AssetManager = require('owp/AssetManager').$;
 
     function debug(message) {
         console.log(message);
     }
 
-    function loadMap(osuFileName, onLoad) {
-        $.get(osuFileName, function (data) {
-            var mapInfo = MapFileReader.read(MapFileReader.parseString(data));
-
-            onLoad(mapInfo);
-        }, 'text');
-    }
-
-    var skin = new Skin('skin');
+    var skin = new Skin(new AssetManager('skin'));
+    var mapAssetManager = new AssetManager('assets');
 
     $(function () {
         // Init
         var mapState = null;
-
-        var audio = new window.Audio();
+        var audio = null;
 
         var canvas = document.createElement('canvas');
         canvas.width = 640;
@@ -59,8 +50,6 @@
             window.setTimeout(render, renderInterval);
         }
 
-        render();
-
         // Lower CPU usage when not active
         function inactive() {
             shouldRender = false;
@@ -80,12 +69,17 @@
             .blur(inactive);
 
         // Start!
-        loadMap('assets/map.osu', function (mapInfo) {
+        mapAssetManager.get('map', 'map', function (mapInfo) {
             mapState = MapState.fromMapInfo(mapInfo);
 
-            audio.src = 'assets/' + mapInfo.audioFile;
+            mapAssetManager.get(mapInfo.audioFile, 'audio', function (a) {
+                audio = a;
 
-            audio.play();
+                audio.currentTime = 33; // XXX TEMP
+                audio.play();
+
+                render();
+            });
         });
     });
 }());
