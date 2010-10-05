@@ -85,6 +85,7 @@ exports.$ = (function () {
             }
 
             var curComboIndex = 0;
+            var curObjectIndex = 0;
             var curObject;
 
             for (i = 0; i < data.HitObjects.lists.length; ++i) {
@@ -92,11 +93,15 @@ exports.$ = (function () {
 
                 if (curObject.newCombo) {
                     curComboIndex = (curComboIndex + 1) % combos.length;
+                    curObjectIndex = 0;
                 }
 
                 curObject.combo = combos[curComboIndex];
+                curObject.comboIndex = curObjectIndex;
 
                 map.objects.push(curObject);
+
+                ++curObjectIndex;
             }
 
             var info = MapInfo.fromSettings(ruleSet, map, {

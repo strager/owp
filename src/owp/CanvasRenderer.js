@@ -63,6 +63,8 @@ exports.$ = (function () {
                 c.drawImage(hitCircleGraphic[hitCircleFrame], -hitCircleGraphic[hitCircleFrame].width / 2, -hitCircleGraphic[hitCircleFrame].height / 2);
             }
 
+            this.renderComboNumber(hitCircle.comboIndex + 1, skin);
+
             var hitCircleOverlayGraphic = skin.getGraphic('hitcircleoverlay');
             var hitCircleOverlayFrame = 0;
 
@@ -93,6 +95,53 @@ exports.$ = (function () {
 
             if (approachCircleGraphic) {
                 c.drawImage(approachCircleGraphic[approachCircleFrame], -approachCircleGraphic[approachCircleFrame].width / 2, -approachCircleGraphic[approachCircleFrame].height / 2);
+            }
+
+            c.restore();
+        },
+
+        renderComboNumber: function (number, skin) {
+            var c = this.context;
+
+            var digits = '' + number;
+            var scale = Math.pow(digits.length, -1 / 4) * 0.9;
+
+            var i, image, digit;
+
+            var graphic;
+            var frame = 0;
+            var images = [ ];
+            var totalWidth = 0;
+            var spacing = -12;  // TODO read from config
+
+            for (i = 0; i < digits.length; ++i) {
+                digit = digits[i];
+
+                graphic = skin.getGraphic('default-' + digit);
+
+                if (!graphic) {
+                    break;
+                }
+
+                image = graphic[frame];
+
+                images.push(image);
+
+                totalWidth += image.width;
+            }
+
+            totalWidth += spacing * (images.length - 1);
+
+            c.save();
+            c.scale(scale, scale);
+            c.translate(-totalWidth / 2, 0);
+
+            for (i = 0; i < images.length; ++i) {
+                image = images[i];
+
+                c.drawImage(image, 0, -image.height / 2);
+
+                c.translate(image.width + spacing, 0);
             }
 
             c.restore();
