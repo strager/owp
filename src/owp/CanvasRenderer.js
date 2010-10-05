@@ -112,7 +112,7 @@ exports.$ = (function () {
             var frame = 0;
             var images = [ ];
             var totalWidth = 0;
-            var spacing = -12;  // TODO read from config
+            var spacing = skin.hitCircleFontSpacing;
 
             for (i = 0; i < digits.length; ++i) {
                 digit = digits[i];

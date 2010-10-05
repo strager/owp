@@ -5,7 +5,7 @@ exports.$ = (function () {
     };
 
     MapInfo.fromSettings = function (ruleSet, map, settings) {
-        var mapInfo = new MapInfo(ruleSet, map, settings);
+        var mapInfo = new MapInfo(ruleSet, map);
 
         var fields = (
             'audioFile,audioLeadIn,previewTime,countdown,modes,' +

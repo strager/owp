@@ -3,6 +3,8 @@ exports.$ = (function () {
     var $ = require('vendor/jquery').$;
     var MapInfo = require('owp/MapInfo').$;
     var MapFileReader = require('owp/MapFileReader').$;
+    var AssetConfigReader = require('owp/AssetConfigReader').$;
+    var Skin = require('owp/Skin').$;
     var Map = require('owp/Util/Map').$;
     var Cache = require('owp/Util/Cache').$;
 
@@ -92,11 +94,31 @@ exports.$ = (function () {
                 break;
 
             case 'map':
-                $.get(this.root + '/' + name + '.osu', function (data) {
-                    var mapInfo = MapFileReader.read(MapFileReader.parseString(data));
+                this.get(name + '.osu', 'asset-config', function (assetConfig) {
+                    var mapInfo = MapFileReader.read(assetConfig);
 
                     loaded(mapInfo);
+                });
+
+                break;
+
+            case 'asset-config':
+                $.get(this.root + '/' + name, function (data) {
+                    var assetConfig = AssetConfigReader.parseString(data);
+
+                    loaded(assetConfig);
                 }, 'text');
+
+                break;
+                
+            case 'skin':
+                var skinAssetManager = new AssetManager(this.root + '/' + name);
+
+                this.get(name + '/skin.ini', 'asset-config', function (assetConfig) {
+                    var skin = Skin.fromConfig(skinAssetManager, assetConfig);
+
+                    loaded(skin);
+                });
 
                 break;
 

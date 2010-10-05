@@ -13,7 +13,11 @@
         console.log(message);
     }
 
-    var skin = new Skin(new AssetManager('skin'));
+    var skin;
+    (new AssetManager('.')).get('skin', 'skin', function (data) {
+        skin = data;
+    });
+
     var mapAssetManager = new AssetManager('assets');
 
     $(function () {
