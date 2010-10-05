@@ -3,67 +3,61 @@ exports.$ = (function () {
     var $ = require('vendor/jquery').$;
     var MapInfo = require('owp/MapInfo').$;
     var MapFileReader = require('owp/MapFileReader').$;
+    var Map = require('owp/Util/Map').$;
+    var Cache = require('owp/Util/Cache').$;
 
     var AssetManager = function (root) {
         this.root = root;
-        this.cache = { };
-        this.loadingCache = { };
+        this.cache = new Cache();
+        this.onLoadHandlers = new Map();
     };
 
     AssetManager.prototype = {
         get: function (name, type, onLoad, forceNew) {
             // TODO Clean up
+            // TODO Test ...
+
+            var assetManager = this;
 
             if (!forceNew) {
-                if (this.loadingCache[type] && this.loadingCache[type][name]) {
+                if (this.onLoadHandlers.contains([ name, type ])) {
                     // Currently loading; attach callback
-                    this.loadingCache[type][name].push(onLoad);
+                    this.onLoadHandlers.get([ name, type ]).push(onLoad);
 
                     return undefined;
                 }
 
-                if (this.cache[type] && this.cache[type][name]) {
-                    // Loaded; call callback immediately
-                    if (typeof onLoad === 'function') {
-                        onLoad(this.cache[type][name]);
-                    }
-
-                    return this.cache[type][name];
-                }
+                return this.cache.get([ name, type ], function () {
+                    assetManager.get(name, type, onLoad, true);
+                });
             }
-
-            var assetManager = this;
 
             function loaded(data) {
                 var i, handlers;
 
-                if (assetManager.loadingCache[type] && assetManager.loadingCache[type][name]) {
-                    handlers = assetManager.loadingCache[type][name];
+                if (assetManager.onLoadHandlers.contains([ name, type ])) {
+                    handlers = assetManager.onLoadHandlers.get([ name, type ]);
 
                     for (i = 0; i < handlers.length; ++i) {
                         handlers[i](data);
                     }
 
-                    delete assetManager.loadingCache[type][name];
+                    assetManager.onLoadHandlers.unset([ name, type ]);
                 }
 
-                if (!assetManager.cache[type]) {
-                    assetManager.cache[type] = { };
-                }
-
-                assetManager.cache[type][name] = data;
+                assetManager.cache.set([ name, type ], data);
             }
 
             function attachOnLoadHandler(onLoadHandler) {
-                if (!assetManager.loadingCache[type]) {
-                    assetManager.loadingCache[type] = { };
+                var handlers = [ ];
+
+                if (assetManager.onLoadHandlers.contains([ name, type ])) {
+                    handlers = assetManager.onLoadHandlers.get([ name, type ]);
+                } else {
+                    assetManager.onLoadHandlers.set([ name, type ], handlers);
                 }
 
-                if (!assetManager.loadingCache[type][name]) {
-                    assetManager.loadingCache[type][name] = [ ];
-                }
-
-                assetManager.loadingCache[type][name].push(onLoadHandler);
+                handlers.push(onLoadHandler);
             }
 
             if (typeof onLoad === 'function') {
