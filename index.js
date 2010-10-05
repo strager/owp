@@ -6,34 +6,30 @@
     var Map = require('owp/Map').$;
     var MapState = require('owp/MapState').$;
     var MapInfo = require('owp/MapInfo').$;
+    var MapFileReader = require('owp/MapFileReader').$;
     var HitCircle = require('owp/HitCircle').$;
     var Skin = require('owp/Skin').$;
-
-    var audio = new window.Audio('assets/map.mp3');
 
     function debug(message) {
         console.log(message);
     }
 
-    // Make the map (TODO actual loading)
-    var ruleSet = new RuleSet();
-    ruleSet.appearTime = 1000;
-    ruleSet.disappearTime = 100;
+    function loadMap(osuFileName, onLoad) {
+        $.get(osuFileName, function (data) {
+            var mapInfo = MapFileReader.read(MapFileReader.parseString(data));
 
-    var map = new Map();
-    var i;
-
-    for (i = 0; i < 20; ++i) {
-        map.objects.push(new HitCircle(i * 1000, Math.random() * 640, Math.random() * 480));
+            onLoad(mapInfo);
+        }, 'text');
     }
 
-    var mapInfo = new MapInfo(ruleSet, map);
-
-    var mapState = MapState.fromMapInfo(mapInfo);
     var skin = new Skin('skin');
 
     $(function () {
         // Init
+        var mapState = null;
+
+        var audio = new window.Audio();
+
         var canvas = document.createElement('canvas');
         canvas.width = 640;
         canvas.height = 480;
@@ -52,11 +48,14 @@
             var time = Math.round(audio.currentTime * 1000);
 
             canvasRenderer.beginRender();
-            canvasRenderer.renderMap(mapState, skin, time);
+
+            if (mapState) {
+                canvasRenderer.renderMap(mapState, skin, time);
+            }
+
             canvasRenderer.endRender();
 
             var renderInterval = 20;
-
             window.setTimeout(render, renderInterval);
         }
 
@@ -81,6 +80,12 @@
             .blur(inactive);
 
         // Start!
-        audio.play();
+        loadMap('assets/map.osu', function (mapInfo) {
+            mapState = MapState.fromMapInfo(mapInfo);
+
+            audio.src = 'assets/' + mapInfo.audioFile;
+
+            audio.play();
+        });
     });
 }());

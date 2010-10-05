@@ -1,7 +1,11 @@
 exports.$ = (function () {
-    var MapInfo = function (ruleSet, map, data) {
+    var MapInfo = function (ruleSet, map) {
         this.ruleSet = ruleSet;
         this.map = map;
+    };
+
+    MapInfo.fromSettings = function (ruleSet, map, settings) {
+        var mapInfo = new MapInfo(ruleSet, map, settings);
 
         var fields = (
             'audioFile,audioLeadIn,previewTime,countdown,modes,' +
@@ -14,8 +18,10 @@ exports.$ = (function () {
         for (i = 0; i < fields.length; ++i) {
             key = fields[i];
 
-            this[key] = data && data.hasOwnProperty(key) ? data[key] : null;
+            mapInfo[key] = settings && settings.hasOwnProperty(key) ? settings[key] : undefined;
         }
+
+        return mapInfo;
     };
 
     return MapInfo;
