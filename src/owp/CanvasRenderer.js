@@ -160,6 +160,45 @@ exports.$ = (function () {
             } else {
                 throw 'Unknown hit object type';
             }
+        },
+
+        renderStoryboard: function (storyboard, assetManager, time) {
+            var c = this.context;
+
+            // Background
+            var background = storyboard.getBackground(time);
+            var backgroundGraphic;
+
+            if (background) {
+                backgroundGraphic = assetManager.get(background.fileName, 'image');
+
+                if (backgroundGraphic) {
+                    // Rectangle fitting
+                    // TODO Clean up and move somewhere else!
+                    var canvasAR = c.canvas.width / c.canvas.height;
+                    var imageAR = backgroundGraphic[0].width / backgroundGraphic[0].height;
+                    var scale;
+
+                    if (imageAR > canvasAR) {
+                        // Image is wider
+                        scale = c.canvas.width / backgroundGraphic[0].width;
+                    } else {
+                        // Image is taller
+                        scale = c.canvas.height / backgroundGraphic[0].height;
+                    }
+
+                    c.save();
+                    c.translate(
+                        (c.canvas.width - backgroundGraphic[0].width * scale) / 2,
+                        (c.canvas.height - backgroundGraphic[0].height * scale) / 2
+                    );
+                    c.scale(scale, scale);
+                    c.drawImage(backgroundGraphic[0], 0, 0);
+                    c.restore();
+                }
+            }
+
+            // TODO Real storyboard stuff
         }
     };
 

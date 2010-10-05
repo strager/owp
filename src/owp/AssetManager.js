@@ -72,11 +72,23 @@ exports.$ = (function () {
                 attachOnLoadHandler(onLoad);
             }
 
+            var img;
+
             switch (type) {
             case 'image-set':
                 // TODO Support animations
-                var img = document.createElement('img');
+                img = document.createElement('img');
                 img.src = this.root + '/' + name + '.png';
+
+                $(img).one('load', function () {
+                    loaded([ img ]);
+                });
+
+                break;
+
+            case 'image':
+                img = document.createElement('img');
+                img.src = this.root + '/' + name;
 
                 $(img).one('load', function () {
                     loaded([ img ]);

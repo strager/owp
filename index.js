@@ -22,6 +22,7 @@
 
     $(function () {
         // Init
+        var mapInfo = null;
         var mapState = null;
         var audio = null;
 
@@ -43,6 +44,10 @@
             var time = Math.round(audio.currentTime * 1000);
 
             canvasRenderer.beginRender();
+
+            if (mapInfo) {
+                canvasRenderer.renderStoryboard(mapInfo.storyboard, mapAssetManager, time);
+            }
 
             if (mapState) {
                 canvasRenderer.renderMap(mapState, skin, time);
@@ -73,7 +78,9 @@
             .blur(inactive);
 
         // Start!
-        mapAssetManager.get('map', 'map', function (mapInfo) {
+        mapAssetManager.get('map', 'map', function (mapInfoParam) {
+            mapInfo = mapInfoParam;
+
             mapState = MapState.fromMapInfo(mapInfo);
 
             mapAssetManager.get(mapInfo.audioFile, 'audio', function (a) {

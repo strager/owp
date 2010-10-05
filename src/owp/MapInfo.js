@@ -1,11 +1,12 @@
 exports.$ = (function () {
-    var MapInfo = function (ruleSet, map) {
+    var MapInfo = function (ruleSet, map, storyboard) {
         this.ruleSet = ruleSet;
         this.map = map;
+        this.storyboard = storyboard;
     };
 
-    MapInfo.fromSettings = function (ruleSet, map, settings) {
-        var mapInfo = new MapInfo(ruleSet, map);
+    MapInfo.fromSettings = function (ruleSet, map, storyboard, settings) {
+        var mapInfo = new MapInfo(ruleSet, map, storyboard);
 
         var fields = (
             'audioFile,audioLeadIn,previewTime,countdown,modes,' +

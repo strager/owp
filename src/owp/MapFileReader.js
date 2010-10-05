@@ -5,6 +5,7 @@ exports.$ = (function () {
     var Map = require('owp/Map').$;
     var Combo = require('owp/Combo').$;
     var MapInfo = require('owp/MapInfo').$;
+    var Storyboard = require('owp/Storyboard').$;
 
     var MapFileReader = {
         read: function (assetConfig) {
@@ -48,7 +49,9 @@ exports.$ = (function () {
                 ++curObjectIndex;
             }
 
-            var info = MapInfo.fromSettings(ruleSet, map, {
+            var storyboard = Storyboard.fromData(assetConfig.Events.lists);
+
+            var info = MapInfo.fromSettings(ruleSet, map, storyboard, {
                 audioFile:      assetConfig.General.values.AudioFilename,
                 audioLeadIn:    assetConfig.General.values.AudioLeadIn,
                 previewTime:    assetConfig.General.values.PreviewTime,
