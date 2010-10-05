@@ -14,7 +14,7 @@ exports.$ = (function () {
                 }
 
                 for (i = 0; i < a.length; ++i) {
-                    if (a[i] !== b[i]) {
+                    if (!this.areKeysEqual(a[i], b[i])) {
                         return false;
                     }
                 }

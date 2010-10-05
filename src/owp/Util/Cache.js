@@ -15,7 +15,10 @@ exports.$ = (function () {
                 data = this.map.get(key);
             } else {
                 data = creator(key);
-                this.map.set(key, data);
+
+                if (!this.map.contains(key)) {
+                    this.map.set(key, data);
+                }
             }
 
             return data;
@@ -23,6 +26,10 @@ exports.$ = (function () {
 
         set: function (key, value) {
             this.map.set(key, value);
+        },
+
+        contains: function (key) {
+            return this.map.contains(key);
         }
     };
 

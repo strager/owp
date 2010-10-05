@@ -27,6 +27,12 @@ exports.$ = (function () {
                     return undefined;
                 }
 
+                if (this.cache.contains([ name, type ])) {
+                    if (typeof onLoad === 'function') {
+                        onLoad(this.cache.get([ name, type ]));
+                    }
+                }
+
                 return this.cache.get([ name, type ], function () {
                     assetManager.get(name, type, onLoad, true);
                 });

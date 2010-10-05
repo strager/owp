@@ -1,7 +1,9 @@
+/*jslint bitwise: false */
 exports.$ = (function () {
     var RuleSet = require('owp/RuleSet').$;
     var HitCircle = require('owp/HitCircle').$;
     var Map = require('owp/Map').$;
+    var Combo = require('owp/Combo').$;
     var MapInfo = require('owp/MapInfo').$;
 
     var MapFileReader = {
@@ -72,11 +74,29 @@ exports.$ = (function () {
             });
 
             var map = new Map(); 
+            var combos = [ ];
 
             var i;
 
+            for (i = 1; i <= 5; ++i) {
+                if (data.Colours.values.hasOwnProperty('Combo' + i)) {
+                    combos.push(new Combo(data.Colours.values['Combo' + i].split(',')));
+                }
+            }
+
+            var curComboIndex = 0;
+            var curObject;
+
             for (i = 0; i < data.HitObjects.lists.length; ++i) {
-                map.objects.push(MapFileReader.readHitObject(data.HitObjects.lists[i]));
+                curObject = MapFileReader.readHitObject(data.HitObjects.lists[i]);
+
+                if (curObject.newCombo) {
+                    curComboIndex = (curComboIndex + 1) % combos.length;
+                }
+
+                curObject.combo = combos[curComboIndex];
+
+                map.objects.push(curObject);
             }
 
             var info = MapInfo.fromSettings(ruleSet, map, {
@@ -106,6 +126,10 @@ exports.$ = (function () {
             object.x = parseInt(list[0], 10);
             object.y = parseInt(list[1], 10);
             object.time = parseInt(list[2], 10);
+
+            var flags1 = parseInt(list[3], 10);
+
+            object.newCombo = !!(flags1 & 4);
 
             return object;
         }

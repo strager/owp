@@ -4,8 +4,8 @@ exports.$ = (function () {
     };
 
     Skin.prototype = {
-        getGraphic: function (name) {
-            return this.assetManager.get(name, 'image-set');
+        getGraphic: function (name, onLoad) {
+            return this.assetManager.get(name, 'image-set', onLoad);
         }
     };
 
