@@ -37,7 +37,7 @@ exports.$ = (function () {
         makeHit: function (x, y, time) {
             var hittableObjects = this.getHittableObjects(time).sort(function (a, b) {
                 // Sort by time ascending
-                return a.time < b.time ? a : b;
+                return a.time < b.time ? -1 : 1;
             });
 
             var i, object;
@@ -48,6 +48,7 @@ exports.$ = (function () {
 
                 if (this.ruleSet.canHitObject(object, x, y, time)) {
                     hit = new HitObjectHit(object, time);
+                    hit.score = this.ruleSet.getHitScore(object, hit);
 
                     this.hits.spawn(hit);
 

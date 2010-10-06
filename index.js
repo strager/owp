@@ -99,6 +99,9 @@
             mapAssetManager.get(mapInfo.audioFile, 'audio', function (a) {
                 audio = a;
 
+                audio.controls = 'controls';
+                document.body.appendChild(audio);
+
                 audio.currentTime = 33; // XXX TEMP
                 audio.play();
 

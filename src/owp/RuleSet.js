@@ -75,7 +75,7 @@ exports.$ = (function () {
 
             // TODO Better logic
 
-            return distance < 20;
+            return distance < 64;
         },
 
         getHitScore: function (object, hit) {

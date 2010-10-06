@@ -23,6 +23,14 @@
         assert.equal(value, map.get(key));
     };
 
+    exports.testGetDefault = function () {
+        var map = new Map();
+
+        map.set('key', 'value');
+
+        assert.equal('default', map.get('not-key', 'default'));
+    };
+
     exports.testSetDifferentObjectDoesNotOverride = function () {
         var map = new Map();
         var key1 = { };

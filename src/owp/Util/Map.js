@@ -61,10 +61,17 @@ exports.$ = (function () {
             return -1;
         },
 
-        get: function (key) {
+        get: function (key, defaultValue) {
             var index = this.getIndexFromKey(key);
 
             if (index < 0) {
+                if (arguments.length > 1) {
+                    // If defaultValue was specified, return it
+                    // (undefined is a legal defaultValue,
+                    //  and if no defaultvalue is given, throw)
+                    return defaultValue;
+                }
+
                 throw 'No such value for key ' + key;
             }
 

@@ -1,5 +1,6 @@
 exports.$ = (function () {
     var HitCircle = require('owp/HitCircle').$;
+    var HitObjectHit = require('owp/HitObjectHit').$;
     var Cache = require('owp/Util/Cache').$;
     var shaders = require('owp/canvasShaders');
 
@@ -25,11 +26,48 @@ exports.$ = (function () {
         },
 
         renderMap: function (mapState, skin, time) {
+            // Visible objects
             var objects = mapState.getVisibleObjects(time);
+
+            // Hit markers
+            objects = objects.concat(
+                mapState.hits.get(time, function start(hit) {
+                    return hit.time;
+                }, function end(hit) {
+                    return hit.time + 2000; // FIXME config or whatever
+                })
+            );
+
+            // Get objects in Z order
+            objects = objects.sort(function (a, b) {
+                var newA = a;
+                var newB = b;
+
+                // Keep hit marker above object
+                if (a instanceof HitObjectHit) {
+                    if (b === a.hitObject) {
+                        return 1;
+                    }
+
+                    newA = a.hitObject;
+                }
+
+                if (b instanceof HitObjectHit) {
+                    if (a === b.hitObject) {
+                        return -1;
+                    }
+
+                    newB = b.hitObject;
+                }
+
+                // Sort by time descending
+                return newA.time > newB.time ? -1 : 1;
+            });
+
             var i;
 
             for (i = 0; i < objects.length; ++i) {
-                this.renderObject(objects[i], mapState.ruleSet, skin, time);
+                this.renderObject(objects[i], mapState, skin, time);
             }
         },
 
@@ -178,16 +216,37 @@ exports.$ = (function () {
             c.restore();
         },
 
-        renderObject: function (object, ruleSet, skin, time) {
+        renderHitMarker: function (hit, skin, time) {
             var c = this.context;
 
-            var approachProgress = ruleSet.getObjectApproachProgress(object, time);
+            c.save();
+            c.translate(hit.hitObject.x, hit.hitObject.y);
+
+            // Hit marker
+            var hitMarkerGraphic = skin.getGraphic('hit' + hit.score);
+            var hitMarkerFrame = 0;
+
+            if (hitMarkerGraphic) {
+                this.drawImageCentred(hitMarkerGraphic[hitMarkerFrame]);
+            }
+
+            c.restore();
+        },
+
+        renderObject: function (object, mapState, skin, time) {
+            var c = this.context;
+
+            var approachProgress = mapState.ruleSet.getObjectApproachProgress(object, time);
 
             c.globalAlpha = Math.abs(approachProgress);
 
             if (object instanceof HitCircle) {
                 this.renderHitCircle(object, skin, time);
                 this.renderApproachCircle(object, skin, approachProgress);
+            } else if (object instanceof HitObjectHit) {
+                c.globalAlpha = 1;
+
+                this.renderHitMarker(object, skin, time);
             } else {
                 throw 'Unknown hit object type';
             }
