@@ -14,131 +14,129 @@ exports.$ = (function () {
         this.onLoadHandlers = new Map();
     };
 
-    AssetManager.prototype = {
-        get: function (name, type, onLoad, forceNew) {
-            // TODO Clean up
-            // TODO Test ...
+    AssetManager.typeHandlers = {
+        'image-set': function (assetManager, name, loaded) {
+            // TODO Support animations
+            var img = document.createElement('img');
+            img.src = assetManager.root + '/' + name + '.png';
 
+            $(img).one('load', function () {
+                loaded([ img ]);
+            });
+        },
+
+        image: function (assetManager, name, loaded) {
+            var img = document.createElement('img');
+            img.src = assetManager.root + '/' + name;
+
+            $(img).one('load', function () {
+                loaded([ img ]);
+            });
+        },
+
+        audio: function (assetManager, name, loaded) {
+            var audio = new window.Audio(assetManager.root + '/' + name);
+
+            $(audio).one('canplaythrough', function () {
+                loaded(audio);
+            });
+        },
+
+        map: function (assetManager, name, loaded) {
+            assetManager.get(name + '.osu', 'asset-config', function (assetConfig) {
+                var mapInfo = MapFileReader.read(assetConfig);
+
+                loaded(mapInfo);
+            });
+        },
+
+        'asset-config': function (assetManager, name, loaded) {
+            $.get(assetManager.root + '/' + name, function (data) {
+                var assetConfig = AssetConfigReader.parseString(data);
+
+                loaded(assetConfig);
+            }, 'text');
+        },
+
+        skin: function (assetManager, name, loaded) {
+            var skinAssetManager = new AssetManager(assetManager.root + '/' + name);
+
+            assetManager.get(name + '/skin.ini', 'asset-config', function (assetConfig) {
+                var skin = Skin.fromConfig(skinAssetManager, assetConfig);
+
+                loaded(skin);
+            });
+        }
+    };
+
+    AssetManager.prototype = {
+        assetLoaded: function (name, type, data) {
+            var key = [ name, type ];
+            var i, handlers;
+
+            if (this.onLoadHandlers.contains(key)) {
+                handlers = this.onLoadHandlers.get(key);
+
+                for (i = 0; i < handlers.length; ++i) {
+                    if (typeof handlers[i] !== 'function') {
+                        continue;
+                    }
+
+                    handlers[i](data);
+                }
+
+                this.onLoadHandlers.unset(key);
+            }
+
+            this.cache.set(key, data);
+        },
+
+        onLoad: function (name, type, onLoadHandler) {
+            var key = [ name, type ];
+            var handlers = [ ];
+
+            if (this.onLoadHandlers.contains(key)) {
+                handlers = this.onLoadHandlers.get(key);
+            } else {
+                this.onLoadHandlers.set(key, handlers);
+            }
+
+            handlers.push(onLoadHandler);
+        },
+
+        forceGet: function (name, type, onLoadHandler) {
             var assetManager = this;
 
-            if (!forceNew) {
-                if (this.onLoadHandlers.contains([ name, type ])) {
-                    // Currently loading; attach callback
-                    this.onLoadHandlers.get([ name, type ]).push(onLoad);
+            this.onLoad(name, type, onLoadHandler);
 
-                    return undefined;
-                }
-
-                if (this.cache.contains([ name, type ])) {
-                    if (typeof onLoad === 'function') {
-                        onLoad(this.cache.get([ name, type ]));
-                    }
-                }
-
-                return this.cache.get([ name, type ], function () {
-                    assetManager.get(name, type, onLoad, true);
-                });
-            }
-
-            function loaded(data) {
-                var i, handlers;
-
-                if (assetManager.onLoadHandlers.contains([ name, type ])) {
-                    handlers = assetManager.onLoadHandlers.get([ name, type ]);
-
-                    for (i = 0; i < handlers.length; ++i) {
-                        handlers[i](data);
-                    }
-
-                    assetManager.onLoadHandlers.unset([ name, type ]);
-                }
-
-                assetManager.cache.set([ name, type ], data);
-            }
-
-            function attachOnLoadHandler(onLoadHandler) {
-                var handlers = [ ];
-
-                if (assetManager.onLoadHandlers.contains([ name, type ])) {
-                    handlers = assetManager.onLoadHandlers.get([ name, type ]);
-                } else {
-                    assetManager.onLoadHandlers.set([ name, type ], handlers);
-                }
-
-                handlers.push(onLoadHandler);
-            }
-
-            if (typeof onLoad === 'function') {
-                attachOnLoadHandler(onLoad);
-            }
-
-            var img;
-
-            switch (type) {
-            case 'image-set':
-                // TODO Support animations
-                img = document.createElement('img');
-                img.src = this.root + '/' + name + '.png';
-
-                $(img).one('load', function () {
-                    loaded([ img ]);
-                });
-
-                break;
-
-            case 'image':
-                img = document.createElement('img');
-                img.src = this.root + '/' + name;
-
-                $(img).one('load', function () {
-                    loaded([ img ]);
-                });
-
-                break;
-
-            case 'audio':
-                var audio = new window.Audio(this.root + '/' + name);
-
-                $(audio).one('canplaythrough', function () {
-                    loaded(audio);
-                });
-
-                break;
-
-            case 'map':
-                this.get(name + '.osu', 'asset-config', function (assetConfig) {
-                    var mapInfo = MapFileReader.read(assetConfig);
-
-                    loaded(mapInfo);
-                });
-
-                break;
-
-            case 'asset-config':
-                $.get(this.root + '/' + name, function (data) {
-                    var assetConfig = AssetConfigReader.parseString(data);
-
-                    loaded(assetConfig);
-                }, 'text');
-
-                break;
-                
-            case 'skin':
-                var skinAssetManager = new AssetManager(this.root + '/' + name);
-
-                this.get(name + '/skin.ini', 'asset-config', function (assetConfig) {
-                    var skin = Skin.fromConfig(skinAssetManager, assetConfig);
-
-                    loaded(skin);
-                });
-
-                break;
-
-            default:
+            if (!AssetManager.typeHandlers.hasOwnProperty(type)) {
                 throw 'Unknown asset type ' + type;
             }
 
-            return undefined;
+            return AssetManager.typeHandlers[type](this, name, function (data) {
+                assetManager.assetLoaded(name, type, data);
+            });
+        },
+
+        get: function (name, type, onLoadHandler) {
+            var assetManager = this;
+
+            if (this.onLoadHandlers.contains([ name, type ])) {
+                // Currently loading; attach callback
+                this.onLoad(name, type, onLoadHandler);
+
+                return undefined;
+            }
+
+            if (this.cache.contains([ name, type ])) {
+                if (typeof onLoadHandler === 'function') {
+                    onLoadHandler(this.cache.get([ name, type ]));
+                }
+            }
+
+            return this.cache.get([ name, type ], function () {
+                assetManager.forceGet(name, type, onLoadHandler);
+            });
         }
     };
 
