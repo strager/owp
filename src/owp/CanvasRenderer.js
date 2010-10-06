@@ -194,8 +194,6 @@ exports.$ = (function () {
         },
 
         renderStoryboard: function (storyboard, assetManager, time) {
-            var c = this.context;
-
             // Background
             var background = storyboard.getBackground(time);
             var backgroundGraphic;
@@ -204,32 +202,38 @@ exports.$ = (function () {
                 backgroundGraphic = assetManager.get(background.fileName, 'image');
 
                 if (backgroundGraphic) {
-                    // Rectangle fitting
-                    // TODO Clean up and move somewhere else!
-                    var canvasAR = c.canvas.width / c.canvas.height;
-                    var imageAR = backgroundGraphic.width / backgroundGraphic.height;
-                    var scale;
-
-                    if (imageAR > canvasAR) {
-                        // Image is wider
-                        scale = c.canvas.width / backgroundGraphic.width;
-                    } else {
-                        // Image is taller
-                        scale = c.canvas.height / backgroundGraphic.height;
-                    }
-
-                    c.save();
-                    c.translate(
-                        (c.canvas.width - backgroundGraphic.width * scale) / 2,
-                        (c.canvas.height - backgroundGraphic.height * scale) / 2
-                    );
-                    c.scale(scale, scale);
-                    c.drawImage(backgroundGraphic, 0, 0);
-                    c.restore();
+                    this.renderBackground(backgroundGraphic);
                 }
             }
 
             // TODO Real storyboard stuff
+        },
+
+        renderBackground: function (graphic) {
+            var c = this.context;
+
+            // TODO Split?
+
+            var canvasAR = c.canvas.width / c.canvas.height;
+            var imageAR = graphic.width / graphic.height;
+            var scale;
+
+            if (imageAR > canvasAR) {
+                // Image is wider
+                scale = c.canvas.width / graphic.width;
+            } else {
+                // Image is taller
+                scale = c.canvas.height / graphic.height;
+            }
+
+            c.save();
+            c.translate(
+                (c.canvas.width - graphic.width * scale) / 2,
+                (c.canvas.height - graphic.height * scale) / 2
+            );
+            c.scale(scale, scale);
+            c.drawImage(graphic, 0, 0);
+            c.restore();
         }
     };
 
