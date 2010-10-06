@@ -4,7 +4,6 @@ exports.$ = (function () {
     var MapInfo = require('owp/MapInfo').$;
     var MapFileReader = require('owp/MapFileReader').$;
     var AssetConfigReader = require('owp/AssetConfigReader').$;
-    var Skin = require('owp/Skin').$;
     var Map = require('owp/Util/Map').$;
     var Cache = require('owp/Util/Cache').$;
 
@@ -59,7 +58,7 @@ exports.$ = (function () {
             var skinAssetManager = new AssetManager(assetManager.root + '/' + name);
 
             assetManager.get(name + '/skin.ini', 'asset-config', function (assetConfig) {
-                var skin = Skin.fromConfig(skinAssetManager, assetConfig);
+                var skin = MapFileReader.readSkin(assetConfig, skinAssetManager);
 
                 loaded(skin);
             });

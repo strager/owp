@@ -5,24 +5,6 @@ exports.$ = (function () {
         this.assetManager = assetManager;
     };
 
-    Skin.fromConfig = function (assetManager, assetConfig) {
-        return Skin.fromSettings(assetManager, {
-            name:   assetConfig.General.values.Name,
-            author: assetConfig.General.values.Author,
-
-            comboColors:                [ ],   // TODO
-            spinnerApproachCircleColor: assetConfig.Colours.values.SpinnerApproachCircle.split(','),
-            sliderBorderColor:          assetConfig.Colours.values.SliderBorder.split(','),
-
-            scoreFontSpacing:     -assetConfig.Fonts.values.ScoreOverlap,
-            hitCircleFontSpacing: -assetConfig.Fonts.values.HitCircleOverlap,
-
-            sliderBallFlips:  assetConfig.General.values.SliderBallFlip,
-            sliderBallFrames: assetConfig.General.values.SliderBallFrames,
-            cursorExpands:    assetConfig.General.values.CursorExpand
-        });
-    };
-
     Skin.fromSettings = function (assetManager, settings) {
         var skin = new Skin(assetManager);
 

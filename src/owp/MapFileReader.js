@@ -6,8 +6,27 @@ exports.$ = (function () {
     var Combo = require('owp/Combo').$;
     var MapInfo = require('owp/MapInfo').$;
     var Storyboard = require('owp/Storyboard').$;
+    var Skin = require('owp/Skin').$;
 
     var MapFileReader = {
+        readSkin: function (assetConfig, assetManager) {
+            return Skin.fromSettings(assetManager, {
+                name:   assetConfig.General.values.Name,
+                author: assetConfig.General.values.Author,
+
+                comboColors:                [ ],   // TODO
+                spinnerApproachCircleColor: assetConfig.Colours.values.SpinnerApproachCircle.split(','),
+                sliderBorderColor:          assetConfig.Colours.values.SliderBorder.split(','),
+
+                scoreFontSpacing:     -assetConfig.Fonts.values.ScoreOverlap,
+                hitCircleFontSpacing: -assetConfig.Fonts.values.HitCircleOverlap,
+
+                sliderBallFlips:  assetConfig.General.values.SliderBallFlip,
+                sliderBallFrames: assetConfig.General.values.SliderBallFrames,
+                cursorExpands:    assetConfig.General.values.CursorExpand
+            });
+        },
+
         readRuleSet: function (assetConfig) {
             return RuleSet.fromSettings({
                 hpDrainRate:        assetConfig.Difficulty.values.HPDrainRate,
