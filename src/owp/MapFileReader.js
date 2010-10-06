@@ -8,8 +8,8 @@ exports.$ = (function () {
     var Storyboard = require('owp/Storyboard').$;
 
     var MapFileReader = {
-        read: function (assetConfig) {
-            var ruleSet = RuleSet.fromSettings({
+        readRuleSet: function (assetConfig) {
+            return RuleSet.fromSettings({
                 hpDrainRate:        assetConfig.Difficulty.values.HPDrainRate,
                 circleSize:         assetConfig.Difficulty.values.CircleSize,
                 overallDifficulty:  assetConfig.Difficulty.values.OverallDifficulty,
@@ -17,8 +17,9 @@ exports.$ = (function () {
                 sliderTickRate:     assetConfig.Difficulty.values.SliderTickRate,
                 stackLeniency:      assetConfig.General.values.StackLeniency
             });
+        },
 
-            var map = new Map(); 
+        readCombos: function (assetConfig) {
             var combos = [ ];
 
             var i;
@@ -29,9 +30,16 @@ exports.$ = (function () {
                 }
             }
 
+            return combos;
+        },
+
+        readHitObjects: function (assetConfig, combos) {
+            var objects = [ ];
+
             var curComboIndex = 0;
             var curObjectIndex = 0;
             var curObject;
+            var i;
 
             for (i = 0; i < assetConfig.HitObjects.lists.length; ++i) {
                 curObject = MapFileReader.readHitObject(assetConfig.HitObjects.lists[i]);
@@ -44,14 +52,16 @@ exports.$ = (function () {
                 curObject.combo = combos[curComboIndex];
                 curObject.comboIndex = curObjectIndex;
 
-                map.objects.push(curObject);
+                objects.push(curObject);
 
                 ++curObjectIndex;
             }
 
-            var storyboard = Storyboard.fromData(assetConfig.Events.lists);
+            return objects;
+        },
 
-            var info = MapInfo.fromSettings(ruleSet, map, storyboard, {
+        readMapInfo: function (assetConfig, ruleSet, map, storyboard) {
+            return MapInfo.fromSettings(ruleSet, map, storyboard, {
                 audioFile:      assetConfig.General.values.AudioFilename,
                 audioLeadIn:    assetConfig.General.values.AudioLeadIn,
                 previewTime:    assetConfig.General.values.PreviewTime,
@@ -67,6 +77,53 @@ exports.$ = (function () {
                 source:     assetConfig.Metadata.values.Source,
                 tags:       assetConfig.Metadata.values.Tags
             });
+
+        },
+
+        readStoryboard: function (assetConfig) {
+            var storyboard = new Storyboard();
+
+            var data = assetConfig.Events.lists;
+            var i, line;
+
+            for (i = 0; i < data.length; ++i) {
+                line = data[i];
+
+                switch (parseInt(line[0], 10)) {
+                case 0:
+                    storyboard.backgrounds.push({
+                        time: parseInt(line[1], 10),
+                        fileName: line[2].replace(/^"([^"]*)"$/, '$1')
+                    });
+
+                    break;
+
+                    // TODO Support more storyboard command types
+
+                default:
+                    // Ignore
+                    break;
+
+                case NaN:
+                    // Ignore
+                    break;
+                }
+            }
+
+            return storyboard;
+        },
+
+        read: function (assetConfig) {
+            var ruleSet = MapFileReader.readRuleSet(assetConfig);
+
+            var combos = MapFileReader.readCombos(assetConfig);
+
+            var map = new Map(); 
+            map.objects = MapFileReader.readHitObjects(assetConfig, combos);
+
+            var storyboard = MapFileReader.readStoryboard(assetConfig);
+
+            var info = MapFileReader.readMapInfo(assetConfig, ruleSet, map, storyboard);
 
             return info;
         },
