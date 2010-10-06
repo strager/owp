@@ -176,24 +176,24 @@ exports.$ = (function () {
                     // Rectangle fitting
                     // TODO Clean up and move somewhere else!
                     var canvasAR = c.canvas.width / c.canvas.height;
-                    var imageAR = backgroundGraphic[0].width / backgroundGraphic[0].height;
+                    var imageAR = backgroundGraphic.width / backgroundGraphic.height;
                     var scale;
 
                     if (imageAR > canvasAR) {
                         // Image is wider
-                        scale = c.canvas.width / backgroundGraphic[0].width;
+                        scale = c.canvas.width / backgroundGraphic.width;
                     } else {
                         // Image is taller
-                        scale = c.canvas.height / backgroundGraphic[0].height;
+                        scale = c.canvas.height / backgroundGraphic.height;
                     }
 
                     c.save();
                     c.translate(
-                        (c.canvas.width - backgroundGraphic[0].width * scale) / 2,
-                        (c.canvas.height - backgroundGraphic[0].height * scale) / 2
+                        (c.canvas.width - backgroundGraphic.width * scale) / 2,
+                        (c.canvas.height - backgroundGraphic.height * scale) / 2
                     );
                     c.scale(scale, scale);
-                    c.drawImage(backgroundGraphic[0], 0, 0);
+                    c.drawImage(backgroundGraphic, 0, 0);
                     c.restore();
                 }
             }

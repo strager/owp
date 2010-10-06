@@ -17,11 +17,8 @@ exports.$ = (function () {
     AssetManager.typeHandlers = {
         'image-set': function (assetManager, name, loaded) {
             // TODO Support animations
-            var img = document.createElement('img');
-            img.src = assetManager.root + '/' + name + '.png';
-
-            $(img).one('load', function () {
-                loaded([ img ]);
+            assetManager.get(name + '.png', 'image', function (data) {
+                loaded([ data ]);
             });
         },
 
@@ -30,7 +27,7 @@ exports.$ = (function () {
             img.src = assetManager.root + '/' + name;
 
             $(img).one('load', function () {
-                loaded([ img ]);
+                loaded(img);
             });
         },
 
