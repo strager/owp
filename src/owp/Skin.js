@@ -1,4 +1,6 @@
 exports.$ = (function () {
+    var util = require('owp/Util/util');
+
     var Skin = function (assetManager) {
         this.assetManager = assetManager;
     };
@@ -31,16 +33,11 @@ exports.$ = (function () {
             'sliderBallFlips,sliderBallFrames,cursorExpands'
         ).split(',');
 
-        var i, key;
-
-        for (i = 0; i < fields.length; ++i) {
-            key = fields[i];
-
-            skin[key] = settings && settings.hasOwnProperty(key) ? settings[key] : undefined;
-        }
+        util.extendObjectWithFields(skin, fields, settings);
 
         return skin;
     };
+
     Skin.prototype = {
         getGraphic: function (name, onLoad) {
             return this.assetManager.get(name, 'image-set', onLoad);
