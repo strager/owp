@@ -42,12 +42,22 @@ exports.$ = (function () {
                     var shadedImages = [ ], i;
 
                     for (i = 0; i < images.length; ++i) {
-                        shadedImages.push(shaders.applyShaderToImage(shader, shaderData, images[i]));
+                        shadedImages.push(
+                            shaders.applyShaderToImage(shader, shaderData, images[i])
+                        );
                     }
 
                     renderer.graphicsCache.set(key, shadedImages);
                 });
             });
+        },
+
+        drawImageCentred: function (image) {
+            this.context.drawImage(
+                image,
+                -image.width / 2,
+                -image.height / 2
+            );
         },
 
         renderHitCircle: function (hitCircle, skin, progress, time) {
@@ -56,20 +66,27 @@ exports.$ = (function () {
             c.save();
             c.translate(hitCircle.x, hitCircle.y);
 
-            var hitCircleGraphic = this.getShadedGraphic(skin, 'hitcircle', shaders.multiplyByColor, hitCircle.combo.color);
+            // Hit circle base
+            var hitCircleGraphic = this.getShadedGraphic(
+                skin, 'hitcircle',
+                shaders.multiplyByColor, hitCircle.combo.color
+            );
+
             var hitCircleFrame = 0;
 
             if (hitCircleGraphic) {
-                c.drawImage(hitCircleGraphic[hitCircleFrame], -hitCircleGraphic[hitCircleFrame].width / 2, -hitCircleGraphic[hitCircleFrame].height / 2);
+                this.drawImageCentred(hitCircleGraphic[hitCircleFrame]);
             }
 
+            // Combo numbering
             this.renderComboNumber(hitCircle.comboIndex + 1, skin);
 
+            // Hit circle overlay
             var hitCircleOverlayGraphic = skin.getGraphic('hitcircleoverlay');
             var hitCircleOverlayFrame = 0;
 
             if (hitCircleOverlayGraphic) {
-                c.drawImage(hitCircleOverlayGraphic[hitCircleOverlayFrame], -hitCircleOverlayGraphic[hitCircleOverlayFrame].width / 2, -hitCircleOverlayGraphic[hitCircleOverlayFrame].height / 2);
+                this.drawImageCentred(hitCircleOverlayGraphic[hitCircleOverlayFrame]);
             }
 
             c.restore();
@@ -90,29 +107,27 @@ exports.$ = (function () {
             c.translate(hitObject.x, hitObject.y);
             c.scale(radius, radius);
 
-            var approachCircleGraphic = this.getShadedGraphic(skin, 'approachcircle', shaders.multiplyByColor, hitObject.combo.color);
+            var approachCircleGraphic = this.getShadedGraphic(
+                skin, 'approachcircle',
+                shaders.multiplyByColor, hitObject.combo.color
+            );
+
             var approachCircleFrame = 0;
 
             if (approachCircleGraphic) {
-                c.drawImage(approachCircleGraphic[approachCircleFrame], -approachCircleGraphic[approachCircleFrame].width / 2, -approachCircleGraphic[approachCircleFrame].height / 2);
+                this.drawImageCentred(approachCircleGraphic[approachCircleFrame]);
             }
 
             c.restore();
         },
 
-        renderComboNumber: function (number, skin) {
-            var c = this.context;
-
+        getNumberImages: function (number, skin) {
             var digits = '' + number;
-            var scale = Math.pow(digits.length, -1 / 4) * 0.9;
 
-            var i, image, digit;
-
-            var graphic;
-            var frame = 0;
             var images = [ ];
-            var totalWidth = 0;
-            var spacing = skin.hitCircleFontSpacing;
+
+            var i, digit, graphic;
+            var frame = 0;
 
             for (i = 0; i < digits.length; ++i) {
                 digit = digits[i];
@@ -123,18 +138,34 @@ exports.$ = (function () {
                     break;
                 }
 
-                image = graphic[frame];
+                images.push(graphic[frame]);
+            }
 
-                images.push(image);
+            return images;
+        },
 
-                totalWidth += image.width;
+        renderComboNumber: function (number, skin) {
+            var c = this.context;
+
+            var images = this.getNumberImages(number, skin);
+            var totalWidth = 0;
+            var spacing = skin.hitCircleFontSpacing;
+
+            var i;
+
+            for (i = 0; i < images.length; ++i) {
+                totalWidth += images[i].width;
             }
 
             totalWidth += spacing * (images.length - 1);
 
+            var scale = Math.pow(images.length, -1 / 4) * 0.9;
+
             c.save();
             c.scale(scale, scale);
             c.translate(-totalWidth / 2, 0);
+
+            var image;
 
             for (i = 0; i < images.length; ++i) {
                 image = images[i];
