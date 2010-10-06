@@ -40,7 +40,7 @@
 
         assert.equal('disappearing', ruleSet.getObjectVisibilityAtTime(object, 1000), '1000ms');
         assert.equal('disappearing', ruleSet.getObjectVisibilityAtTime(object, 1001), '1001ms');
-        assert.equal('disappearing', ruleSet.getObjectVisibilityAtTime(object, 1050), '1050ms');
+        assert.equal('disappearing', ruleSet.getObjectVisibilityAtTime(object, 1049), '1049ms');
     };
 
     exports.testGetObjectVisibilityAtTime_after = function () {
@@ -49,6 +49,7 @@
 
         var object = { time: 1000 };
 
+        amsssert.equal('after', ruleSet.getObjectVisibilityAtTime(object, 1050), '1050ms');
         assert.equal('after', ruleSet.getObjectVisibilityAtTime(object, 1051), '1051ms');
     };
 }());

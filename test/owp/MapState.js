@@ -23,7 +23,6 @@
 
         assert.equal(1, ms.getVisibleObjects(900).length, '900ms');
         assert.equal(1, ms.getVisibleObjects(1000).length, '1000ms');
-        assert.equal(1, ms.getVisibleObjects(1050).length, '1050ms');
     };
 
     exports.testGetVisibleObjects_after = function () {
@@ -32,6 +31,7 @@
 
         var ms = new MapState(ruleSet, [ { time: 1000 } ]);
 
+        assert.equal(0, ms.getVisibleObjects(1050).length, '1050ms');
         assert.equal(0, ms.getVisibleObjects(1051).length, '1051ms');
         assert.equal(0, ms.getVisibleObjects(2000).length, '2000ms');
     };

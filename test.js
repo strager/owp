@@ -6,7 +6,8 @@
         'owp/MapState',
         'owp/AssetConfigReader',
         'owp/RuleSet',
-        'owp/Util/Map'
+        'owp/Util/Map',
+        'owp/Util/TimedMap'
     ];
 
     var i;

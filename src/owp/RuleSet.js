@@ -44,7 +44,7 @@ exports.$ = (function () {
                 return 'appearing';
             } else if (time < endTime) {
                 return 'during';
-            } else if (time <= disappearTime) {
+            } else if (time < disappearTime) {
                 return 'disappearing';
             } else {
                 return 'after';
