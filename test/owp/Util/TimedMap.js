@@ -2,37 +2,37 @@
     var assert = require('assert');
     var TimedMap = require('owp/Util/TimedMap').$;
 
-    function makeTimedMap() {
-        return new TimedMap(function (item) {
-            return item.start;
-        }, function (item) {
-            return item.end;
-        });
+    function start(item) {
+        return item.start;
+    }
+
+    function end(item) {
+        return item.end;
     }
 
     exports.testSpawnedBefore = function () {
-        var tm = makeTimedMap();
+        var tm = new TimedMap();
         tm.spawn({ start: 10, end: 20 });
 
-        assert.deepEqual([ ], tm.get(0));
-        assert.deepEqual([ ], tm.get(9));
+        assert.deepEqual([ ], tm.get(0, start, end));
+        assert.deepEqual([ ], tm.get(9, start, end));
     };
 
     exports.testSpawnedDuring = function () {
         var item = { start: 10, end: 20 };
 
-        var tm = makeTimedMap();
+        var tm = new TimedMap();
         tm.spawn(item);
 
-        assert.deepEqual([ item ], tm.get(10));
-        assert.deepEqual([ item ], tm.get(19));
+        assert.deepEqual([ item ], tm.get(10, start, end));
+        assert.deepEqual([ item ], tm.get(19, start, end));
     };
 
     exports.testSpawnedAfter = function () {
-        var tm = makeTimedMap();
+        var tm = new TimedMap();
         tm.spawn({ start: 10, end: 20 });
 
-        assert.deepEqual([ ], tm.get(20));
-        assert.deepEqual([ ], tm.get(200));
+        assert.deepEqual([ ], tm.get(20, start, end));
+        assert.deepEqual([ ], tm.get(200, start, end));
     };
 }());

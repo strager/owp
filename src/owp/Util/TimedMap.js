@@ -1,8 +1,5 @@
 exports.$ = (function () {
-    var TimedMap = function (startFunc, endFunc) {
-        this.startFunc = startFunc;
-        this.endFunc = endFunc;
-
+    var TimedMap = function () {
         this.items = [ ];
     };
 
@@ -15,9 +12,9 @@ exports.$ = (function () {
             this.items = this.items.concat(items);
         },
 
-        get: function (time) {
+        get: function (time, startFunc, endFunc) {
             // TODO Optimize to minimize looping
-            // (Probably sort by time, and cache out passed
+            // (Probably sort by start time, and cache out passed
             // items based on the last time accessed)
 
             var ret = [ ];
@@ -27,7 +24,7 @@ exports.$ = (function () {
             for (i = 0; i < this.items.length; ++i) {
                 item = this.items[i];
 
-                if (this.startFunc(item) <= time && time < this.endFunc(item)) {
+                if (startFunc(item) <= time && time < endFunc(item)) {
                     ret.push(item);
                 }
             }

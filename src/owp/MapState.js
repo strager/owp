@@ -4,15 +4,7 @@ exports.$ = (function () {
     var MapState = function (ruleSet, objects) {
         this.ruleSet = ruleSet;
 
-        this.objectMap = new TimedMap(
-            function start(hitObject) {
-                return ruleSet.getObjectAppearTime(hitObject);
-            },
-            function end(hitObject) {
-                return ruleSet.getObjectDisappearTime(hitObject);
-            }
-        );
-
+        this.objectMap = new TimedMap();
         this.objectMap.spawnMany(objects);
     };
 
@@ -22,7 +14,13 @@ exports.$ = (function () {
 
     MapState.prototype = {
         getVisibleObjects: function (time) {
-            return this.objectMap.get(time);
+            var ruleSet = this.ruleSet;
+
+            return this.objectMap.get(time, function start(hitObject) {
+                return ruleSet.getObjectAppearTime(hitObject);
+            }, function end(hitObject) {
+                return ruleSet.getObjectDisappearTime(hitObject);
+            });
         }
     };
 

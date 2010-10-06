@@ -49,7 +49,7 @@
 
         var object = { time: 1000 };
 
-        amsssert.equal('after', ruleSet.getObjectVisibilityAtTime(object, 1050), '1050ms');
+        assert.equal('after', ruleSet.getObjectVisibilityAtTime(object, 1050), '1050ms');
         assert.equal('after', ruleSet.getObjectVisibilityAtTime(object, 1051), '1051ms');
     };
 }());
