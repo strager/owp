@@ -26,12 +26,25 @@
         var mapState = null;
         var audio = null;
 
+        function getMapTime() {
+            return Math.round(audio.currentTime * 1000);
+        }
+
         var canvas = document.createElement('canvas');
         canvas.width = 640;
         canvas.height = 480;
         $(canvas).appendTo(document.body);
 
         var canvasRenderer = new CanvasRenderer(canvas.getContext('2d'));
+
+        $(canvas).click(function (e) {
+            var x = e.pageX - this.offsetLeft;
+            var y = e.pageY - this.offsetTop;
+
+            if (mapState) {
+                mapState.makeHit(x, y, getMapTime());
+            }
+        });
 
         // Render loop logic
         var shouldRender = true;
@@ -41,7 +54,7 @@
                 return;
             }
 
-            var time = Math.round(audio.currentTime * 1000);
+            var time = getMapTime();
 
             canvasRenderer.beginRender();
 

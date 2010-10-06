@@ -1,7 +1,7 @@
 exports.$ = (function () {
     var RuleSet = function () {
-        this.appearTime = 500;
-        this.disappearTime = 50;
+        this.appearTime = 1500;
+        this.disappearTime = 200;
     };
 
     RuleSet.fromSettings = function (settings) {
@@ -65,6 +65,28 @@ exports.$ = (function () {
                 return 1;
             } else if (time <= disappearTime) {
                 return ((time - endTime) / (disappearTime - endTime)) - 1;
+            } else {
+                return 0;
+            }
+        },
+
+        canHitObject: function (object, x, y, time) {
+            var distance = Math.sqrt(Math.pow(object.x - x, 2) + Math.pow(object.y - y, 2));
+
+            // TODO Better logic
+
+            return distance < 20;
+        },
+
+        getHitScore: function (object, hit) {
+            var delta = Math.abs(this.getObjectEndTime(object) - hit.time);
+
+            if (delta < 100) {
+                return 300;
+            } else if (delta < 300) {
+                return 100;
+            } else if (delta < 600) {
+                return 50;
             } else {
                 return 0;
             }
