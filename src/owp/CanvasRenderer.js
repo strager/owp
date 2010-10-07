@@ -189,6 +189,11 @@ exports.$ = (function () {
             var totalWidth = 0;
             var spacing = skin.hitCircleFontSpacing;
 
+            if (images.length === 0) {
+                // No images?  Don't render anything.
+                return;
+            }
+
             var i;
 
             for (i = 0; i < images.length; ++i) {
