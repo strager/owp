@@ -72,24 +72,6 @@
             window.setTimeout(render, renderInterval);
         }
 
-        // Lower CPU usage when not active
-        function inactive() {
-            shouldRender = false;
-        }
-
-        function active() {
-            if (!shouldRender) {
-                shouldRender = true;
-                render();
-            }
-        }
-
-        $(window)
-            .focus(active)
-            .mousemove(active)
-            .keydown(active)
-            .blur(inactive);
-
         // Start!
         mapAssetManager.get('map', 'map', function (mapInfoParam) {
             mapInfo = mapInfoParam;
