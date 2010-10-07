@@ -31,11 +31,22 @@ exports.$ = (function () {
         },
 
         audio: function (assetManager, name, loaded) {
-            var audio = new window.Audio(assetManager.root + '/' + name);
+            var originalTrack = document.createElement('source');
+            originalTrack.src = assetManager.root + '/' + name;
 
-            $(audio).one('canplaythrough', function () {
-                loaded(audio);
-            });
+            var vorbisTrack = document.createElement('source');
+            vorbisTrack.src = assetManager.root + '/' + name + '.ogg';
+
+            var audio = new window.Audio();
+
+            $(audio)
+                .append(originalTrack)
+                .append(vorbisTrack)
+                .one('canplaythrough', function () {
+                    loaded(audio);
+                });
+
+            audio.load();
         },
 
         map: function (assetManager, name, loaded) {
