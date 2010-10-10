@@ -6,7 +6,7 @@
 
     exports.testGetVisibleObjects_before = function () {
         var ruleSet = new RuleSet();
-        ruleSet.appearTime = 100;
+        RuleSet.appearTime = 100;
 
         var ms = new MapState(ruleSet, [ { time: 1000 } ]);
 

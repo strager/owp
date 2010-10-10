@@ -1,24 +1,56 @@
 exports.$ = (function () {
+    var util = require('owp/Util/util');
+
     var RuleSet = function () {
-        this.appearTime = 1500;
-        this.disappearTime = 200;
+        this.approachRate = 5;
+        this.overallDifficulty = 5;
+        this.hpDrain = 5;
+        this.circleSize = 5;
     };
 
     RuleSet.fromSettings = function (settings) {
         var ruleSet = new RuleSet();
 
-        // TODO
+        var fields = (
+            'approachRate,overallDifficulty,hpDrain,circleSize'
+        ).split(',');
+
+        util.extendObjectWithFields(ruleSet, fields, settings);
 
         return ruleSet;
     };
 
     RuleSet.prototype = {
+        getAppearTime: function () {
+            if (this.appearTime) {
+                return this.appearTime; // Allow override (TODO remove)
+            }
+
+            var approachRate =
+                typeof this.approachRate === 'undefined' ?
+                    this.overallDifficulty :
+                    this.approachRate;
+
+            if (typeof this.approachRate !== 'number') {
+                throw 'Approach rate must be a number';
+            }
+
+            // 0 => 1800ms
+            // 5 => 1200ms
+            // 10 => 450ms
+            if (approachRate < 5) {
+                return 1800 + (approachRate - 0) * (1200 - 1800) / (5 - 0);
+            } else {
+                return 1200 + (approachRate - 5) * (450 - 1200) / (10 - 5);
+            }
+        },
+
         getObjectAppearTime: function (object) {
-            return this.getObjectStartTime(object) - this.appearTime;
+            return this.getObjectStartTime(object) - this.getAppearTime();
         },
 
         getObjectDisappearTime: function (object) {
-            return this.getObjectEndTime(object) + this.disappearTime;
+            return this.getObjectEndTime(object) + 50;  // TODO
         },
 
         getObjectStartTime: function (object) {
