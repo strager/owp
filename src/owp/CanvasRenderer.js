@@ -101,9 +101,6 @@ exports.$ = (function () {
         renderHitCircle: function (hitCircle, skin, progress, time) {
             var c = this.context;
 
-            c.save();
-            c.translate(hitCircle.x, hitCircle.y);
-
             // Hit circle base
             var hitCircleGraphic = this.getShadedGraphic(
                 skin, 'hitcircle',
@@ -126,8 +123,6 @@ exports.$ = (function () {
             if (hitCircleOverlayGraphic) {
                 this.drawImageCentred(hitCircleOverlayGraphic[hitCircleOverlayFrame]);
             }
-
-            c.restore();
         },
 
         renderApproachCircle: function (hitObject, skin, progress, x, y) {
@@ -141,8 +136,6 @@ exports.$ = (function () {
                 radius += (1 - (-progress)) / 4;
             }
 
-            c.save();
-            c.translate(hitObject.x, hitObject.y);
             c.scale(radius, radius);
 
             var approachCircleGraphic = this.getShadedGraphic(
@@ -155,8 +148,6 @@ exports.$ = (function () {
             if (approachCircleGraphic) {
                 this.drawImageCentred(approachCircleGraphic[approachCircleFrame]);
             }
-
-            c.restore();
         },
 
         getNumberImages: function (number, skin) {
@@ -240,14 +231,21 @@ exports.$ = (function () {
 
         renderObject: function (object, mapState, skin, time) {
             var c = this.context;
+            var scale = mapState.ruleSet.getCircleSize() / 128;
 
             var approachProgress = mapState.ruleSet.getObjectApproachProgress(object, time);
 
             c.globalAlpha = Math.abs(approachProgress);
 
             if (object instanceof HitCircle) {
+                c.save();
+                c.translate(object.x, object.y);
+                c.scale(scale, scale);
+
                 this.renderHitCircle(object, skin, time);
                 this.renderApproachCircle(object, skin, approachProgress);
+
+                c.restore();
             } else if (object instanceof HitMarker) {
                 c.globalAlpha = 1;
 

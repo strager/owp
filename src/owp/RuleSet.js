@@ -102,7 +102,12 @@ exports.$ = (function () {
 
             // TODO Better logic
 
-            return distance < 64;
+            return distance <= this.getCircleSize() / 2;
+        },
+
+        // Gives diameter
+        getCircleSize: function () {
+            return -(this.circleSize - 5) * 16 + 64;
         },
 
         getHitScore: function (object, hit) {
