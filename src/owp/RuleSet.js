@@ -26,16 +26,18 @@ exports.$ = (function () {
     };
 
     RuleSet.prototype = {
-        getAppearTime: function () {
-            // 0 => 1800ms
-            // 5 => 1200ms
-            // 10 => 450ms
+        threePartLerp: function (a, b, c, value) {
+            value = +value; // Quick cast to number
 
-            if (this.approachRate < 5) {
-                return 1800 + (this.approachRate - 0) * (1200 - 1800) / (5 - 0);
+            if (value < 5) {
+                return a + (value - 0) * (b - a) / (5 - 0);
             } else {
-                return 1200 + (this.approachRate - 5) * (450 - 1200) / (10 - 5);
+                return b + (value - 5) * (c - b) / (10 - 5);
             }
+        },
+
+        getAppearTime: function () {
+            return this.threePartLerp(1800, 1200, 450, this.approachRate);
         },
 
         getObjectAppearTime: function (object) {
@@ -106,11 +108,23 @@ exports.$ = (function () {
         getHitScore: function (object, hit) {
             var delta = Math.abs(this.getObjectEndTime(object) - hit.time);
 
-            if (delta < 100) {
+            /*jslint white: false */
+            var window300 = this.threePartLerp( 80,  50,  20, this.overallDifficulty);
+            var window100 = this.threePartLerp(140, 100,  60, this.overallDifficulty);
+            var window50  = this.threePartLerp(200, 150, 100, this.overallDifficulty);
+            /*jslint white: true */
+
+            // owp-specific leniency
+            // TODO Remove when timing is good enough
+            window300 *= 2;
+            window100 *= 2;
+            window50  *= 2;
+
+            if (delta <= window300) {
                 return 300;
-            } else if (delta < 300) {
+            } else if (delta <= window100) {
                 return 100;
-            } else if (delta < 600) {
+            } else if (delta <= window50) {
                 return 50;
             } else {
                 return 0;
