@@ -110,30 +110,38 @@ exports.$ = (function () {
             return -(this.circleSize - 5) * 16 + 64;
         },
 
+        getHitWindow: function (score) {
+            var windows = {
+                300: [  80,  50,  20 ],
+                100: [ 140, 100,  60 ],
+                50:  [ 200, 150, 100 ],
+                0:   [ 0, 0, 0 ]    // TODO
+            };
+
+            var window = windows[score];
+
+            if (!window) {
+                return NaN;
+            }
+
+            return this.threePartLerp(window[0], window[1], window[2], this.overallDifficulty);
+        },
+
         getHitScore: function (object, hit) {
             var delta = Math.abs(this.getObjectEndTime(object) - hit.time);
 
-            /*jslint white: false */
-            var window300 = this.threePartLerp( 80,  50,  20, this.overallDifficulty);
-            var window100 = this.threePartLerp(140, 100,  60, this.overallDifficulty);
-            var window50  = this.threePartLerp(200, 150, 100, this.overallDifficulty);
-            /*jslint white: true */
+            var scores = [ 300, 100, 50, 0 ];
+            var i;
 
-            // owp-specific leniency
-            // TODO Remove when timing is good enough
-            window300 *= 2;
-            window100 *= 2;
-            window50  *= 2;
-
-            if (delta <= window300) {
-                return 300;
-            } else if (delta <= window100) {
-                return 100;
-            } else if (delta <= window50) {
-                return 50;
-            } else {
-                return 0;
+            for (i = 0; i < scores.length; ++i) {
+                // * 2 is owp-specific leniency
+                // TODO Remove when timing is good enough
+                if (delta <= this.getHitWindow(scores[i]) * 2) {
+                    return scores[i];
+                }
             }
+
+            return 0;   // TODO Return "shouldn't be hit" or throw or something
         }
     };
 
