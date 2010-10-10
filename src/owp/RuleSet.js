@@ -45,7 +45,8 @@ exports.$ = (function () {
         },
 
         getObjectDisappearTime: function (object) {
-            return this.getObjectEndTime(object) + 50;  // TODO
+            // Allow players to hit a late 50
+            return this.getObjectEndTime(object) + this.getHitWindow(50);
         },
 
         getObjectStartTime: function (object) {
@@ -75,6 +76,24 @@ exports.$ = (function () {
                 return 'disappearing';
             } else {
                 return 'after';
+            }
+        },
+
+        getObjectOpacity: function (object, time) {
+            var appearTime    = this.getObjectAppearTime(object);
+            var startTime     = this.getObjectStartTime(object);
+            var disappearTime = this.getObjectDisappearTime(object);
+
+            var opaqueTime = (appearTime + startTime) * 0.5;
+
+            if (time < appearTime) {
+                return 0;
+            } else if (time < opaqueTime) {
+                return (time - appearTime) / (opaqueTime - appearTime);
+            } else if (time < disappearTime) {
+                return 1;
+            } else {
+                return 0;
             }
         },
 
@@ -134,9 +153,7 @@ exports.$ = (function () {
             var i;
 
             for (i = 0; i < scores.length; ++i) {
-                // * 2 is owp-specific leniency
-                // TODO Remove when timing is good enough
-                if (delta <= this.getHitWindow(scores[i]) * 2) {
+                if (delta <= this.getHitWindow(scores[i])) {
                     return scores[i];
                 }
             }

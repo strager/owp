@@ -235,7 +235,7 @@ exports.$ = (function () {
 
             var approachProgress = mapState.ruleSet.getObjectApproachProgress(object, time);
 
-            c.globalAlpha = Math.abs(approachProgress);
+            c.globalAlpha = mapState.ruleSet.getObjectOpacity(object, time);
 
             if (object instanceof HitCircle) {
                 c.save();
