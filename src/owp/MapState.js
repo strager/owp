@@ -1,7 +1,7 @@
 exports.$ = (function () {
     var TimedMap = require('owp/Util/TimedMap').$;
     var Map = require('owp/Util/Map').$;
-    var HitObjectHit = require('owp/HitObjectHit').$;
+    var HitMarker = require('owp/HitMarker').$;
 
     var MapState = function (ruleSet, objects) {
         this.ruleSet = ruleSet;
@@ -9,8 +9,8 @@ exports.$ = (function () {
         this.objectMap = new TimedMap();
         this.objectMap.spawnMany(objects);
 
-        this.hits = new TimedMap();
-        this.objectToHits = new Map();
+        this.hitMarkers = new TimedMap();
+        this.objectToHitMarkers = new Map();
     };
 
     MapState.fromMapInfo = function (mapInfo) {
@@ -41,25 +41,25 @@ exports.$ = (function () {
             });
 
             var i, object;
-            var hit;
+            var hitMarker;
 
             for (i = 0; i < hittableObjects.length; ++i) {
                 object = hittableObjects[i];
 
                 if (this.ruleSet.canHitObject(object, x, y, time)) {
-                    hit = new HitObjectHit(object, time);
-                    hit.score = this.ruleSet.getHitScore(object, hit);
+                    hitMarker = new HitMarker(object, time);
+                    hitMarker.score = this.ruleSet.getHitScore(object, hitMarker);
 
-                    this.hits.spawn(hit);
+                    this.hitMarkers.spawn(hitMarker);
 
                     // TODO Multi-map
-                    if (this.objectToHits.contains(object)) {
-                        this.objectToHits.get(object).push(hit);
+                    if (this.objectToHitMarkers.contains(object)) {
+                        this.objectToHitMarkers.get(object).push(hitMarker);
                     } else {
-                        this.objectToHits.set(object, [ hit ]);
+                        this.objectToHitMarkers.set(object, [ hitMarker ]);
                     }
 
-                    return hit;
+                    return hitMarker;
                 }
             }
 

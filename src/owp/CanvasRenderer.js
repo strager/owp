@@ -1,6 +1,6 @@
 exports.$ = (function () {
     var HitCircle = require('owp/HitCircle').$;
-    var HitObjectHit = require('owp/HitObjectHit').$;
+    var HitMarker = require('owp/HitMarker').$;
     var Cache = require('owp/Util/Cache').$;
     var shaders = require('owp/canvasShaders');
 
@@ -31,7 +31,7 @@ exports.$ = (function () {
 
             // Hit markers
             objects = objects.concat(
-                mapState.hits.get(time, function start(hit) {
+                mapState.hitMarkers.get(time, function start(hit) {
                     return hit.time;
                 }, function end(hit) {
                     return hit.time + 2000; // FIXME config or whatever
@@ -44,7 +44,7 @@ exports.$ = (function () {
                 var newB = b;
 
                 // Keep hit marker above object
-                if (a instanceof HitObjectHit) {
+                if (a instanceof HitMarker) {
                     if (b === a.hitObject) {
                         return 1;
                     }
@@ -52,7 +52,7 @@ exports.$ = (function () {
                     newA = a.hitObject;
                 }
 
-                if (b instanceof HitObjectHit) {
+                if (b instanceof HitMarker) {
                     if (a === b.hitObject) {
                         return -1;
                     }
@@ -221,14 +221,14 @@ exports.$ = (function () {
             c.restore();
         },
 
-        renderHitMarker: function (hit, skin, time) {
+        renderHitMarker: function (hitMarker, skin, time) {
             var c = this.context;
 
             c.save();
-            c.translate(hit.hitObject.x, hit.hitObject.y);
+            c.translate(hitMarker.hitObject.x, hitMarker.hitObject.y);
 
             // Hit marker
-            var hitMarkerGraphic = skin.getGraphic('hit' + hit.score);
+            var hitMarkerGraphic = skin.getGraphic('hit' + hitMarker.score);
             var hitMarkerFrame = 0;
 
             if (hitMarkerGraphic) {
@@ -248,7 +248,7 @@ exports.$ = (function () {
             if (object instanceof HitCircle) {
                 this.renderHitCircle(object, skin, time);
                 this.renderApproachCircle(object, skin, approachProgress);
-            } else if (object instanceof HitObjectHit) {
+            } else if (object instanceof HitMarker) {
                 c.globalAlpha = 1;
 
                 this.renderHitMarker(object, skin, time);
