@@ -32,6 +32,7 @@ exports.$ = (function () {
                 hpDrainRate:        assetConfig.Difficulty.values.HPDrainRate,
                 circleSize:         assetConfig.Difficulty.values.CircleSize,
                 overallDifficulty:  assetConfig.Difficulty.values.OverallDifficulty,
+                approachRate:       assetConfig.Difficulty.values.ApproachRate,
                 sliderMultiplier:   assetConfig.Difficulty.values.SliderMultiplier,
                 sliderTickRate:     assetConfig.Difficulty.values.SliderTickRate,
                 stackLeniency:      assetConfig.General.values.StackLeniency

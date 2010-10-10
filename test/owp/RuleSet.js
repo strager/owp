@@ -2,54 +2,53 @@
     var assert = require('assert');
     var RuleSet = require('owp/RuleSet').$;
 
+    var appearTime = 1200;
+
     exports.testGetObjectVisibilityAtTime_before = function () {
         var ruleSet = new RuleSet();
-        ruleSet.appearTime = 100;
+        ruleSet.approachRate = 5;
 
-        var object = { time: 1000 };
+        var object = { time: 10000 };
 
-        assert.equal('before', ruleSet.getObjectVisibilityAtTime(object, 0), '0ms');
-        assert.equal('before', ruleSet.getObjectVisibilityAtTime(object, 899), '899ms');
+        assert.equal('before', ruleSet.getObjectVisibilityAtTime(object, 0));
+        assert.equal('before', ruleSet.getObjectVisibilityAtTime(object, 10000 - appearTime - 1));
     };
 
     exports.testGetObjectVisibilityAtTime_appearing = function () {
         var ruleSet = new RuleSet();
-        ruleSet.appearTime = 100;
+        ruleSet.approachRate = 5;
 
-        var object = { time: 1000 };
+        var object = { time: 10000 };
 
-        assert.equal('appearing', ruleSet.getObjectVisibilityAtTime(object, 900), '900ms');
-        assert.equal('appearing', ruleSet.getObjectVisibilityAtTime(object, 950), '950ms');
+        assert.equal('appearing', ruleSet.getObjectVisibilityAtTime(object, 10000 - appearTime));
+        assert.equal('appearing', ruleSet.getObjectVisibilityAtTime(object, 10000 - 1));
     };
 
     exports.testGetObjectVisibilityAtTime_during = function () {
         var ruleSet = new RuleSet();
-        ruleSet.appearTime = 100;
-        ruleSet.disappearTime = 50;
+        ruleSet.approachRate = 5;
 
-        var object = { time: 1000, duration: 1 };
+        var object = { time: 10000, duration: 1 };
 
-        assert.equal('during', ruleSet.getObjectVisibilityAtTime(object, 1000), '1000ms');
+        assert.equal('during', ruleSet.getObjectVisibilityAtTime(object, 10000));
     };
 
     exports.testGetObjectVisibilityAtTime_disappearing = function () {
         var ruleSet = new RuleSet();
-        ruleSet.disappearTime = 50;
 
-        var object = { time: 1000 };
+        var object = { time: 10000 };
 
-        assert.equal('disappearing', ruleSet.getObjectVisibilityAtTime(object, 1000), '1000ms');
-        assert.equal('disappearing', ruleSet.getObjectVisibilityAtTime(object, 1001), '1001ms');
-        assert.equal('disappearing', ruleSet.getObjectVisibilityAtTime(object, 1049), '1049ms');
+        assert.equal('disappearing', ruleSet.getObjectVisibilityAtTime(object, 10000));
+        assert.equal('disappearing', ruleSet.getObjectVisibilityAtTime(object, 10001));
+        assert.equal('disappearing', ruleSet.getObjectVisibilityAtTime(object, 10049));
     };
 
     exports.testGetObjectVisibilityAtTime_after = function () {
         var ruleSet = new RuleSet();
-        ruleSet.disappearTime = 50;
 
-        var object = { time: 1000 };
+        var object = { time: 10000 };
 
-        assert.equal('after', ruleSet.getObjectVisibilityAtTime(object, 1050), '1050ms');
-        assert.equal('after', ruleSet.getObjectVisibilityAtTime(object, 1051), '1051ms');
+        assert.equal('after', ruleSet.getObjectVisibilityAtTime(object, 10050));
+        assert.equal('after', ruleSet.getObjectVisibilityAtTime(object, 10051));
     };
 }());

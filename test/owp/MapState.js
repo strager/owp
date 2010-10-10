@@ -4,35 +4,36 @@
     var MapState = require('owp/MapState').$;
     var RuleSet = require('owp/RuleSet').$;
 
+    var appearTime = 1200;
+
     exports.testGetVisibleObjects_before = function () {
         var ruleSet = new RuleSet();
-        RuleSet.appearTime = 100;
+        ruleSet.approachRate = 5;
 
-        var ms = new MapState(ruleSet, [ { time: 1000 } ]);
+        var ms = new MapState(ruleSet, [ { time: 10000 } ]);
 
         assert.equal(0, ms.getVisibleObjects(0).length, '0ms');
-        assert.equal(0, ms.getVisibleObjects(899).length, '899ms');
+        assert.equal(0, ms.getVisibleObjects(10000 - appearTime - 1).length, 'Just before appearance');
     };
 
     exports.testGetVisibleObjects_during = function () {
         var ruleSet = new RuleSet();
-        ruleSet.appearTime = 100;
-        ruleSet.disappearTime = 50;
+        ruleSet.approachRate = 5;
 
-        var ms = new MapState(ruleSet, [ { time: 1000 } ]);
+        var ms = new MapState(ruleSet, [ { time: 10000 } ]);
 
-        assert.equal(1, ms.getVisibleObjects(900).length, '900ms');
-        assert.equal(1, ms.getVisibleObjects(1000).length, '1000ms');
+        assert.equal(1, ms.getVisibleObjects(10000 - appearTime).length, 'Just at appearance');
+        assert.equal(1, ms.getVisibleObjects(10000).length, 'Just at start time');
     };
 
     exports.testGetVisibleObjects_after = function () {
         var ruleSet = new RuleSet();
-        ruleSet.disappearTime = 50;
+        ruleSet.approachRate = 5;
 
-        var ms = new MapState(ruleSet, [ { time: 1000 } ]);
+        var ms = new MapState(ruleSet, [ { time: 10000 } ]);
 
-        assert.equal(0, ms.getVisibleObjects(1050).length, '1050ms');
-        assert.equal(0, ms.getVisibleObjects(1051).length, '1051ms');
-        assert.equal(0, ms.getVisibleObjects(2000).length, '2000ms');
+        assert.equal(0, ms.getVisibleObjects(10050).length, 'Just at disappearance');
+        assert.equal(0, ms.getVisibleObjects(10051).length, 'Just after disappearance');
+        assert.equal(0, ms.getVisibleObjects(90000).length, 'Over 90000ms');
     };
 }());

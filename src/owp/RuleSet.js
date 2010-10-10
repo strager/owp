@@ -17,31 +17,24 @@ exports.$ = (function () {
 
         util.extendObjectWithFields(ruleSet, fields, settings);
 
+        // TODO Peek at version?
+        if (typeof settings.approachRate === 'undefined') {
+            ruleSet.approachRate = ruleSet.overallDifficulty;
+        }
+
         return ruleSet;
     };
 
     RuleSet.prototype = {
         getAppearTime: function () {
-            if (this.appearTime) {
-                return this.appearTime; // Allow override (TODO remove)
-            }
-
-            var approachRate =
-                typeof this.approachRate === 'undefined' ?
-                    this.overallDifficulty :
-                    this.approachRate;
-
-            if (typeof this.approachRate !== 'number') {
-                throw 'Approach rate must be a number';
-            }
-
             // 0 => 1800ms
             // 5 => 1200ms
             // 10 => 450ms
-            if (approachRate < 5) {
-                return 1800 + (approachRate - 0) * (1200 - 1800) / (5 - 0);
+
+            if (this.approachRate < 5) {
+                return 1800 + (this.approachRate - 0) * (1200 - 1800) / (5 - 0);
             } else {
-                return 1200 + (approachRate - 5) * (450 - 1200) / (10 - 5);
+                return 1200 + (this.approachRate - 5) * (450 - 1200) / (10 - 5);
             }
         },
 
