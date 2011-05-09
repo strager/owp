@@ -1,6 +1,5 @@
-(function () {
-    var assert = require('assert');
-    var TimedMap = require('owp/Util/TimedMap').$;
+define([ 'assert', 'Util/TimedMap' ], function (assert, TimedMap) {
+    var exports = { };
 
     function start(item) {
         return item.start;
@@ -35,4 +34,6 @@
         assert.deepEqual([ ], tm.get(20, start, end));
         assert.deepEqual([ ], tm.get(200, start, end));
     };
-}());
+
+    return exports;
+});

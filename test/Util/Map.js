@@ -1,6 +1,5 @@
-(function () {
-    var assert = require('assert');
-    var Map = require('owp/Util/Map').$;
+define([ 'assert', 'Util/Map' ], function (assert, Map) {
+    var exports = { };
 
     exports.testSetGet = function () {
         var map = new Map();
@@ -78,4 +77,6 @@
 
         assert.equal(10, hits);
     };
-}());
+
+    return exports;
+});

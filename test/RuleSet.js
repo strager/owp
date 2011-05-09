@@ -1,6 +1,5 @@
-(function () {
-    var assert = require('assert');
-    var RuleSet = require('owp/RuleSet').$;
+define([ 'assert', 'RuleSet' ], function (assert, RuleSet) {
+    var exports = { };
 
     var appearTime = 1200;
     var disappearTime = 150;
@@ -54,4 +53,6 @@
         assert.equal('after', ruleSet.getObjectVisibilityAtTime(object, 10000 + disappearTime));
         assert.equal('after', ruleSet.getObjectVisibilityAtTime(object, 10001 + disappearTime));
     };
-}());
+
+    return exports;
+});

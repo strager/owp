@@ -1,22 +1,62 @@
-(function () {
-    require.paths.unshift(__dirname);
-    require.paths.unshift(__dirname + '/src');
-
+require({ baseUrl: 'src' }, [ ], function (module) {
     var tests = [
-        'owp/MapState',
-        'owp/AssetConfigReader',
-        'owp/RuleSet',
-        'owp/Util/Map',
-        'owp/Util/TimedMap'
+        'MapState',
+        'AssetConfigReader',
+        'RuleSet',
+        'Util/Map',
+        'Util/TimedMap'
     ];
 
-    var i;
+    var suite = { };
 
-    for (i = 0; i < tests.length; ++i) {
-        exports[tests[i]] = require(__dirname + '/test/' + tests[i]);
-    }
+    tests.forEach(function (test) {
+        suite[test] = require('./test/' + test);
+    });
 
-    if (require.main === module) {
-        require('patr/runner').run(module.exports);
+    var runTestRecursive = function (obj) {
+        var runTestFunction = function (func, names) {
+            try {
+                func();
+
+                return [ ];
+            } catch (e) {
+                return [ { error: e, names: names } ];
+            }
+        };
+
+        var runTestObject = function (obj, names) {
+            var errors = [ ];
+
+            Object.keys(obj).forEach(function (testName) {
+                var testErrors = runTestRecursiveImpl(obj[testName], names.concat([ testName ]));
+
+                errors = errors.concat(testErrors);
+            });
+
+            return errors;
+        };
+
+        var runTestRecursiveImpl = function (obj, names) {
+            if (typeof obj === 'function') {
+                return runTestFunction(obj, names);
+            } else if (typeof obj === 'object') {
+                return runTestObject(obj, names);
+            }
+        };
+
+        return runTestRecursiveImpl(obj, [ ]);
+    };
+
+    var errors = runTestRecursive(suite);
+
+    if (errors.length === 0) {
+        console.log('All tests passed');
+    } else {
+        errors.forEach(function (error) {
+            console.error('Error in ' + error.names.join(' ') + ':');
+            console.error(error.error.stack);
+        });
+
+        console.log('Some tests failed; see errors above');
     }
-}());
+});

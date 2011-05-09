@@ -1,8 +1,5 @@
-(function () {
-    var assert = require('assert');
-    var Map = require('owp/Map').$;
-    var MapState = require('owp/MapState').$;
-    var RuleSet = require('owp/RuleSet').$;
+define([ 'assert', 'Map', 'MapState', 'RuleSet' ], function (assert, Map, MapState, RuleSet) {
+    var exports = { };
 
     var appearTime = 1200;
     var disappearTime = 150;
@@ -39,4 +36,6 @@
         assert.equal(0, ms.getVisibleObjects(10000 + disappearTime + 1).length, 'Just after disappearance');
         assert.equal(0, ms.getVisibleObjects(90000).length, 'Over 90000ms');
     };
-}());
+
+    return exports;
+});

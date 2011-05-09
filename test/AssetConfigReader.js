@@ -1,6 +1,5 @@
-(function () {
-    var assert = require('assert');
-    var AssetConfigReader = require('owp/AssetConfigReader').$;
+define([ 'assert', 'AssetConfigReader' ], function (assert, AssetConfigReader) {
+    var exports = { };
 
     exports.testParseSectionlessData = function () {
         var data = AssetConfigReader.parseString('osu file format v2\n\nfoobar');
@@ -54,4 +53,6 @@
             [ '   2', '1', ' ' ]
         ], data.global.lists);
     };
-}());
+
+    return exports;
+});
