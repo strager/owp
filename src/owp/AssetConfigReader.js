@@ -1,4 +1,4 @@
-exports.$ = (function () {
+define('AssetConfigReader', [ ], function () {
     var AssetConfigReader = function () {
     };
 
@@ -58,4 +58,4 @@ exports.$ = (function () {
     };
 
     return AssetConfigReader;
-}());
+});

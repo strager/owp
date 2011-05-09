@@ -1,4 +1,4 @@
-exports.$ = (function () {
+define('Storyboard', [ ], function () {
     var Storyboard = function () {
         this.sounds = [ ];
         this.backgrounds = [ ];
@@ -22,4 +22,4 @@ exports.$ = (function () {
     };
 
     return Storyboard;
-}());
+});

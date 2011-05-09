@@ -1,6 +1,4 @@
-exports.$ = (function () {
-    var HitObject = require('owp/HitObject').$;
-
+define('HitCircle', [ 'HitObject' ], function (HitObject) {
     var HitCircle = function (time, x, y) {
         this.time = time;
         this.x = x;
@@ -10,4 +8,4 @@ exports.$ = (function () {
     HitCircle.prototype = new HitObject();
 
     return HitCircle;
-}());
+});

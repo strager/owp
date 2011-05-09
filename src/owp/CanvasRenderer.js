@@ -1,9 +1,4 @@
-exports.$ = (function () {
-    var HitCircle = require('owp/HitCircle').$;
-    var HitMarker = require('owp/HitMarker').$;
-    var Cache = require('owp/Util/Cache').$;
-    var shaders = require('owp/canvasShaders');
-
+define('CanvasRenderer', [ 'HitCircle', 'HitMarker', 'Util/Cache', 'canvasShaders' ], function (HitCircle, HitMarker, Cache, shaders) {
     var CanvasRenderer = function (context) {
         this.context = context;
 
@@ -300,4 +295,4 @@ exports.$ = (function () {
     };
 
     return CanvasRenderer;
-}());
+});

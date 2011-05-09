@@ -1,4 +1,4 @@
-exports.$ = (function () {
+define('Util/Map', [ ], function () {
     var Map = function () {
         this.data = [ ];
     };
@@ -102,4 +102,4 @@ exports.$ = (function () {
     };
 
     return Map;
-}());
+});

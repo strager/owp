@@ -1,6 +1,4 @@
-exports.$ = (function () {
-    var util = require('owp/Util/util');
-
+define('Skin', [ 'Util/util' ], function (util) {
     var Skin = function (assetManager) {
         this.assetManager = assetManager;
     };
@@ -27,4 +25,4 @@ exports.$ = (function () {
     };
 
     return Skin;
-}());
+});

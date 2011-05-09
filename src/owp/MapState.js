@@ -1,8 +1,4 @@
-exports.$ = (function () {
-    var TimedMap = require('owp/Util/TimedMap').$;
-    var Map = require('owp/Util/Map').$;
-    var HitMarker = require('owp/HitMarker').$;
-
+define('MapState', [ 'Util/TimedMap', 'Util/Map', 'HitMarker' ], function (TimedMap, Map, HitMarker) {
     var MapState = function (ruleSet, objects) {
         this.ruleSet = ruleSet;
 
@@ -68,4 +64,4 @@ exports.$ = (function () {
     };
 
     return MapState;
-}());
+});

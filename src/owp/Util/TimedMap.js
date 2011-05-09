@@ -1,4 +1,4 @@
-exports.$ = (function () {
+define('Util/TimedMap', [ ], function () {
     var TimedMap = function () {
         this.items = [ ];
     };
@@ -34,4 +34,4 @@ exports.$ = (function () {
     };
 
     return TimedMap;
-}());
+});

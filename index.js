@@ -1,14 +1,6 @@
 /*global console: false, window: false */
-(function () {
-    var $ = require('vendor/jquery').$;
-    var CanvasRenderer = require('owp/CanvasRenderer').$;
-    var RuleSet = require('owp/RuleSet').$;
-    var Map = require('owp/Map').$;
-    var MapState = require('owp/MapState').$;
-    var HitCircle = require('owp/HitCircle').$;
-    var Skin = require('owp/Skin').$;
-    var AssetManager = require('owp/AssetManager').$;
 
+require([ 'jQuery', 'CanvasRenderer', 'RuleSet', 'Map', 'MapState', 'HitCircle', 'Skin', 'AssetManager' ], function ($, CanvasRenderer, RuleSet, Map, MapState, HitCircle, Skin, AssetManager) {
     function debug(message) {
         console.log(message);
     }
@@ -91,4 +83,4 @@
             });
         });
     });
-}());
+});

@@ -1,12 +1,5 @@
 /*global window: false */
-exports.$ = (function () {
-    var $ = require('vendor/jquery').$;
-    var MapInfo = require('owp/MapInfo').$;
-    var MapFileReader = require('owp/MapFileReader').$;
-    var AssetConfigReader = require('owp/AssetConfigReader').$;
-    var Map = require('owp/Util/Map').$;
-    var Cache = require('owp/Util/Cache').$;
-
+define('AssetManager', [ 'jQuery', 'MapInfo', 'MapFileReader', 'AssetConfigReader', 'Util/Map', 'Util/Cache' ], function ($, MapInfo, MapFileReader, AssetConfigReader, Map, Cache) {
     var AssetManager = function (root) {
         this.root = root;
         this.cache = new Cache();
@@ -148,4 +141,4 @@ exports.$ = (function () {
     };
 
     return AssetManager;
-}());
+});

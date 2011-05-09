@@ -1,13 +1,5 @@
 /*jslint bitwise: false */
-exports.$ = (function () {
-    var RuleSet = require('owp/RuleSet').$;
-    var HitCircle = require('owp/HitCircle').$;
-    var Map = require('owp/Map').$;
-    var Combo = require('owp/Combo').$;
-    var MapInfo = require('owp/MapInfo').$;
-    var Storyboard = require('owp/Storyboard').$;
-    var Skin = require('owp/Skin').$;
-
+define('MapFileReader', [ 'RuleSet', 'HitCircle', 'Map', 'Combo', 'MapInfo', 'Storyboard', 'Skin' ], function (RuleSet, HitCircle, Map, Combo, MapInfo, Storyboard, Skin) {
     var MapFileReader = {
         readSkin: function (assetConfig, assetManager) {
             return Skin.fromSettings(assetManager, {
@@ -165,4 +157,4 @@ exports.$ = (function () {
     };
 
     return MapFileReader;
-}());
+});

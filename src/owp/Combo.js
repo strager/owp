@@ -1,4 +1,4 @@
-exports.$ = (function () {
+define('Combo', [ ], function () {
     var Combo = function (color) {
         // TODO Make nicer (color class?)
 
@@ -14,4 +14,4 @@ exports.$ = (function () {
     };
 
     return Combo;
-}());
+});

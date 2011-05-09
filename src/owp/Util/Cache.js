@@ -1,6 +1,4 @@
-exports.$ = (function () {
-    var Map = require('owp/Util/Map').$;
-
+define('Util/Cache', [ 'Util/Map' ], function (Map) {
     // TODO Actual caching
 
     var Cache = function () {
@@ -34,4 +32,4 @@ exports.$ = (function () {
     };
 
     return Cache;
-}());
+});

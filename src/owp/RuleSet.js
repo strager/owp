@@ -1,6 +1,4 @@
-exports.$ = (function () {
-    var util = require('owp/Util/util');
-
+define('RuleSet', [ 'Util/util' ], function (util) {
     var RuleSet = function () {
         this.approachRate = 5;
         this.overallDifficulty = 5;
@@ -163,4 +161,4 @@ exports.$ = (function () {
     };
 
     return RuleSet;
-}());
+});

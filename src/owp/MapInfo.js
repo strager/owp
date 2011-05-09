@@ -1,6 +1,4 @@
-exports.$ = (function () {
-    var util = require('owp/Util/util');
-
+define('MapInfo', [ 'Util/util' ], function (util) {
     var MapInfo = function (ruleSet, map, storyboard) {
         this.ruleSet = ruleSet;
         this.map = map;
@@ -22,4 +20,4 @@ exports.$ = (function () {
     };
 
     return MapInfo;
-}());
+});
