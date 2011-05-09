@@ -141,6 +141,8 @@ define('MapFileReader', [ 'RuleSet', 'HitCircle', 'Map', 'Combo', 'MapInfo', 'St
         },
 
         readHitObject: function (list) {
+            /*jshint bitwise: false */
+
             // TODO Slider/spinner support
             var object = new HitCircle();
 
