@@ -1,3 +1,4 @@
+/*global console*/
 require({ baseUrl: 'src' }, [ ], function (module) {
     var tests = [
         'MapState',
@@ -14,6 +15,8 @@ require({ baseUrl: 'src' }, [ ], function (module) {
     });
 
     var runTestRecursive = function (obj) {
+        var runTestRecursiveImpl = null;
+
         var runTestFunction = function (func, names) {
             try {
                 func();
@@ -36,7 +39,7 @@ require({ baseUrl: 'src' }, [ ], function (module) {
             return errors;
         };
 
-        var runTestRecursiveImpl = function (obj, names) {
+        runTestRecursiveImpl = function (obj, names) {
             if (typeof obj === 'function') {
                 return runTestFunction(obj, names);
             } else if (typeof obj === 'object') {

@@ -1,12 +1,8 @@
 {
     "predef": [ 
-        "exports",
-        "global",
-        "process",
+        "define",
         "require",
-        "__filename",
-        "__dirname",
-        "module"       
+        "require"
     ],
     "browser": true,
     "devel": false,
