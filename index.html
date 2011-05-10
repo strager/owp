@@ -7,10 +7,22 @@
     <body>
         <script src="vendor/require.js"></script>
         <script src="vendor/jquery.js"></script>
+        <script src="vendor/q/lib/q.js"></script>
+        <script src="vendor/q/lib/q/util.js"></script>
         <script type="text/javascript">
             window.onload = function() {
                 define('jQuery', [ ], function () {
                     return jQuery.noConflict();
+                });
+
+                define('q', [ ], function () {
+                    var qKey = '/q/util';
+
+                    var Q = window[qKey];
+
+                    delete window[qKey];
+
+                    return Q;
                 });
 
                 require({

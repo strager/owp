@@ -1,19 +1,25 @@
 /*global console: false, window: false */
 
-require([ 'jQuery', 'CanvasRenderer', 'RuleSet', 'Map', 'MapState', 'HitCircle', 'Skin', 'AssetManager' ], function ($, CanvasRenderer, RuleSet, Map, MapState, HitCircle, Skin, AssetManager) {
+require([ 'jQuery', 'CanvasRenderer', 'RuleSet', 'Map', 'MapState', 'HitCircle', 'Skin', 'AssetManager', 'q' ], function ($, CanvasRenderer, RuleSet, Map, MapState, HitCircle, Skin, AssetManager, Q) {
     function debug(message) {
         console.log(message);
     }
 
-    var skin;
-    (new AssetManager('.')).get('skin', 'skin', function (data) {
-        skin = data;
+    var skinPromise = (new AssetManager('.')).load('skin', 'skin');
+    var skinLoaded = false;
+
+    Q.when(skinPromise, function (skin) {
+        Q.when(skin.preload(), function () {
+            skinLoaded = true;
+        });
     });
 
     var mapAssetManager = new AssetManager('assets');
 
     $(function () {
         // Init
+        var mapLoaded = false;
+
         var mapInfo = null;
         var mapState = null;
         var audio = null;
@@ -41,8 +47,8 @@ require([ 'jQuery', 'CanvasRenderer', 'RuleSet', 'Map', 'MapState', 'HitCircle',
         // Render loop logic
         var shouldRender = true;
 
-        function render() {
-            if (!shouldRender) {
+        function renderImpl() {
+            if (!skinLoaded || !mapLoaded) {
                 return;
             }
 
@@ -50,34 +56,43 @@ require([ 'jQuery', 'CanvasRenderer', 'RuleSet', 'Map', 'MapState', 'HitCircle',
 
             canvasRenderer.beginRender();
 
-            if (mapInfo) {
-                canvasRenderer.renderStoryboard(mapInfo.storyboard, mapAssetManager, time);
-            }
+            canvasRenderer.renderStoryboard(mapInfo.storyboard, mapAssetManager, time);
 
-            if (mapState) {
-                canvasRenderer.renderMap(mapState, skin, time);
-            }
+            canvasRenderer.renderMap(mapState, skinPromise.valueOf(), time);
 
             canvasRenderer.endRender();
+        }
+
+        function render() {
+            if (!shouldRender) {
+                return;
+            }
+
+            renderImpl();
 
             var renderInterval = 20;
             window.setTimeout(render, renderInterval);
         }
 
         // Start!
-        mapAssetManager.get('map', 'map', function (mapInfoParam) {
+        Q.when(mapAssetManager.load('map', 'map'), function (mapInfoParam) {
             mapInfo = mapInfoParam;
 
             mapState = MapState.fromMapInfo(mapInfo);
 
-            mapAssetManager.get(mapInfo.audioFile, 'audio', function (a) {
-                audio = a;
+            Q.shallow([
+                mapAssetManager.load(mapInfo.audioFile, 'audio'),
+                mapInfo.storyboard.preload(mapAssetManager)
+            ]).then(function (r) {
+                audio = r[0];
 
                 audio.controls = 'controls';
                 document.body.appendChild(audio);
 
                 audio.currentTime = 33; // XXX TEMP
                 audio.play();
+
+                mapLoaded = true;
 
                 render();
             });

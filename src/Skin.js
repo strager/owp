@@ -19,8 +19,28 @@ define('Skin', [ 'Util/util' ], function (util) {
     };
 
     Skin.prototype = {
-        getGraphic: function (name, onLoad) {
-            return this.assetManager.get(name, 'image-set', onLoad);
+        preload: function () {
+            var files = {
+                'image-set': [
+                    'hitcircle',
+                    'approachcircle',
+                    'hitcircleoverlay',
+                    'hit0',
+                    'hit50',
+                    'hit100',
+                    'hit100k',
+                    'hit300k',
+                    'hit300'
+                ]
+            };
+
+            var i;
+
+            for (i = 0; i < 10; ++i) {
+                files['image-set'].push('default-' + i);
+            }
+
+            return this.assetManager.preload(files);
         }
     };
 

@@ -18,6 +18,16 @@ define('Storyboard', [ ], function () {
             }
 
             return background;
+        },
+
+        preload: function (assetManager) {
+            var files = {
+                'image': this.backgrounds.map(function (background) {
+                    return background.fileName;
+                })
+            };
+
+            return assetManager.preload(files);
         }
     };
 

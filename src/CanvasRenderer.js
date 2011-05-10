@@ -71,17 +71,16 @@ define('CanvasRenderer', [ 'HitCircle', 'HitMarker', 'Util/Cache', 'canvasShader
             var key = [ graphicName, skin, shader, shaderData ];
 
             return renderer.graphicsCache.get(key, function () {
-                skin.getGraphic(graphicName, function (images) {
-                    var shadedImages = [ ], i;
+                var images = skin.assetManager.get(graphicName, 'image-set');
+                var shadedImages = [ ], i;
 
-                    for (i = 0; i < images.length; ++i) {
-                        shadedImages.push(
-                            shaders.applyShaderToImage(shader, shaderData, images[i])
-                        );
-                    }
+                for (i = 0; i < images.length; ++i) {
+                    shadedImages.push(
+                        shaders.applyShaderToImage(shader, shaderData, images[i])
+                    );
+                }
 
-                    renderer.graphicsCache.set(key, shadedImages);
-                });
+                return shadedImages;
             });
         },
 
@@ -104,20 +103,16 @@ define('CanvasRenderer', [ 'HitCircle', 'HitMarker', 'Util/Cache', 'canvasShader
 
             var hitCircleFrame = 0;
 
-            if (hitCircleGraphic) {
-                this.drawImageCentred(hitCircleGraphic[hitCircleFrame]);
-            }
+            this.drawImageCentred(hitCircleGraphic[hitCircleFrame]);
 
             // Combo numbering
             this.renderComboNumber(hitCircle.comboIndex + 1, skin);
 
             // Hit circle overlay
-            var hitCircleOverlayGraphic = skin.getGraphic('hitcircleoverlay');
+            var hitCircleOverlayGraphic = skin.assetManager.get('hitcircleoverlay', 'image-set');
             var hitCircleOverlayFrame = 0;
 
-            if (hitCircleOverlayGraphic) {
-                this.drawImageCentred(hitCircleOverlayGraphic[hitCircleOverlayFrame]);
-            }
+            this.drawImageCentred(hitCircleOverlayGraphic[hitCircleOverlayFrame]);
         },
 
         renderApproachCircle: function (hitObject, skin, progress, x, y) {
@@ -156,11 +151,7 @@ define('CanvasRenderer', [ 'HitCircle', 'HitMarker', 'Util/Cache', 'canvasShader
             for (i = 0; i < digits.length; ++i) {
                 digit = digits[i];
 
-                graphic = skin.getGraphic('default-' + digit);
-
-                if (!graphic) {
-                    break;
-                }
+                graphic = skin.assetManager.get('default-' + digit, 'image-set');
 
                 images.push(graphic[frame]);
             }
@@ -214,12 +205,10 @@ define('CanvasRenderer', [ 'HitCircle', 'HitMarker', 'Util/Cache', 'canvasShader
             c.translate(hitMarker.hitObject.x, hitMarker.hitObject.y);
 
             // Hit marker
-            var hitMarkerGraphic = skin.getGraphic('hit' + hitMarker.score);
+            var hitMarkerGraphic = skin.assetManager.get('hit' + hitMarker.score, 'image-set');
             var hitMarkerFrame = 0;
 
-            if (hitMarkerGraphic) {
-                this.drawImageCentred(hitMarkerGraphic[hitMarkerFrame]);
-            }
+            this.drawImageCentred(hitMarkerGraphic[hitMarkerFrame]);
 
             c.restore();
         },
@@ -258,9 +247,7 @@ define('CanvasRenderer', [ 'HitCircle', 'HitMarker', 'Util/Cache', 'canvasShader
             if (background) {
                 backgroundGraphic = assetManager.get(background.fileName, 'image');
 
-                if (backgroundGraphic) {
-                    this.renderBackground(backgroundGraphic);
-                }
+                this.renderBackground(backgroundGraphic);
             }
 
             // TODO Real storyboard stuff

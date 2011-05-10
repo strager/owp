@@ -1,29 +1,34 @@
 /*global window: false */
-define('AssetManager', [ 'jQuery', 'MapInfo', 'MapFileReader', 'AssetConfigReader', 'Util/Map', 'Util/Cache' ], function ($, MapInfo, MapFileReader, AssetConfigReader, Map, Cache) {
+define('AssetManager', [ 'jQuery', 'MapInfo', 'MapFileReader', 'AssetConfigReader', 'Util/Map', 'Util/Cache', 'q' ], function ($, MapInfo, MapFileReader, AssetConfigReader, Map, Cache, Q) {
     var AssetManager = function (root) {
         this.root = root;
         this.cache = new Cache();
-        this.onLoadHandlers = new Map();
     };
 
     AssetManager.typeHandlers = {
-        'image-set': function (assetManager, name, loaded) {
+        'image-set': function (assetManager, name) {
             // TODO Support animations
-            assetManager.get(name + '.png', 'image', function (data) {
-                loaded([ data ]);
+            return Q.when(assetManager.load(name + '.png', 'image'), function (image) {
+                return [ image ];
             });
         },
 
-        image: function (assetManager, name, loaded) {
+        image: function (assetManager, name) {
+            var ret = Q.defer();
+
             var img = document.createElement('img');
             img.src = assetManager.root + '/' + name;
 
             $(img).one('load', function () {
-                loaded(img);
+                ret.resolve(img);
             });
+
+            return ret.promise;
         },
 
-        audio: function (assetManager, name, loaded) {
+        audio: function (assetManager, name) {
+            var ret = Q.defer();
+
             var originalTrack = document.createElement('source');
             originalTrack.src = assetManager.root + '/' + name;
 
@@ -36,107 +41,90 @@ define('AssetManager', [ 'jQuery', 'MapInfo', 'MapFileReader', 'AssetConfigReade
                 .append(originalTrack)
                 .append(vorbisTrack)
                 .one('canplaythrough', function () {
-                    loaded(audio);
+                    ret.resolve(audio);
                 });
 
             audio.load();
+
+            return ret.promise;
         },
 
-        map: function (assetManager, name, loaded) {
-            assetManager.get(name + '.osu', 'asset-config', function (assetConfig) {
-                var mapInfo = MapFileReader.read(assetConfig);
+        map: function (assetManager, name) {
+            return Q.when(assetManager.load(name + '.osu', 'asset-config'))
+                .then(function (assetConfig) {
+                    var mapInfo = MapFileReader.read(assetConfig);
 
-                loaded(mapInfo);
-            });
+                    return mapInfo;
+                });
         },
 
-        'asset-config': function (assetManager, name, loaded) {
+        'asset-config': function (assetManager, name) {
+            var ret = Q.defer();
+
             $.get(assetManager.root + '/' + name, function (data) {
                 var assetConfig = AssetConfigReader.parseString(data);
 
-                loaded(assetConfig);
+                ret.resolve(assetConfig);
             }, 'text');
+
+            return ret.promise;
         },
 
         skin: function (assetManager, name, loaded) {
             var skinAssetManager = new AssetManager(assetManager.root + '/' + name);
 
-            assetManager.get(name + '/skin.ini', 'asset-config', function (assetConfig) {
-                var skin = MapFileReader.readSkin(assetConfig, skinAssetManager);
+            return Q.when(assetManager.load(name + '/skin.ini', 'asset-config'))
+                .then(function (assetConfig) {
+                    var skin = MapFileReader.readSkin(assetConfig, skinAssetManager);
 
-                loaded(skin);
-            });
+                    return skin;
+                });
         }
     };
 
     AssetManager.prototype = {
-        assetLoaded: function (name, type, data) {
-            var key = [ name, type ];
-            var i, handlers;
-
-            if (this.onLoadHandlers.contains(key)) {
-                handlers = this.onLoadHandlers.get(key);
-
-                for (i = 0; i < handlers.length; ++i) {
-                    if (typeof handlers[i] !== 'function') {
-                        continue;
-                    }
-
-                    handlers[i](data);
-                }
-
-                this.onLoadHandlers.unset(key);
-            }
-
-            this.cache.set(key, data);
-        },
-
-        onLoad: function (name, type, onLoadHandler) {
-            var key = [ name, type ];
-            var handlers = [ ];
-
-            if (this.onLoadHandlers.contains(key)) {
-                handlers = this.onLoadHandlers.get(key);
-            } else {
-                this.onLoadHandlers.set(key, handlers);
-            }
-
-            handlers.push(onLoadHandler);
-        },
-
-        forceGet: function (name, type, onLoadHandler) {
+        loadUncached: function (name, type) {
             var assetManager = this;
-
-            this.onLoad(name, type, onLoadHandler);
 
             if (!AssetManager.typeHandlers.hasOwnProperty(type)) {
-                throw 'Unknown asset type ' + type;
+                throw 'Unknown asset type: ' + type;
             }
 
-            return AssetManager.typeHandlers[type](this, name, function (data) {
-                assetManager.assetLoaded(name, type, data);
+            return AssetManager.typeHandlers[type](this, name);
+        },
+
+        load: function (name, type) {
+            var assetManager = this;
+
+            return this.cache.get([ name, type ], function () {
+                return assetManager.loadUncached(name, type);
             });
         },
 
-        get: function (name, type, onLoadHandler) {
+        get: function (name, type) {
+            var data = this.load(name, type);
+
+            if (!Q.isResolved(data)) {
+                throw new Error('Data could not be loaded: ' + name);
+            }
+
+            return data.valueOf();
+        },
+
+        preload: function (obj) {
             var assetManager = this;
 
-            if (this.onLoadHandlers.contains([ name, type ])) {
-                // Currently loading; attach callback
-                this.onLoad(name, type, onLoadHandler);
+            var assets = [ ];
 
-                return undefined;
-            }
+            Object.keys(obj).forEach(function (type) {
+                obj[type].forEach(function (name) {
+                    var asset = assetManager.load(name, type);
 
-            if (this.cache.contains([ name, type ])) {
-                if (typeof onLoadHandler === 'function') {
-                    onLoadHandler(this.cache.get([ name, type ]));
-                }
-            }
-
-            return this.cache.get([ name, type ], function () {
-                assetManager.forceGet(name, type, onLoadHandler);
+                    assets.push(asset);
+                });
             });
+
+            return Q.shallow(assets);
         }
     };
 
