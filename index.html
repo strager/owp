@@ -5,26 +5,29 @@
     </head>
 
     <body>
-        <script src="vendor/teleport.js"></script>
+        <script src="vendor/require.js"></script>
+        <script src="vendor/jquery.js"></script>
+        <script src="vendor/q/lib/q.js"></script>
+        <script src="vendor/q/lib/q/util.js"></script>
         <script type="text/javascript">
             window.onload = function() {
-                require('teleport/packages').register({
-                    'owp': {
-                        path: '.',
-                        directories: {
-                            'lib': '/src/'
-                        }
-                    },
-
-                    'vendor': {
-                        path: '.',
-                        directories: {
-                            'lib': '/'
-                        }
-                    }
+                define('jQuery', [ ], function () {
+                    return jQuery.noConflict();
                 });
 
-                require.main('./index');
+                define('q', [ ], function () {
+                    var qKey = '/q/util';
+
+                    var Q = window[qKey];
+
+                    delete window[qKey];
+
+                    return Q;
+                });
+
+                require({
+                    baseUrl: 'src'
+                }, [ './index' ]);
             };
         </script>
     </body>
