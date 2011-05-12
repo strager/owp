@@ -5,7 +5,8 @@ require({ baseUrl: 'src' }, [ ], function (module) {
         'AssetConfigReader',
         'RuleSet',
         'Util/Map',
-        'Util/TimedMap'
+        'Util/TimedMap',
+        'Util/Timeline'
     ];
 
     var suite = { };
