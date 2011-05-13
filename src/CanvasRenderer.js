@@ -26,11 +26,7 @@ define('CanvasRenderer', [ 'HitCircle', 'HitMarker', 'Util/Cache', 'canvasShader
 
             // Hit markers
             objects = objects.concat(
-                mapState.hitMarkers.get(time, function start(hit) {
-                    return hit.time;
-                }, function end(hit) {
-                    return hit.time + 2000; // FIXME config or whatever
-                })
+                mapState.timeline.getAllAtTime(time, 'hitmarker visibility')
             );
 
             // Get objects in Z order

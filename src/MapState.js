@@ -1,11 +1,22 @@
-define('MapState', [ 'Util/TimedMap', 'Util/Map', 'HitMarker' ], function (TimedMap, Map, HitMarker) {
+define('MapState', [ 'Util/Timeline', 'Util/Map', 'HitMarker' ], function (Timeline, Map, HitMarker) {
+    var HIT_OBJECT_VISIBILITY = 'hitobject visibility';
+    var HIT_OBJECT_HITABLE = 'hitobject hitable';
+
+    var HIT_MARKER_CREATION = 'hitmarker';
+    var HIT_MARKER_VISIBILITY = 'hitmarker visibility';
+
     var MapState = function (ruleSet, objects) {
         this.ruleSet = ruleSet;
 
-        this.objectMap = new TimedMap();
-        this.objectMap.spawnMany(objects);
+        var timeline = this.timeline = new Timeline();
 
-        this.hitMarkers = new TimedMap();
+        objects.forEach(function (hitObject) {
+            var appearTime = ruleSet.getObjectAppearTime(hitObject);
+            var disappearTime = ruleSet.getObjectDisappearTime(hitObject);
+
+            timeline.add(HIT_OBJECT_VISIBILITY, hitObject, appearTime, disappearTime);
+        });
+
         this.objectToHitMarkers = new Map();
     };
 
@@ -15,13 +26,7 @@ define('MapState', [ 'Util/TimedMap', 'Util/Map', 'HitMarker' ], function (Timed
 
     MapState.prototype = {
         getVisibleObjects: function (time) {
-            var ruleSet = this.ruleSet;
-
-            return this.objectMap.get(time, function start(hitObject) {
-                return ruleSet.getObjectAppearTime(hitObject);
-            }, function end(hitObject) {
-                return ruleSet.getObjectDisappearTime(hitObject);
-            });
+            return this.timeline.getAllAtTime(time, HIT_OBJECT_VISIBILITY);
         },
 
         getHittableObjects: function (time) {
@@ -46,7 +51,8 @@ define('MapState', [ 'Util/TimedMap', 'Util/Map', 'HitMarker' ], function (Timed
                     hitMarker = new HitMarker(object, time);
                     hitMarker.score = this.ruleSet.getHitScore(object, hitMarker);
 
-                    this.hitMarkers.spawn(hitMarker);
+                    this.timeline.add(HIT_MARKER_CREATION, hitMarker, time);
+                    this.timeline.add(HIT_MARKER_VISIBILITY, hitMarker, time, time + 2000);
 
                     // TODO Multi-map
                     if (this.objectToHitMarkers.contains(object)) {
