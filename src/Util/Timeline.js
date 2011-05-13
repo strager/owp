@@ -3,11 +3,15 @@ define('Util/Timeline', [ ], function () {
         this.items = [ ];
     };
 
+    var validateKey = function (key) {
+        if (typeof key !== 'string') {
+            throw new TypeError('key must be null or a string');
+        }
+    };
+
     Timeline.prototype = {
         add: function (key, value, startTime, endTime) {
-            if (key !== null && typeof key !== 'string') {
-                throw new TypeError('key must be null or a string');
-            }
+            validateKey(key);
 
             if (typeof endTime === 'undefined') {
                 endTime = startTime;
@@ -30,9 +34,9 @@ define('Util/Timeline', [ ], function () {
                 filterFunc = function (item) {
                     return item.startTime <= time && time < item.endTime;
                 };
-            } else if (key !== null && typeof key !== 'string') {
-                throw new TypeError('key must be null or a string');
             } else {
+                validateKey(key);
+
                 filterFunc = function (item) {
                     return item.startTime <= time && time < item.endTime
                         && item.key === key;
