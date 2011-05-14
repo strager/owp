@@ -1,10 +1,4 @@
 define('MapState', [ 'Util/Timeline', 'Util/Map', 'HitMarker' ], function (Timeline, Map, HitMarker) {
-    var HIT_OBJECT_VISIBILITY = 'hitobject visibility';
-    var HIT_OBJECT_HITABLE = 'hitobject hitable';
-
-    var HIT_MARKER_CREATION = 'hitmarker';
-    var HIT_MARKER_VISIBILITY = 'hitmarker visibility';
-
     var MapState = function (ruleSet, objects) {
         this.ruleSet = ruleSet;
 
@@ -14,11 +8,16 @@ define('MapState', [ 'Util/Timeline', 'Util/Map', 'HitMarker' ], function (Timel
             var appearTime = ruleSet.getObjectAppearTime(hitObject);
             var disappearTime = ruleSet.getObjectDisappearTime(hitObject);
 
-            timeline.add(HIT_OBJECT_VISIBILITY, hitObject, appearTime, disappearTime);
+            timeline.add(MapState.HIT_OBJECT_VISIBILITY, hitObject, appearTime, disappearTime);
         });
 
         this.objectToHitMarkers = new Map();
     };
+
+    MapState.HIT_OBJECT_VISIBILITY = { };
+    MapState.HIT_OBJECT_HITABLE = { };
+
+    MapState.HIT_MARKER_CREATION = { };
 
     MapState.fromMapInfo = function (mapInfo) {
         return new MapState(mapInfo.ruleSet, mapInfo.map.objects);
@@ -26,7 +25,7 @@ define('MapState', [ 'Util/Timeline', 'Util/Map', 'HitMarker' ], function (Timel
 
     MapState.prototype = {
         getVisibleObjects: function (time) {
-            return this.timeline.getAllAtTime(time, HIT_OBJECT_VISIBILITY);
+            return this.timeline.getAllAtTime(time, MapState.HIT_OBJECT_VISIBILITY);
         },
 
         getHittableObjects: function (time) {
@@ -51,8 +50,7 @@ define('MapState', [ 'Util/Timeline', 'Util/Map', 'HitMarker' ], function (Timel
                     hitMarker = new HitMarker(object, time);
                     hitMarker.score = this.ruleSet.getHitScore(object, hitMarker);
 
-                    this.timeline.add(HIT_MARKER_CREATION, hitMarker, time);
-                    this.timeline.add(HIT_MARKER_VISIBILITY, hitMarker, time, time + 2000);
+                    this.timeline.add(MapState.HIT_MARKER_CREATION, hitMarker, time);
 
                     // TODO Multi-map
                     if (this.objectToHitMarkers.contains(object)) {

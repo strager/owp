@@ -1,4 +1,4 @@
-define('CanvasRenderer', [ 'HitCircle', 'HitMarker', 'Util/Cache', 'canvasShaders' ], function (HitCircle, HitMarker, Cache, shaders) {
+define('CanvasRenderer', [ 'HitCircle', 'HitMarker', 'Util/Cache', 'canvasShaders', 'MapState' ], function (HitCircle, HitMarker, Cache, shaders, MapState) {
     var CanvasRenderer = function (context) {
         this.context = context;
 
@@ -26,7 +26,7 @@ define('CanvasRenderer', [ 'HitCircle', 'HitMarker', 'Util/Cache', 'canvasShader
 
             // Hit markers
             objects = objects.concat(
-                mapState.timeline.getAllAtTime(time, 'hitmarker visibility')
+                mapState.timeline.getAllInTimeRange(time - 2000, time, MapState.HIT_MARKER_CREATION)
             );
 
             // Get objects in Z order
