@@ -17,6 +17,12 @@ define('Util/Timeline', [ ], function () {
         }
     };
 
+    var filter = function (timeline, filterFunc) {
+        return timeline.items.filter(filterFunc).map(function (item) {
+            return item.value;
+        });
+    };
+
     Timeline.prototype = {
         add: function (key, value, startTime, endTime) {
             validateKey(key);
@@ -51,8 +57,30 @@ define('Util/Timeline', [ ], function () {
                 };
             }
 
-            return this.items.filter(filterFunc).map(function (item) {
-                return item.value;
+            return filter(this, filterFunc);
+        },
+
+        getAllInTimeRange: function (startTime, endTime, key) {
+            return filter(this, function (item) {
+                // [] is item; () is arguments
+
+                // [ ] ( )
+                if (item.endTime < startTime) {
+                    return false;
+                }
+
+                // ( ) [ ]
+                if (endTime < item.startTime) {
+                    return false;
+                }
+
+                // Compare keys
+                if (typeof key !== 'undefined' && item.key !== key) {
+                    return false;
+                }
+
+                // Any other case is an intersection
+                return true;
             });
         }
     };

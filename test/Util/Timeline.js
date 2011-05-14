@@ -80,6 +80,25 @@ define([ 'assert', 'Util/Timeline' ], function (assert, Timeline) {
             assert.deepEqual([ ], t.getAllAtTime(100, { }));
         },
 
+        'get all in time range': function () {
+            var t = new Timeline();
+            t.add('key1', 'value1', 0, 999);
+            t.add('key2', 'value2', 0, 999);
+            t.add('key1', 'value3', 500, 999);
+            t.add('key1', 'value4', 0, 350);
+            t.add('key1', 'value5', 299, 500);
+
+            assert.deepEqual(
+                t.getAllInTimeRange(400, 500).sort(),
+                [ 'value1', 'value2', 'value3', 'value5' ].sort()
+            );
+
+            assert.deepEqual(
+                t.getAllInTimeRange(299, 299, 'key1').sort(),
+                [ 'value1', 'value4', 'value5' ].sort()
+            );
+        },
+
         'key cannot be null': function () {
             assertThrows(function () {
                 var t = new Timeline();
