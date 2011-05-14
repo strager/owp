@@ -1,72 +1,14 @@
 define('CanvasRenderer', [ 'HitCircle', 'HitMarker', 'Util/Cache', 'canvasShaders', 'MapState' ], function (HitCircle, HitMarker, Cache, shaders, MapState) {
     var CanvasRenderer = function (context) {
-        this.context = context;
+        var c = context;
 
-        this.graphicsCache = new Cache();    // [ 'graphic-name', skin, shader, shaderData ] => graphic
-    };
+        // [ 'graphic-name', skin, shader, shaderData ] => graphic
+        var graphicsCache = new Cache();
 
-    CanvasRenderer.prototype = {
-        beginRender: function () {
-            var c = this.context;
-
-            c.save();
-
-            c.clearRect(0, 0, 640, 480);
-        },
-
-        endRender: function () {
-            var c = this.context;
-
-            c.restore();
-        },
-
-        renderMap: function (mapState, skin, time) {
-            // Visible objects
-            var objects = mapState.getVisibleObjects(time);
-
-            // Hit markers
-            objects = objects.concat(
-                mapState.timeline.getAllInTimeRange(time - 2000, time, MapState.HIT_MARKER_CREATION)
-            );
-
-            // Get objects in Z order
-            objects = objects.sort(function (a, b) {
-                var newA = a;
-                var newB = b;
-
-                // Keep hit marker above object
-                if (a instanceof HitMarker) {
-                    if (b === a.hitObject) {
-                        return 1;
-                    }
-
-                    newA = a.hitObject;
-                }
-
-                if (b instanceof HitMarker) {
-                    if (a === b.hitObject) {
-                        return -1;
-                    }
-
-                    newB = b.hitObject;
-                }
-
-                // Sort by time descending
-                return newA.time > newB.time ? -1 : 1;
-            });
-
-            var i;
-
-            for (i = 0; i < objects.length; ++i) {
-                this.renderObject(objects[i], mapState, skin, time);
-            }
-        },
-
-        getShadedGraphic: function (skin, graphicName, shader, shaderData) {
-            var renderer = this;
+        var getShadedGraphic = function (skin, graphicName, shader, shaderData) {
             var key = [ graphicName, skin, shader, shaderData ];
 
-            return renderer.graphicsCache.get(key, function () {
+            return graphicsCache.get(key, function () {
                 var images = skin.assetManager.get(graphicName, 'image-set');
                 var shadedImages = [ ], i;
 
@@ -78,65 +20,17 @@ define('CanvasRenderer', [ 'HitCircle', 'HitMarker', 'Util/Cache', 'canvasShader
 
                 return shadedImages;
             });
-        },
+        };
 
-        drawImageCentred: function (image) {
-            this.context.drawImage(
+        var drawImageCentred = function (image) {
+            c.drawImage(
                 image,
                 -image.width / 2,
                 -image.height / 2
             );
-        },
+        };
 
-        renderHitCircle: function (hitCircle, skin, progress, time) {
-            var c = this.context;
-
-            // Hit circle base
-            var hitCircleGraphic = this.getShadedGraphic(
-                skin, 'hitcircle',
-                shaders.multiplyByColor, hitCircle.combo.color
-            );
-
-            var hitCircleFrame = 0;
-
-            this.drawImageCentred(hitCircleGraphic[hitCircleFrame]);
-
-            // Combo numbering
-            this.renderComboNumber(hitCircle.comboIndex + 1, skin);
-
-            // Hit circle overlay
-            var hitCircleOverlayGraphic = skin.assetManager.get('hitcircleoverlay', 'image-set');
-            var hitCircleOverlayFrame = 0;
-
-            this.drawImageCentred(hitCircleOverlayGraphic[hitCircleOverlayFrame]);
-        },
-
-        renderApproachCircle: function (hitObject, skin, progress, x, y) {
-            var c = this.context;
-
-            var radius = 1;
-
-            if (progress > 0) {
-                radius += (1 - progress);
-            } else {
-                radius += (1 - (-progress)) / 4;
-            }
-
-            c.scale(radius, radius);
-
-            var approachCircleGraphic = this.getShadedGraphic(
-                skin, 'approachcircle',
-                shaders.multiplyByColor, hitObject.combo.color
-            );
-
-            var approachCircleFrame = 0;
-
-            if (approachCircleGraphic) {
-                this.drawImageCentred(approachCircleGraphic[approachCircleFrame]);
-            }
-        },
-
-        getNumberImages: function (number, skin) {
+        var getNumberImages = function (number, skin) {
             var digits = '' + number;
 
             var images = [ ];
@@ -153,12 +47,10 @@ define('CanvasRenderer', [ 'HitCircle', 'HitMarker', 'Util/Cache', 'canvasShader
             }
 
             return images;
-        },
+        };
 
-        renderComboNumber: function (number, skin) {
-            var c = this.context;
-
-            var images = this.getNumberImages(number, skin);
+        var renderComboNumber = function (number, skin) {
+            var images = getNumberImages(number, skin);
             var totalWidth = 0;
             var spacing = skin.hitCircleFontSpacing;
 
@@ -192,11 +84,53 @@ define('CanvasRenderer', [ 'HitCircle', 'HitMarker', 'Util/Cache', 'canvasShader
             }
 
             c.restore();
-        },
+        };
 
-        renderHitMarker: function (hitMarker, skin, time) {
-            var c = this.context;
+        var renderHitCircle = function (hitCircle, skin, progress, time) {
+            // Hit circle base
+            var hitCircleGraphic = getShadedGraphic(
+                skin, 'hitcircle',
+                shaders.multiplyByColor, hitCircle.combo.color
+            );
 
+            var hitCircleFrame = 0;
+
+            drawImageCentred(hitCircleGraphic[hitCircleFrame]);
+
+            // Combo numbering
+            renderComboNumber(hitCircle.comboIndex + 1, skin);
+
+            // Hit circle overlay
+            var hitCircleOverlayGraphic = skin.assetManager.get('hitcircleoverlay', 'image-set');
+            var hitCircleOverlayFrame = 0;
+
+            drawImageCentred(hitCircleOverlayGraphic[hitCircleOverlayFrame]);
+        };
+
+        var renderApproachCircle = function (hitObject, skin, progress, x, y) {
+            var radius = 1;
+
+            if (progress > 0) {
+                radius += (1 - progress);
+            } else {
+                radius += (1 - (-progress)) / 4;
+            }
+
+            c.scale(radius, radius);
+
+            var approachCircleGraphic = getShadedGraphic(
+                skin, 'approachcircle',
+                shaders.multiplyByColor, hitObject.combo.color
+            );
+
+            var approachCircleFrame = 0;
+
+            if (approachCircleGraphic) {
+                drawImageCentred(approachCircleGraphic[approachCircleFrame]);
+            }
+        };
+
+        var renderHitMarker = function (hitMarker, skin, time) {
             c.save();
             c.translate(hitMarker.hitObject.x, hitMarker.hitObject.y);
 
@@ -204,13 +138,12 @@ define('CanvasRenderer', [ 'HitCircle', 'HitMarker', 'Util/Cache', 'canvasShader
             var hitMarkerGraphic = skin.assetManager.get('hit' + hitMarker.score, 'image-set');
             var hitMarkerFrame = 0;
 
-            this.drawImageCentred(hitMarkerGraphic[hitMarkerFrame]);
+            drawImageCentred(hitMarkerGraphic[hitMarkerFrame]);
 
             c.restore();
-        },
+        };
 
-        renderObject: function (object, mapState, skin, time) {
-            var c = this.context;
+        var renderObject = function (object, mapState, skin, time) {
             var scale = mapState.ruleSet.getCircleSize() / 128;
 
             var approachProgress = mapState.ruleSet.getObjectApproachProgress(object, time);
@@ -222,36 +155,20 @@ define('CanvasRenderer', [ 'HitCircle', 'HitMarker', 'Util/Cache', 'canvasShader
                 c.translate(object.x, object.y);
                 c.scale(scale, scale);
 
-                this.renderHitCircle(object, skin, time);
-                this.renderApproachCircle(object, skin, approachProgress);
+                renderHitCircle(object, skin, time);
+                renderApproachCircle(object, skin, approachProgress);
 
                 c.restore();
             } else if (object instanceof HitMarker) {
                 c.globalAlpha = 1;
 
-                this.renderHitMarker(object, skin, time);
+                renderHitMarker(object, skin, time);
             } else {
                 throw 'Unknown hit object type';
             }
-        },
+        };
 
-        renderStoryboard: function (storyboard, assetManager, time) {
-            // Background
-            var background = storyboard.getBackground(time);
-            var backgroundGraphic;
-
-            if (background) {
-                backgroundGraphic = assetManager.get(background.fileName, 'image');
-
-                this.renderBackground(backgroundGraphic);
-            }
-
-            // TODO Real storyboard stuff
-        },
-
-        renderBackground: function (graphic) {
-            var c = this.context;
-
+        var renderBackground = function (graphic) {
             // TODO Split?
 
             var canvasAR = c.canvas.width / c.canvas.height;
@@ -274,7 +191,75 @@ define('CanvasRenderer', [ 'HitCircle', 'HitMarker', 'Util/Cache', 'canvasShader
             c.scale(scale, scale);
             c.drawImage(graphic, 0, 0);
             c.restore();
-        }
+        };
+
+        return {
+            beginRender: function () {
+                c.save();
+
+                c.clearRect(0, 0, 640, 480);
+            },
+
+            endRender: function () {
+                c.restore();
+            },
+
+            renderMap: function (mapState, skin, time) {
+                // Visible objects
+                var objects = mapState.getVisibleObjects(time);
+
+                // Hit markers
+                objects = objects.concat(
+                    mapState.timeline.getAllInTimeRange(time - 2000, time, MapState.HIT_MARKER_CREATION)
+                );
+
+                // Get objects in Z order
+                objects = objects.sort(function (a, b) {
+                    var newA = a;
+                    var newB = b;
+
+                    // Keep hit marker above object
+                    if (a instanceof HitMarker) {
+                        if (b === a.hitObject) {
+                            return 1;
+                        }
+
+                        newA = a.hitObject;
+                    }
+
+                    if (b instanceof HitMarker) {
+                        if (a === b.hitObject) {
+                            return -1;
+                        }
+
+                        newB = b.hitObject;
+                    }
+
+                    // Sort by time descending
+                    return newA.time > newB.time ? -1 : 1;
+                });
+
+                var i;
+
+                for (i = 0; i < objects.length; ++i) {
+                    renderObject(objects[i], mapState, skin, time);
+                }
+            },
+
+            renderStoryboard: function (storyboard, assetManager, time) {
+                // Background
+                var background = storyboard.getBackground(time);
+                var backgroundGraphic;
+
+                if (background) {
+                    backgroundGraphic = assetManager.get(background.fileName, 'image');
+
+                    renderBackground(backgroundGraphic);
+                }
+
+                // TODO Real storyboard stuff
+            }
+        };
     };
 
     return CanvasRenderer;
