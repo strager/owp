@@ -4,8 +4,16 @@ define('Util/Timeline', [ ], function () {
     };
 
     var validateKey = function (key) {
-        if (typeof key !== 'string') {
-            throw new TypeError('key must be null or a string');
+        if (typeof key === 'undefined') {
+            throw new TypeError('key must not be undefined');
+        }
+
+        if (typeof key === 'object' && key === null) {
+            throw new TypeError('key must not be null');
+        }
+
+        if (typeof key === 'number' || key instanceof Number) {
+            throw new TypeError('key must not be a number');
         }
     };
 

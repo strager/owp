@@ -1,4 +1,16 @@
 define([ 'assert', 'Util/Timeline' ], function (assert, Timeline) {
+    var assertThrows = function (callback) {
+        var hasThrown = false;
+
+        try {
+            callback();
+        } catch (err) {
+            hasThrown = true;
+        }
+
+        assert.ok(hasThrown, 'exception not thrown');
+    };
+
     return {
         'spawned before': function () {
             var obj = { };
@@ -55,6 +67,38 @@ define([ 'assert', 'Util/Timeline' ], function (assert, Timeline) {
             t.add('key2', obj2, 0, 999);
 
             assert.deepEqual([ obj1 ], t.getAllAtTime(100, 'key1'));
+        },
+
+        'object key compares references': function () {
+            var obj = { a: 1 };
+            var key = { };
+
+            var t = new Timeline();
+            t.add(key, obj, 0, 999);
+
+            assert.deepEqual([ obj ], t.getAllAtTime(100, key));
+            assert.deepEqual([ ], t.getAllAtTime(100, { }));
+        },
+
+        'key cannot be null': function () {
+            assertThrows(function () {
+                var t = new Timeline();
+                t.add(null, { }, 0, 10);
+            });
+        },
+
+        'key cannot be undefined': function () {
+            assertThrows(function () {
+                var t = new Timeline();
+                t.add(undefined, { }, 0, 10);
+            });
+        },
+
+        'key cannot be a number': function () {
+            assertThrows(function () {
+                var t = new Timeline();
+                t.add(42, { }, 0, 10);
+            });
         }
     };
 });
