@@ -9,7 +9,9 @@ define('Util/PubSub', [ ], function () {
                 subscribers.filter(function (subscriber) {
                     return subscriber && subscriber.key === key;
                 }).forEach(function (subscriber) {
-                    return subscriber.callback.apply(null, args);
+                    setTimeout(function () {
+                        subscriber.callback.apply(null, args);
+                    }, 0);
                 });
             },
 
