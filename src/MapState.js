@@ -1,13 +1,29 @@
-define('MapState', [ 'Util/TimedMap', 'Util/Map', 'HitMarker' ], function (TimedMap, Map, HitMarker) {
+define('MapState', [ 'Util/Timeline', 'Util/Map', 'HitMarker', 'Util/PubSub' ], function (Timeline, Map, HitMarker, PubSub) {
     var MapState = function (ruleSet, objects) {
         this.ruleSet = ruleSet;
 
-        this.objectMap = new TimedMap();
-        this.objectMap.spawnMany(objects);
+        this.events = new PubSub();
 
-        this.hitMarkers = new TimedMap();
+        this.events.subscribe(MapState.HIT_MADE, this.reactToHit.bind(this));
+
+        var timeline = this.timeline = new Timeline();
+
+        objects.forEach(function (hitObject) {
+            var appearTime = ruleSet.getObjectAppearTime(hitObject);
+            var disappearTime = ruleSet.getObjectDisappearTime(hitObject);
+
+            timeline.add(MapState.HIT_OBJECT_VISIBILITY, hitObject, appearTime, disappearTime);
+        });
+
         this.objectToHitMarkers = new Map();
     };
+
+    MapState.HIT_OBJECT_VISIBILITY = { };
+    MapState.HIT_OBJECT_HITABLE = { };
+
+    MapState.HIT_MARKER_CREATION = { };
+
+    MapState.HIT_MADE = { };
 
     MapState.fromMapInfo = function (mapInfo) {
         return new MapState(mapInfo.ruleSet, mapInfo.map.objects);
@@ -15,13 +31,7 @@ define('MapState', [ 'Util/TimedMap', 'Util/Map', 'HitMarker' ], function (Timed
 
     MapState.prototype = {
         getVisibleObjects: function (time) {
-            var ruleSet = this.ruleSet;
-
-            return this.objectMap.get(time, function start(hitObject) {
-                return ruleSet.getObjectAppearTime(hitObject);
-            }, function end(hitObject) {
-                return ruleSet.getObjectDisappearTime(hitObject);
-            });
+            return this.timeline.getAllAtTime(time, MapState.HIT_OBJECT_VISIBILITY);
         },
 
         getHittableObjects: function (time) {
@@ -31,7 +41,11 @@ define('MapState', [ 'Util/TimedMap', 'Util/Map', 'HitMarker' ], function (Timed
         },
 
         makeHit: function (x, y, time) {
-            var hittableObjects = this.getHittableObjects(time).sort(function (a, b) {
+            this.events.publish(MapState.HIT_MADE, { x: x, y: y, time: time });
+        },
+
+        reactToHit: function (hit) {
+            var hittableObjects = this.getHittableObjects(hit.time).sort(function (a, b) {
                 // Sort by time ascending
                 return a.time < b.time ? -1 : 1;
             });
@@ -42,11 +56,11 @@ define('MapState', [ 'Util/TimedMap', 'Util/Map', 'HitMarker' ], function (Timed
             for (i = 0; i < hittableObjects.length; ++i) {
                 object = hittableObjects[i];
 
-                if (this.ruleSet.canHitObject(object, x, y, time)) {
-                    hitMarker = new HitMarker(object, time);
+                if (this.ruleSet.canHitObject(object, hit.x, hit.y, hit.time)) {
+                    hitMarker = new HitMarker(object, hit.time);
                     hitMarker.score = this.ruleSet.getHitScore(object, hitMarker);
 
-                    this.hitMarkers.spawn(hitMarker);
+                    this.timeline.add(MapState.HIT_MARKER_CREATION, hitMarker, hit.time);
 
                     // TODO Multi-map
                     if (this.objectToHitMarkers.contains(object)) {
@@ -55,11 +69,9 @@ define('MapState', [ 'Util/TimedMap', 'Util/Map', 'HitMarker' ], function (Timed
                         this.objectToHitMarkers.set(object, [ hitMarker ]);
                     }
 
-                    return hitMarker;
+                    return;
                 }
             }
-
-            return null;
         }
     };
 
