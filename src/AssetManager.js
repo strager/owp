@@ -1,5 +1,5 @@
 /*global window: false */
-define('AssetManager', [ 'jQuery', 'MapInfo', 'MapFileReader', 'AssetConfigReader', 'Util/Map', 'Util/Cache', 'q' ], function ($, MapInfo, MapFileReader, AssetConfigReader, Map, Cache, Q) {
+define('AssetManager', [ 'jQuery', 'MapInfo', 'MapFileReader', 'assetConfig', 'Util/Map', 'Util/Cache', 'q' ], function ($, MapInfo, MapFileReader, assetConfig, Map, Cache, Q) {
     var AssetManager = function (root) {
         this.root = root;
         this.cache = new Cache();
@@ -62,9 +62,9 @@ define('AssetManager', [ 'jQuery', 'MapInfo', 'MapFileReader', 'AssetConfigReade
             var ret = Q.defer();
 
             $.get(assetManager.root + '/' + name, function (data) {
-                var assetConfig = AssetConfigReader.parseString(data);
+                var config = assetConfig.parseString(data);
 
-                ret.resolve(assetConfig);
+                ret.resolve(config);
             }, 'text');
 
             return ret.promise;
