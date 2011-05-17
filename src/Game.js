@@ -122,12 +122,19 @@ define('Game', [ 'q', 'MapState', 'Util/PubSub' ], function (Q, MapState, PubSub
             events.publishSync.apply(events, arguments);
         };
 
+        var debugInfo = function () {
+            return {
+                'current map time (ms)': getMapTime && getMapTime()
+            };
+        };
+
         return {
             startMap: startMap,
             render: render,
             update: update,
             setSkin: setSkin,
-            event: event
+            event: event,
+            debugInfo: debugInfo
         };
     };
 

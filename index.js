@@ -1,4 +1,4 @@
-require([ 'jQuery', 'CanvasRenderer', 'AssetManager', 'q', 'Game' ], function ($, CanvasRenderer, AssetManager, Q, Game) {
+require([ 'jQuery', 'CanvasRenderer', 'AssetManager', 'q', 'Game', 'Util/FramerateCounter' ], function ($, CanvasRenderer, AssetManager, Q, Game, FramerateCounter) {
     var mapAssetManager = new AssetManager('assets');
     var skinAssetManager = new AssetManager('.');
 
@@ -26,17 +26,26 @@ require([ 'jQuery', 'CanvasRenderer', 'AssetManager', 'q', 'Game' ], function ($
         innerLoop();
     };
 
+    var renderFps = new FramerateCounter();
+    var gameUpdateFps = new FramerateCounter();
+
+    var game;
+
     var go = function (io) {
-        var game = new Game();
+        game = new Game();
         game.setSkin(skinAssetManager);
         game.startMap(mapAssetManager, 'map');
 
         loop(function () {
             game.render(io.renderer);
+
+            renderFps.addTick();
         }, 20);
 
         loop(function () {
             game.update();
+
+            gameUpdateFps.addTick();
         }, 200);
 
         $(io.playArea).click(function (e) {
@@ -46,6 +55,55 @@ require([ 'jQuery', 'CanvasRenderer', 'AssetManager', 'q', 'Game' ], function ($
             game.event('click', { x: x, y: y });
         });
     };
+
+    var getPaintCount = function () {
+        return window.mozPaintCount || 0;
+    };
+
+    var lastPaintCount = 0;
+    var paintFps = new FramerateCounter();
+
+    var debugInfo = function () {
+        var currentPaintCount = getPaintCount();
+        paintFps.addTicks(currentPaintCount - lastPaintCount);
+        lastPaintCount = currentPaintCount;
+
+        var debug = {
+            'paint fps': paintFps.framerate,
+            'game update fps': gameUpdateFps.framerate,
+            'render fps': renderFps.framerate
+        };
+
+        return $.extend({ }, debug, game.debugInfo());
+    };
+
+    var updateDebugInfo = function () {
+        if (!game) {
+            return;
+        }
+
+        var $debug = $('#debug');
+
+        if (!$debug.length) {
+            return;
+        }
+
+        var debug = debugInfo();
+
+        var text = Object.keys(debug).map(function (key) {
+            var value = debug[key];
+
+            if (typeof value === 'number') {
+                value = value.toFixed(2);
+            }
+
+            return key + ': ' + value;
+        }).join('\n');
+
+        $debug.text(text);
+    };
+
+    loop(updateDebugInfo, 100);
 
     Q.when(init()).then(go);
 });
