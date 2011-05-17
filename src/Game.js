@@ -1,0 +1,135 @@
+define('Game', [ 'q', 'MapState', 'Util/PubSub' ], function (Q, MapState, PubSub) {
+    var Game = function () {
+        var currentState = null;
+        var skin = null;
+
+        var getMapTime = null;
+
+        var events = new PubSub();
+
+        var render = function (renderer) {
+            renderer.beginRender();
+
+            try {
+                if (currentState && currentState.render) {
+                    currentState.render.call(null, renderer);
+                }
+            } catch (e) {
+                // wtb `finally`
+                renderer.endRender();
+
+                throw e;
+            }
+
+            renderer.endRender();
+        };
+
+        var update = function () {
+            if (currentState && currentState.update) {
+                currentState.update();
+            }
+        };
+
+        var setSkin = function (skinAssetManager) {
+            skin = Q.when(skinAssetManager.load('skin', 'skin'))
+                .then(function (skin_) {
+                    return Q.when(skin_.preload())
+                        .then(function () {
+                            // preload returns an array of assets;
+                            // we want the actual skin object
+                            return skin_;
+                        });
+                });
+
+            // Let callers know when the skin is loaded,
+            // but don't let them know about the skin
+            return Q.when(skin, function () { });
+        };
+
+        var setState = function (state) {
+            if (currentState && currentState.leave) {
+                currentState.leave();
+            }
+
+            currentState = state;
+
+            if (currentState && currentState.enter) {
+                currentState.enter();
+            }
+        };
+
+        var startMap = function (mapAssetManager, mapName) {
+            var mapInfo, mapState, audio;
+            var boundEvents = [ ];
+
+            var play = function () {
+                setState({
+                    render: function (renderer) {
+                        var time = getMapTime();
+
+                        renderer.renderStoryboard(mapInfo.storyboard, mapAssetManager, time);
+                        renderer.renderMap(mapState, skin.valueOf(), time);
+                    },
+                    enter: function () {
+                        audio.currentTime = 33; // XXX TEMP
+                        audio.play();
+
+                        getMapTime = function () {
+                            return Math.round(audio.currentTime * 1000);
+                        };
+
+                        boundEvents.push(events.subscribe('click', function (e) {
+                            mapState.makeHit(e.x, e.y, getMapTime());
+                        }));
+                    },
+                    leave: function () {
+                        boundEvents.forEach(function (be) {
+                            be.unsubscribe();
+                        });
+                    }
+                });
+            };
+
+            if (!skin) {
+                throw new Error('Must set a skin before starting a map');
+            }
+
+            // TODO Refactor this mess
+            var load = Q.shallow([
+                Q.when(mapAssetManager.load(mapName, 'map'))
+                    .then(function (mapInfo_) {
+                        mapInfo = mapInfo_;
+                        mapState = MapState.fromMapInfo(mapInfo);
+
+                        return Q.shallow([
+                            mapAssetManager.load(mapInfo.audioFile, 'audio'),
+                            mapInfo.storyboard.preload(mapAssetManager)
+                        ]);
+                    })
+                    .then(function (r) {
+                        audio = r[0];
+
+                        audio.controls = 'controls';
+                        document.body.appendChild(audio);
+                    }),
+                Q.when(skin)
+            ]);
+
+            return Q.when(load).then(play);
+        };
+
+        var event = function (key) {
+            events.publishSync.apply(events, arguments);
+        };
+
+        return {
+            startMap: startMap,
+            render: render,
+            update: update,
+            setSkin: setSkin,
+            event: event
+        };
+    };
+
+    return Game;
+});
