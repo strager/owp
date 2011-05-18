@@ -103,6 +103,27 @@ require([ 'jQuery', 'CanvasRenderer', 'AssetManager', 'q', 'Game', 'Util/Framera
         $debug.text(text);
     };
 
+    var getMissingFeatures = function () {
+        var features = [ ];
+
+        if (!window.Audio) {
+            features.push('HTML5 <audio> element');
+        }
+
+        return features;
+    };
+
+    var missingFeatures = getMissingFeatures();
+
+    if (missingFeatures.length > 0) {
+        var text = 'Your browser is not supported; it is missing the following features:'
+        text = [ text ].concat(missingFeatures).join('\n* ');
+
+        $('<pre/>').text(text).appendTo('body');
+
+        return;
+    }
+
     loop(updateDebugInfo, 100);
 
     Q.when(init()).then(go);

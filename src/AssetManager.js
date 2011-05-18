@@ -42,6 +42,9 @@ define('AssetManager', [ 'jQuery', 'MapInfo', 'MapFileReader', 'AssetConfigReade
                 .append(vorbisTrack)
                 .one('canplaythrough', function () {
                     ret.resolve(audio);
+                })
+                .one('error', function (event) {
+                    ret.reject(event);
                 });
 
             audio.load();
