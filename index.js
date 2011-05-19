@@ -48,11 +48,22 @@ require([ 'jQuery', 'CanvasRenderer', 'AssetManager', 'q', 'Game', 'Util/Framera
             gameUpdateFps.addTick();
         }, 200);
 
+        var mouseX, mouseY;
+
         $(io.playArea).click(function (e) {
             var x = e.pageX - this.offsetLeft;
             var y = e.pageY - this.offsetTop;
 
             game.event('click', { x: x, y: y });
+        });
+
+        $(io.playArea).mousemove(function (e) {
+            mouseX = e.pageX - this.offsetLeft;
+            mouseY = e.pageY - this.offsetTop;
+        });
+
+        $('body').keydown(function (e) {
+            game.event('click', { x: mouseX, y: mouseY });
         });
     };
 
