@@ -116,7 +116,7 @@ require([ 'jQuery', 'CanvasRenderer', 'AssetManager', 'q', 'Game', 'Util/Framera
     var missingFeatures = getMissingFeatures();
 
     if (missingFeatures.length > 0) {
-        var text = 'Your browser is not supported; it is missing the following features:'
+        var text = 'Your browser is not supported; it is missing the following features:';
         text = [ text ].concat(missingFeatures).join('\n* ');
 
         $('<pre/>').text(text).appendTo('body');
