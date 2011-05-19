@@ -15,9 +15,8 @@ define('MapState', [ 'Util/Timeline', 'Util/Map', 'HitMarker', 'Util/PubSub' ], 
             timeline.add(MapState.HIT_OBJECT_VISIBILITY, hitObject, appearTime, disappearTime);
 
             // FIXME This won't work for the future
-            var hitWindow = ruleSet.getHitWindow();
-            var earliestHitTime = hitObject.time - hitWindow;
-            var latestHitTime = hitObject.time + hitWindow;
+            var earliestHitTime = ruleSet.getObjectEarliestHitTime(hitObject);
+            var latestHitTime = ruleSet.getObjectLatestHitTime(hitObject);
 
             timeline.add(MapState.HIT_OBJECT_HITABLE, hitObject, earliestHitTime, latestHitTime);
         });
@@ -77,26 +76,48 @@ define('MapState', [ 'Util/Timeline', 'Util/Map', 'HitMarker', 'Util/PubSub' ], 
                     hitMarker = new HitMarker(object, hit.time);
                     hitMarker.score = this.ruleSet.getHitScore(object, hitMarker);
 
-                    this.timeline.add(MapState.HIT_MARKER_CREATION, hitMarker, hit.time);
-
-                    unhitIndex = this.unhitObjects.indexOf(object);
-
-                    if (unhitIndex < 0) {
-                        throw new Error('Bad map state; oh dear!');
-                    }
-
-                    this.unhitObjects.splice(unhitIndex, 1);
-
-                    // TODO Multi-map
-                    if (this.objectToHitMarkers.contains(object)) {
-                        this.objectToHitMarkers.get(object).push(hitMarker);
-                    } else {
-                        this.objectToHitMarkers.set(object, [ hitMarker ]);
-                    }
+                    this.addHitMarker(hitMarker, object);
 
                     return;
                 }
             }
+        },
+
+        addHitMarker: function (hitMarker, hitObject) {
+            // TODO Better name
+            // TODO Private
+            // FIXME This is ugly; why are we doing the same thing thirice?
+
+            this.timeline.add(MapState.HIT_MARKER_CREATION, hitMarker, hitMarker.time);
+
+            var unhitIndex = this.unhitObjects.indexOf(hitObject);
+
+            if (unhitIndex < 0) {
+                throw new Error('Bad map state; oh dear!');
+            }
+
+            this.unhitObjects.splice(unhitIndex, 1);
+
+            if (this.objectToHitMarkers.contains(hitObject)) {
+                this.objectToHitMarkers.get(hitObject).push(hitMarker);
+            } else {
+                this.objectToHitMarkers.set(hitObject, [ hitMarker ]);
+            }
+        },
+
+        processMisses: function (time) {
+            var self = this;
+
+            var missedObjects = this.unhitObjects.filter(function (object) {
+                return self.ruleSet.getObjectLatestHitTime(object) < time;
+            });
+
+            missedObjects.forEach(function (object) {
+                var hitMarker = new HitMarker(object, self.ruleSet.getObjectLatestHitTime(object));
+                hitMarker.score = 0;
+
+                self.addHitMarker(hitMarker, object);
+            });
         }
     };
 
