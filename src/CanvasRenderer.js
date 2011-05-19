@@ -143,29 +143,46 @@ define('CanvasRenderer', [ 'HitCircle', 'HitMarker', 'Util/Cache', 'canvasShader
             c.restore();
         };
 
-        var renderObject = function (object, mapState, skin, time) {
+        var renderHitCircleObject = function (object, mapState, skin, time) {
             var scale = mapState.ruleSet.getCircleSize() / 128;
-
             var approachProgress = mapState.ruleSet.getObjectApproachProgress(object, time);
+
+            c.save();
+            c.translate(object.x, object.y);
+            c.scale(scale, scale);
 
             c.globalAlpha = mapState.ruleSet.getObjectOpacity(object, time);
 
-            if (object instanceof HitCircle) {
-                c.save();
-                c.translate(object.x, object.y);
-                c.scale(scale, scale);
+            renderHitCircle(object, skin, time);
+            renderApproachCircle(object, skin, approachProgress);
 
-                renderHitCircle(object, skin, time);
-                renderApproachCircle(object, skin, approachProgress);
+            c.restore();
+        };
 
-                c.restore();
-            } else if (object instanceof HitMarker) {
-                c.globalAlpha = 1;
+        var renderHitMarkerObject = function (object, mapState, skin, time) {
+            renderHitMarker(object, skin, time);
+        };
 
-                renderHitMarker(object, skin, time);
-            } else {
-                throw 'Unknown hit object type';
+        var getObjectRenderer = function (object) {
+            var renderers = [
+                [ HitCircle, renderHitCircleObject ],
+                [ HitMarker, renderHitMarkerObject ]
+            ];
+
+            var objectRenderers = renderers.filter(function (r) {
+                return object instanceof r[0];
+            });
+
+            if (objectRenderers.length !== 1) {
+                throw new TypeError('Unknown object type');
             }
+
+            return objectRenderers[0][1];
+        };
+
+        var renderObject = function (object, mapState, skin, time) {
+            var renderer = getObjectRenderer(object);
+            renderer(object, mapState, skin, time);
         };
 
         var renderBackground = function (graphic) {

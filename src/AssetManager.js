@@ -1,5 +1,5 @@
 /*global window: false */
-define('AssetManager', [ 'jQuery', 'MapInfo', 'MapFileReader', 'AssetConfigReader', 'Util/Map', 'Util/Cache', 'q' ], function ($, MapInfo, MapFileReader, AssetConfigReader, Map, Cache, Q) {
+define('AssetManager', [ 'jQuery', 'MapInfo', 'mapFile', 'assetConfig', 'Util/Map', 'Util/Cache', 'q' ], function ($, MapInfo, mapFile, assetConfig, Map, Cache, Q) {
     var AssetManager = function (root) {
         this.root = root;
         this.cache = new Cache();
@@ -55,7 +55,7 @@ define('AssetManager', [ 'jQuery', 'MapInfo', 'MapFileReader', 'AssetConfigReade
         map: function (assetManager, name) {
             return Q.when(assetManager.load(name + '.osu', 'asset-config'))
                 .then(function (assetConfig) {
-                    var mapInfo = MapFileReader.read(assetConfig);
+                    var mapInfo = mapFile.readMap(assetConfig);
 
                     return mapInfo;
                 });
@@ -65,9 +65,9 @@ define('AssetManager', [ 'jQuery', 'MapInfo', 'MapFileReader', 'AssetConfigReade
             var ret = Q.defer();
 
             $.get(assetManager.root + '/' + name, function (data) {
-                var assetConfig = AssetConfigReader.parseString(data);
+                var config = assetConfig.parseString(data);
 
-                ret.resolve(assetConfig);
+                ret.resolve(config);
             }, 'text');
 
             return ret.promise;
@@ -78,7 +78,7 @@ define('AssetManager', [ 'jQuery', 'MapInfo', 'MapFileReader', 'AssetConfigReade
 
             return Q.when(assetManager.load(name + '/skin.ini', 'asset-config'))
                 .then(function (assetConfig) {
-                    var skin = MapFileReader.readSkin(assetConfig, skinAssetManager);
+                    var skin = mapFile.readSkin(assetConfig, skinAssetManager);
 
                     return skin;
                 });
