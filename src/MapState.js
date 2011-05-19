@@ -13,9 +13,18 @@ define('MapState', [ 'Util/Timeline', 'Util/Map', 'HitMarker', 'Util/PubSub' ], 
             var disappearTime = ruleSet.getObjectDisappearTime(hitObject);
 
             timeline.add(MapState.HIT_OBJECT_VISIBILITY, hitObject, appearTime, disappearTime);
+
+            // FIXME This won't work for the future
+            var hitWindow = ruleSet.getHitWindow();
+            var earliestHitTime = hitObject.time - hitWindow;
+            var latestHitTime = hitObject.time + hitWindow;
+
+            timeline.add(MapState.HIT_OBJECT_HITABLE, hitObject, earliestHitTime, latestHitTime);
         });
 
         this.objectToHitMarkers = new Map();
+
+        this.unhitObjects = objects.slice(); // Copy array
     };
 
     MapState.HIT_OBJECT_VISIBILITY = { };
@@ -35,9 +44,15 @@ define('MapState', [ 'Util/Timeline', 'Util/Map', 'HitMarker', 'Util/PubSub' ], 
         },
 
         getHittableObjects: function (time) {
-            // TODO Add rule set functions and use 'em
+            var rawHittables = this.timeline.getAllAtTime(time, MapState.HIT_OBJECT_HITABLE);
+            var unhitObjects = this.unhitObjects;
 
-            return this.getVisibleObjects(time);
+            return rawHittables.filter(this.isObjectHittable, this);
+        },
+
+        isObjectHittable: function (object) {
+            // If the object is unhit, it's hittable
+            return this.unhitObjects.indexOf(object) >= 0;
         },
 
         makeHit: function (x, y, time) {
@@ -53,6 +68,8 @@ define('MapState', [ 'Util/Timeline', 'Util/Map', 'HitMarker', 'Util/PubSub' ], 
             var i, object;
             var hitMarker;
 
+            var unhitIndex;
+
             for (i = 0; i < hittableObjects.length; ++i) {
                 object = hittableObjects[i];
 
@@ -61,6 +78,14 @@ define('MapState', [ 'Util/Timeline', 'Util/Map', 'HitMarker', 'Util/PubSub' ], 
                     hitMarker.score = this.ruleSet.getHitScore(object, hitMarker);
 
                     this.timeline.add(MapState.HIT_MARKER_CREATION, hitMarker, hit.time);
+
+                    unhitIndex = this.unhitObjects.indexOf(object);
+
+                    if (unhitIndex < 0) {
+                        throw new Error('Bad map state; oh dear!');
+                    }
+
+                    this.unhitObjects.splice(unhitIndex, 1);
 
                     // TODO Multi-map
                     if (this.objectToHitMarkers.contains(object)) {

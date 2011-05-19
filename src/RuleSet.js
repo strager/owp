@@ -128,17 +128,23 @@ define('RuleSet', [ 'Util/util' ], function (util) {
         },
 
         getHitWindow: function (score) {
+            if (arguments.length === 0) {
+                // score not provided;
+                // assume widest hit window
+                score = 0;
+            }
+
             var windows = {
                 300: [  80,  50,  20 ],
                 100: [ 140, 100,  60 ],
                 50:  [ 200, 150, 100 ],
-                0:   [ 0, 0, 0 ]    // TODO
+                0:   [ 260, 200, 140 ]  // FIXME Just a guess
             };
 
             var window = windows[score];
 
             if (!window) {
-                return NaN;
+                throw new Error('score must be one of: ' + Object.keys(windows).join(', '));
             }
 
             return this.threePartLerp(window[0], window[1], window[2], this.overallDifficulty);
