@@ -1,35 +1,8 @@
-/*global console: false, window: false */
-(function () {
-    var $ = require('vendor/jquery').$;
-    var CanvasRenderer = require('owp/CanvasRenderer').$;
-    var RuleSet = require('owp/RuleSet').$;
-    var Map = require('owp/Map').$;
-    var MapState = require('owp/MapState').$;
-    var HitCircle = require('owp/HitCircle').$;
-    var Skin = require('owp/Skin').$;
-    var AssetManager = require('owp/AssetManager').$;
-
-    function debug(message) {
-        console.log(message);
-    }
-
-    var skin;
-    (new AssetManager('.')).get('skin', 'skin', function (data) {
-        skin = data;
-    });
-
+require([ 'jQuery', 'CanvasRenderer', 'AssetManager', 'q', 'Game', 'Util/FramerateCounter' ], function ($, CanvasRenderer, AssetManager, Q, Game, FramerateCounter) {
     var mapAssetManager = new AssetManager('assets');
+    var skinAssetManager = new AssetManager('.');
 
-    $(function () {
-        // Init
-        var mapInfo = null;
-        var mapState = null;
-        var audio = null;
-
-        function getMapTime() {
-            return Math.round(audio.currentTime * 1000);
-        }
-
+    var init = function () {
         var canvas = document.createElement('canvas');
         canvas.width = 640;
         canvas.height = 480;
@@ -37,58 +10,132 @@
 
         var canvasRenderer = new CanvasRenderer(canvas.getContext('2d'));
 
-        $(canvas).click(function (e) {
+        return {
+            renderer: canvasRenderer,
+            playArea: canvas
+        };
+    };
+
+    var loop = function (callback, interval) {
+        var innerLoop = function () {
+            Q.when(callback(), function () {
+                setTimeout(innerLoop, interval);
+            });
+        };
+
+        innerLoop();
+    };
+
+    var renderFps = new FramerateCounter();
+    var gameUpdateFps = new FramerateCounter();
+
+    var game;
+
+    var go = function (io) {
+        game = new Game();
+        game.setSkin(skinAssetManager);
+        game.startMap(mapAssetManager, 'map');
+
+        loop(function () {
+            game.render(io.renderer);
+
+            renderFps.addTick();
+        }, 20);
+
+        loop(function () {
+            game.update();
+
+            gameUpdateFps.addTick();
+        }, 200);
+
+        var mouseX, mouseY;
+
+        $(io.playArea).click(function (e) {
             var x = e.pageX - this.offsetLeft;
             var y = e.pageY - this.offsetTop;
 
-            if (mapState) {
-                mapState.makeHit(x, y, getMapTime());
-            }
+            game.event('click', { x: x, y: y });
         });
 
-        // Render loop logic
-        var shouldRender = true;
+        $(io.playArea).mousemove(function (e) {
+            mouseX = e.pageX - this.offsetLeft;
+            mouseY = e.pageY - this.offsetTop;
+        });
 
-        function render() {
-            if (!shouldRender) {
-                return;
-            }
+        $('body').keydown(function (e) {
+            game.event('click', { x: mouseX, y: mouseY });
+        });
+    };
 
-            var time = getMapTime();
+    var getPaintCount = function () {
+        return window.mozPaintCount || 0;
+    };
 
-            canvasRenderer.beginRender();
+    var lastPaintCount = 0;
+    var paintFps = new FramerateCounter();
 
-            if (mapInfo) {
-                canvasRenderer.renderStoryboard(mapInfo.storyboard, mapAssetManager, time);
-            }
+    var debugInfo = function () {
+        var currentPaintCount = getPaintCount();
+        paintFps.addTicks(currentPaintCount - lastPaintCount);
+        lastPaintCount = currentPaintCount;
 
-            if (mapState) {
-                canvasRenderer.renderMap(mapState, skin, time);
-            }
+        var debug = {
+            'paint fps': paintFps.framerate,
+            'game update fps': gameUpdateFps.framerate,
+            'render fps': renderFps.framerate
+        };
 
-            canvasRenderer.endRender();
+        return $.extend({ }, debug, game.debugInfo());
+    };
 
-            var renderInterval = 20;
-            window.setTimeout(render, renderInterval);
+    var updateDebugInfo = function () {
+        if (!game) {
+            return;
         }
 
-        // Start!
-        mapAssetManager.get('map', 'map', function (mapInfoParam) {
-            mapInfo = mapInfoParam;
+        var $debug = $('#debug');
 
-            mapState = MapState.fromMapInfo(mapInfo);
+        if (!$debug.length) {
+            return;
+        }
 
-            mapAssetManager.get(mapInfo.audioFile, 'audio', function (a) {
-                audio = a;
+        var debug = debugInfo();
 
-                audio.controls = 'controls';
-                document.body.appendChild(audio);
+        var text = Object.keys(debug).map(function (key) {
+            var value = debug[key];
 
-                audio.currentTime = 33; // XXX TEMP
-                audio.play();
+            if (typeof value === 'number') {
+                value = value.toFixed(2);
+            }
 
-                render();
-            });
-        });
-    });
-}());
+            return key + ': ' + value;
+        }).join('\n');
+
+        $debug.text(text);
+    };
+
+    var getMissingFeatures = function () {
+        var features = [ ];
+
+        if (!window.Audio) {
+            features.push('HTML5 <audio> element');
+        }
+
+        return features;
+    };
+
+    var missingFeatures = getMissingFeatures();
+
+    if (missingFeatures.length > 0) {
+        var text = 'Your browser is not supported; it is missing the following features:';
+        text = [ text ].concat(missingFeatures).join('\n* ');
+
+        $('<pre/>').text(text).appendTo('body');
+
+        return;
+    }
+
+    loop(updateDebugInfo, 100);
+
+    Q.when(init()).then(go);
+});

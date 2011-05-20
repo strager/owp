@@ -1,0 +1,20 @@
+{
+    "predef": [ 
+        "define",
+        "require",
+        "require"
+    ],
+    "browser": true,
+    "devel": false,
+    "rhino": false,
+    "es5": false, 
+    "nomen": false,
+    "bitwise": true,
+    "newcap": true,
+    "immed": true,
+    "white": true,
+    "undef": true,
+    "widget": false,
+    "windows": false,
+    "eqeqeq": true
+}
