@@ -6,8 +6,6 @@ define('MapState', [ 'Util/Timeline', 'Util/Map', 'HitMarker', 'Util/PubSub' ], 
             var i, object;
             var hitMarker;
 
-            var unhitIndex;
-
             for (i = 0; i < hittableObjects.length; ++i) {
                 object = hittableObjects[i];
 
