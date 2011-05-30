@@ -2,7 +2,7 @@
 require({ baseUrl: 'src' }, [ ], function (module) {
     var tests = [
         'MapState',
-        'AssetConfigReader',
+        'assetConfig',
         'RuleSet',
         'Util/Map',
         'Util/Timeline'

@@ -1,8 +1,8 @@
-define([ 'assert', 'AssetConfigReader' ], function (assert, AssetConfigReader) {
+define([ 'assert', 'assetConfig' ], function (assert, assetConfig) {
     var exports = { };
 
     exports.testParseSectionlessData = function () {
-        var data = AssetConfigReader.parseString('osu file format v2\n\nfoobar');
+        var data = assetConfig.parseString('osu file format v2\n\nfoobar');
 
         assert.deepEqual([
             'osu file format v2',
@@ -11,7 +11,7 @@ define([ 'assert', 'AssetConfigReader' ], function (assert, AssetConfigReader) {
     };
 
     exports.testParseSection = function () {
-        var data = AssetConfigReader.parseString('[Section]\nabc: def\n[Test\n]same section\n[Test] again\nyay');
+        var data = assetConfig.parseString('[Section]\nabc: def\n[Test\n]same section\n[Test] again\nyay');
 
         assert.deepEqual([
             'abc: def',
@@ -23,7 +23,7 @@ define([ 'assert', 'AssetConfigReader' ], function (assert, AssetConfigReader) {
     };
 
     exports.testParseSections = function () {
-        var data = AssetConfigReader.parseString('[Section A]\na data\n[Section B]\nb data\n');
+        var data = assetConfig.parseString('[Section A]\na data\n[Section B]\nb data\n');
 
         assert.deepEqual([
             'a data'
@@ -35,7 +35,7 @@ define([ 'assert', 'AssetConfigReader' ], function (assert, AssetConfigReader) {
     };
 
     exports.testParseValues = function () {
-        var data = AssetConfigReader.parseString('a: b\nc:d\n  e :f : :: :F ');
+        var data = assetConfig.parseString('a: b\nc:d\n  e :f : :: :F ');
 
         assert.deepEqual({
             a: 'b',
@@ -45,7 +45,7 @@ define([ 'assert', 'AssetConfigReader' ], function (assert, AssetConfigReader) {
     };
 
     exports.testParseLists = function () {
-        var data = AssetConfigReader.parseString('1,2,3\n4:2,5,6,8\n   2,1, ');
+        var data = assetConfig.parseString('1,2,3\n4:2,5,6,8\n   2,1, ');
 
         assert.deepEqual([
             [ '1', '2', '3' ],
