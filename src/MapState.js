@@ -1,10 +1,37 @@
 define('MapState', [ 'Util/Timeline', 'Util/Map', 'HitMarker', 'Util/PubSub' ], function (Timeline, Map, HitMarker, PubSub) {
     var MapState = function (ruleSet, objects) {
+        var reactToHit = function (hit) {
+            var hittableObjects = this.getHittableObjects(hit.time).sort(function (a, b) {
+                // Sort by time ascending
+                return a.time < b.time ? -1 : 1;
+            });
+
+            var i, object;
+            var hitMarker;
+
+            var unhitIndex;
+
+            for (i = 0; i < hittableObjects.length; ++i) {
+                object = hittableObjects[i];
+
+                if (this.ruleSet.canHitObject(object, hit.x, hit.y, hit.time)) {
+                    hitMarker = HitMarker.create(
+                        object,
+                        hit.time,
+                        this.ruleSet
+                    );
+
+                    this.applyHitMarker(hitMarker);
+
+                    return;
+                }
+            }
+        };
+
         this.ruleSet = ruleSet;
 
         this.events = new PubSub();
-
-        this.events.subscribe(MapState.HIT_MADE, this.reactToHit.bind(this));
+        this.events.subscribe(MapState.HIT_MADE, reactToHit.bind(this));
 
         var timeline = this.timeline = new Timeline();
 
@@ -15,13 +42,12 @@ define('MapState', [ 'Util/Timeline', 'Util/Map', 'HitMarker', 'Util/PubSub' ], 
             timeline.add(MapState.HIT_OBJECT_VISIBILITY, hitObject, appearTime, disappearTime);
 
             // FIXME This won't work for the future
+            //   ... Why not?
             var earliestHitTime = ruleSet.getObjectEarliestHitTime(hitObject);
             var latestHitTime = ruleSet.getObjectLatestHitTime(hitObject);
 
             timeline.add(MapState.HIT_OBJECT_HITABLE, hitObject, earliestHitTime, latestHitTime);
         });
-
-        this.objectToHitMarkers = new Map();
 
         this.unhitObjects = objects.slice(); // Copy array
     };
@@ -54,55 +80,22 @@ define('MapState', [ 'Util/Timeline', 'Util/Map', 'HitMarker', 'Util/PubSub' ], 
             return this.unhitObjects.indexOf(object) >= 0;
         },
 
-        makeHit: function (x, y, time) {
+        clickAt: function (x, y, time) {
             this.events.publish(MapState.HIT_MADE, { x: x, y: y, time: time });
         },
 
-        reactToHit: function (hit) {
-            var hittableObjects = this.getHittableObjects(hit.time).sort(function (a, b) {
-                // Sort by time ascending
-                return a.time < b.time ? -1 : 1;
-            });
-
-            var i, object;
-            var hitMarker;
-
-            var unhitIndex;
-
-            for (i = 0; i < hittableObjects.length; ++i) {
-                object = hittableObjects[i];
-
-                if (this.ruleSet.canHitObject(object, hit.x, hit.y, hit.time)) {
-                    hitMarker = new HitMarker(object, hit.time);
-                    hitMarker.score = this.ruleSet.getHitScore(object, hitMarker);
-
-                    this.addHitMarker(hitMarker, object);
-
-                    return;
-                }
-            }
-        },
-
-        addHitMarker: function (hitMarker, hitObject) {
-            // TODO Better name
-            // TODO Private
-            // FIXME This is ugly; why are we doing the same thing thirice?
-
-            this.timeline.add(MapState.HIT_MARKER_CREATION, hitMarker, hitMarker.time);
-
-            var unhitIndex = this.unhitObjects.indexOf(hitObject);
+        applyHitMarker: function (hitMarker) {
+            var unhitIndex = this.unhitObjects.indexOf(hitMarker.hitObject);
 
             if (unhitIndex < 0) {
                 throw new Error('Bad map state; oh dear!');
             }
 
+            // Object is now hit; remove it from unhit objects list
             this.unhitObjects.splice(unhitIndex, 1);
 
-            if (this.objectToHitMarkers.contains(hitObject)) {
-                this.objectToHitMarkers.get(hitObject).push(hitMarker);
-            } else {
-                this.objectToHitMarkers.set(hitObject, [ hitMarker ]);
-            }
+            // Add hit marker itself to the timeline
+            this.timeline.add(MapState.HIT_MARKER_CREATION, hitMarker, hitMarker.time);
         },
 
         processMisses: function (time) {
@@ -113,10 +106,13 @@ define('MapState', [ 'Util/Timeline', 'Util/Map', 'HitMarker', 'Util/PubSub' ], 
             });
 
             missedObjects.forEach(function (object) {
-                var hitMarker = new HitMarker(object, self.ruleSet.getObjectLatestHitTime(object));
-                hitMarker.score = 0;
+                var hitMarker = new HitMarker(
+                    object,
+                    self.ruleSet.getObjectLatestHitTime(object) + 1,
+                    0
+                );
 
-                self.addHitMarker(hitMarker, object);
+                self.applyHitMarker(hitMarker);
             });
         }
     };

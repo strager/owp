@@ -84,7 +84,7 @@ define('Game', [ 'q', 'MapState', 'Util/PubSub' ], function (Q, MapState, PubSub
                         };
 
                         boundEvents.push(events.subscribe('click', function (e) {
-                            mapState.makeHit(e.x, e.y, getMapTime());
+                            mapState.clickAt(e.x, e.y, getMapTime());
                         }));
                     },
                     leave: function () {
