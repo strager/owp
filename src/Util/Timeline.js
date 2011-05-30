@@ -18,7 +18,9 @@ define('Util/Timeline', [ ], function () {
     };
 
     var filter = function (timeline, filterFunc) {
-        return timeline.items.filter(filterFunc).map(function (item) {
+        return timeline.items.filter(filterFunc).sort(function (a, b) {
+            return a.time < b.time ? -1 : 1;
+        }).map(function (item) {
             return item.value;
         });
     };
