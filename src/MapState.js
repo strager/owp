@@ -1,10 +1,7 @@
 define('MapState', [ 'Util/Timeline', 'Util/Map', 'HitMarker', 'Util/PubSub' ], function (Timeline, Map, HitMarker, PubSub) {
     var MapState = function (ruleSet, objects) {
         var reactToHit = function (hit) {
-            var hittableObjects = this.getHittableObjects(hit.time).sort(function (a, b) {
-                // Sort by time ascending
-                return a.time < b.time ? -1 : 1;
-            });
+            var hittableObjects = this.getHittableObjects(hit.time);
 
             var i, object;
             var hitMarker;
