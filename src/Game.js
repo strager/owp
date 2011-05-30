@@ -70,6 +70,11 @@ define('Game', [ 'q', 'MapState', 'Util/PubSub' ], function (Q, MapState, PubSub
                         renderer.renderStoryboard(mapInfo.storyboard, mapAssetManager, time);
                         renderer.renderMap(mapState, skin.valueOf(), time);
                     },
+                    update: function () {
+                        var time = getMapTime();
+
+                        mapState.processMisses(time);
+                    },
                     enter: function () {
                         audio.currentTime = 33; // XXX TEMP
                         audio.play();
@@ -79,7 +84,7 @@ define('Game', [ 'q', 'MapState', 'Util/PubSub' ], function (Q, MapState, PubSub
                         };
 
                         boundEvents.push(events.subscribe('click', function (e) {
-                            mapState.makeHit(e.x, e.y, getMapTime());
+                            mapState.clickAt(e.x, e.y, getMapTime());
                         }));
                     },
                     leave: function () {

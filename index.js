@@ -46,7 +46,7 @@ require([ 'jQuery', 'CanvasRenderer', 'AssetManager', 'q', 'Game', 'Util/Framera
             game.update();
 
             gameUpdateFps.addTick();
-        }, 200);
+        }, 20);
 
         var mouseX, mouseY;
 
