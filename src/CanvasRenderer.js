@@ -171,10 +171,6 @@ define('CanvasRenderer', [ 'HitCircle', 'Slider', 'HitMarker', 'Util/Cache', 'ca
             }
 
             c.save();
-            c.strokeStyle = '#00FFFF';
-            c.lineWidth = 7;
-
-            c.beginPath();
 
             // Hit circle base
             var hitCircleGraphic = getShadedGraphic(
@@ -200,9 +196,6 @@ define('CanvasRenderer', [ 'HitCircle', 'Slider', 'HitMarker', 'Util/Cache', 'ca
 
             var approachProgress = mapState.ruleSet.getObjectApproachProgress(object, time);
             renderApproachCircle(object, skin, approachProgress);
-
-            c.stroke();
-            c.closePath();
 
             c.restore();
         };
