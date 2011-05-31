@@ -45,7 +45,7 @@ define('mapFile', [ 'RuleSet', 'HitCircle', 'Slider', 'Map', 'Combo', 'MapInfo',
         return combos;
     };
 
-    var readCurve = function (curveString, x, y) {
+    var readCurve = function (curveString, x, y, maxLength) {
         var parts = curveString.split('|');
         var curveType = parts.shift();
         var curvePoints = parts.map(function (pointString) {
@@ -63,7 +63,7 @@ define('mapFile', [ 'RuleSet', 'HitCircle', 'Slider', 'Map', 'Combo', 'MapInfo',
                 // Magic number; this is what osu! uses, so whatever
                 var stepCount = 50 * (curvePoints.length - 1);
 
-                return Slider.bezier.call(this, curvePoints, stepCount);
+                return Slider.bezier.call(this, curvePoints, stepCount, maxLength);
             };
 
         default:
@@ -92,7 +92,7 @@ define('mapFile', [ 'RuleSet', 'HitCircle', 'Slider', 'Map', 'Combo', 'MapInfo',
 
             object.length = parseInt(list[7], 10);
             object.repeats = parseInt(list[6], 10);
-            object.renderPoints = readCurve(list[5], x, y);
+            object.renderPoints = readCurve(list[5], x, y, object.length);
 
             break;
 
