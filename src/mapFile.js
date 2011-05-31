@@ -60,7 +60,10 @@ define('mapFile', [ 'RuleSet', 'HitCircle', 'Slider', 'Map', 'Combo', 'MapInfo',
         case 'B':
             // Bezier
             return function () {
-                return Slider.bezier.call(this, curvePoints);
+                // Magic number; this is what osu! uses, so whatever
+                var stepCount = 50 * (curvePoints.length - 1);
+
+                return Slider.bezier.call(this, curvePoints, stepCount);
             };
 
         default:
