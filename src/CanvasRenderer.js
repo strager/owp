@@ -176,11 +176,30 @@ define('CanvasRenderer', [ 'HitCircle', 'Slider', 'HitMarker', 'Util/Cache', 'ca
 
             c.beginPath();
 
-            c.moveTo(points[0][0], points[0][1]);
+            // Hit circle base
+            var hitCircleGraphic = getShadedGraphic(
+                skin, 'hitcircle',
+                shaders.multiplyByColor, object.combo.color
+            );
+
+            var hitCircleFrame = 0;
+
+            var scale = mapState.ruleSet.getCircleSize() / 128;
 
             points.forEach(function (point) {
-                c.lineTo(point[0], point[1]);
+                c.save();
+                c.translate(point[0], point[1]);
+                c.scale(scale, scale);
+                drawImageCentred(hitCircleGraphic[hitCircleFrame]);
+                c.restore();
             });
+
+            c.translate(object.x, object.y);
+            c.scale(scale, scale);
+            renderHitCircle(object, skin, time);
+
+            var approachProgress = mapState.ruleSet.getObjectApproachProgress(object, time);
+            renderApproachCircle(object, skin, approachProgress);
 
             c.stroke();
             c.closePath();
