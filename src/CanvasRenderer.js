@@ -1,4 +1,4 @@
-define('CanvasRenderer', [ 'HitCircle', 'HitMarker', 'Util/Cache', 'canvasShaders', 'MapState' ], function (HitCircle, HitMarker, Cache, shaders, MapState) {
+define('CanvasRenderer', [ 'HitCircle', 'Slider', 'HitMarker', 'Util/Cache', 'canvasShaders', 'MapState' ], function (HitCircle, Slider, HitMarker, Cache, shaders, MapState) {
     var CanvasRenderer = function (context) {
         var c = context;
 
@@ -163,10 +163,36 @@ define('CanvasRenderer', [ 'HitCircle', 'HitMarker', 'Util/Cache', 'canvasShader
             renderHitMarker(object, skin, time);
         };
 
+        var renderSliderObject = function (object, mapState, skin, time) {
+            var points = object.renderPoints();
+
+            if (!points.length) {
+                return;
+            }
+
+            c.save();
+            c.strokeStyle = '#00FFFF';
+            c.lineWidth = 7;
+
+            c.beginPath();
+
+            c.moveTo(points[0][0], points[0][1]);
+
+            points.forEach(function (point) {
+                c.lineTo(point[0], point[1]);
+            });
+
+            c.stroke();
+            c.closePath();
+
+            c.restore();
+        };
+
         var getObjectRenderer = function (object) {
             var renderers = [
                 [ HitCircle, renderHitCircleObject ],
-                [ HitMarker, renderHitMarkerObject ]
+                [ HitMarker, renderHitMarkerObject ],
+                [ Slider,    renderSliderObject ]
             ];
 
             var objectRenderers = renderers.filter(function (r) {

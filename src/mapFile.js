@@ -1,6 +1,6 @@
 /*jslint bitwise: false */
 /*jshint bitwise: false */
-define('mapFile', [ 'RuleSet', 'HitCircle', 'Map', 'Combo', 'MapInfo', 'Storyboard', 'Skin' ], function (RuleSet, HitCircle, Map, Combo, MapInfo, Storyboard, Skin) {
+define('mapFile', [ 'RuleSet', 'HitCircle', 'Slider', 'Map', 'Combo', 'MapInfo', 'Storyboard', 'Skin' ], function (RuleSet, HitCircle, Slider, Map, Combo, MapInfo, Storyboard, Skin) {
     var readSkin = function (assetConfig, assetManager) {
         return Skin.fromSettings(assetManager, {
             name:   assetConfig.General.values.Name,
@@ -45,15 +45,63 @@ define('mapFile', [ 'RuleSet', 'HitCircle', 'Map', 'Combo', 'MapInfo', 'Storyboa
         return combos;
     };
 
+    var readCurve = function (curveString, x, y) {
+        var parts = curveString.split('|');
+        var curveType = parts.shift();
+        var curvePoints = parts.map(function (pointString) {
+            return pointString.split(':').map(function (coord) {
+                return parseInt(coord, 10);
+            });
+        });
+
+        curvePoints.unshift([ x, y ]);
+
+        switch (curveType) {
+        case 'B':
+            // Bezier
+            return function () {
+                return Slider.bezier.call(this, curvePoints);
+            };
+
+        default:
+            throw new Error('Unknown slider type: ' + curveType);
+        }
+    };
+
     var readHitObject = function (list) {
-        // TODO Slider/spinner support
-        var object = new HitCircle();
-
-        object.x = parseInt(list[0], 10);
-        object.y = parseInt(list[1], 10);
-        object.time = parseInt(list[2], 10);
-
         var flags1 = parseInt(list[3], 10);
+
+        var x = parseInt(list[0], 10);
+        var y = parseInt(list[1], 10);
+
+        var object;
+
+        switch (flags1 & 0x03) {
+        case 1:
+            // Hit circle
+            object = new HitCircle();
+
+            break;
+
+        case 2:
+            // Slider
+            object = new Slider();
+
+            object.length = parseInt(list[7], 10);
+            object.repeats = parseInt(list[6], 10);
+            object.renderPoints = readCurve(list[5], x, y);
+
+            break;
+
+        // TODO Spinner support
+
+        default:
+            return null;
+        }
+
+        object.x = x;
+        object.y = y;
+        object.time = parseInt(list[2], 10);
 
         object.newCombo = !!(flags1 & 4);
 
@@ -70,6 +118,10 @@ define('mapFile', [ 'RuleSet', 'HitCircle', 'Map', 'Combo', 'MapInfo', 'Storyboa
 
         for (i = 0; i < assetConfig.HitObjects.lists.length; ++i) {
             curObject = readHitObject(assetConfig.HitObjects.lists[i]);
+
+            if (!curObject) {
+                continue;
+            }
 
             if (curObject.newCombo) {
                 curComboIndex = (curComboIndex + 1) % combos.length;
