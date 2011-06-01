@@ -163,6 +163,34 @@ define('CanvasRenderer', [ 'HitCircle', 'Slider', 'HitMarker', 'Util/Cache', 'ca
             renderHitMarker(object, skin, time);
         };
 
+        var renderSliderTrack = function (points, object, mapState, skin) {
+            var sliderImage = document.createElement('canvas');
+            sliderImage.width = c.canvas.width;
+            sliderImage.height = c.canvas.height;
+
+            var sc = sliderImage.getContext('2d');
+
+            var hitCircleGraphic = getShadedGraphic(
+                skin, 'hitcircle',
+                shaders.multiplyByColor, object.combo.color
+            );
+
+            var hitCircleFrame = 0;
+
+            var g = hitCircleGraphic[hitCircleFrame];
+            var scale = mapState.ruleSet.getCircleSize() / 128;
+
+            points.forEach(function (point) {
+                sc.save();
+                sc.translate(point[0], point[1]);
+                sc.scale(scale, scale);
+                sc.drawImage(g, -g.width / 2, -g.height / 2);
+                sc.restore();
+            });
+
+            c.drawImage(sliderImage, 0, 0);
+        };
+
         var renderSliderObject = function (object, mapState, skin, time) {
             var points = object.renderPoints();
 
@@ -172,23 +200,16 @@ define('CanvasRenderer', [ 'HitCircle', 'Slider', 'HitMarker', 'Util/Cache', 'ca
 
             c.save();
 
-            // Hit circle base
-            var hitCircleGraphic = getShadedGraphic(
-                skin, 'hitcircle',
-                shaders.multiplyByColor, object.combo.color
-            );
+            var growPercentage = mapState.ruleSet.getSliderGrowPercentage(object, time);
+            var growPoints = points.length * growPercentage;
 
-            var hitCircleFrame = 0;
+            points = points.slice(0, growPoints);
 
             var scale = mapState.ruleSet.getCircleSize() / 128;
+            var opacity = mapState.ruleSet.getObjectOpacity(object, time);
 
-            points.forEach(function (point) {
-                c.save();
-                c.translate(point[0], point[1]);
-                c.scale(scale, scale);
-                drawImageCentred(hitCircleGraphic[hitCircleFrame]);
-                c.restore();
-            });
+            c.globalAlpha = opacity;
+            renderSliderTrack(points, object, mapState, skin);
 
             c.translate(object.x, object.y);
             c.scale(scale, scale);
