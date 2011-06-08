@@ -163,12 +163,33 @@ define('CanvasRenderer', [ 'HitCircle', 'Slider', 'HitMarker', 'Util/Cache', 'ca
             renderHitMarker(object, skin, time);
         };
 
-        var renderSliderTrack = function (points, object, mapState, skin) {
-            var sliderImage = document.createElement('canvas');
-            sliderImage.width = c.canvas.width;
-            sliderImage.height = c.canvas.height;
+        var sliderTrackCache = new Cache();
 
-            var sc = sliderImage.getContext('2d');
+        var renderSliderTrack = function (points, object, mapState, skin) {
+            var key = [ object, mapState, skin ];
+
+            var cachedTrack = sliderTrackCache.get(key, function () {
+                var sliderImage = document.createElement('canvas');
+                sliderImage.width = c.canvas.width;
+                sliderImage.height = c.canvas.height;
+
+                return {
+                    image: sliderImage,
+                    pointCount: 0,
+                };
+            });
+
+            if (cachedTrack.pointCount > points.length) {
+                // Cache has the slider track rendered "too much".
+                // We need to re-render the whole track now.
+                sliderTrackCache.unset(key);
+                renderSliderTrack(points, object, mapState, skin);
+                return;
+            }
+
+            var pointsToRender = points.slice(cachedTrack.pointCount);
+
+            var sc = cachedTrack.image.getContext('2d');
 
             var hitCircleGraphic = getShadedGraphic(
                 skin, 'hitcircle',
@@ -180,7 +201,7 @@ define('CanvasRenderer', [ 'HitCircle', 'Slider', 'HitMarker', 'Util/Cache', 'ca
             var g = hitCircleGraphic[hitCircleFrame];
             var scale = mapState.ruleSet.getCircleSize() / 128;
 
-            points.forEach(function (point) {
+            pointsToRender.forEach(function (point) {
                 sc.save();
                 sc.translate(point[0], point[1]);
                 sc.scale(scale, scale);
@@ -188,7 +209,9 @@ define('CanvasRenderer', [ 'HitCircle', 'Slider', 'HitMarker', 'Util/Cache', 'ca
                 sc.restore();
             });
 
-            c.drawImage(sliderImage, 0, 0);
+            cachedTrack.pointCount = points.length;
+
+            c.drawImage(cachedTrack.image, 0, 0);
         };
 
         var renderSliderObject = function (object, mapState, skin, time) {
