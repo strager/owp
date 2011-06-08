@@ -192,7 +192,8 @@ define('CanvasRenderer', [ 'HitCircle', 'Slider', 'HitMarker', 'Util/Cache', 'ca
         };
 
         var renderSliderObject = function (object, mapState, skin, time) {
-            var points = object.renderPoints();
+            var growPercentage = mapState.ruleSet.getSliderGrowPercentage(object, time);
+            var points = object.curve.render(null, growPercentage * object.curve.length);
 
             if (!points.length) {
                 return;
@@ -200,28 +201,27 @@ define('CanvasRenderer', [ 'HitCircle', 'Slider', 'HitMarker', 'Util/Cache', 'ca
 
             c.save();
 
-            var growPercentage = mapState.ruleSet.getSliderGrowPercentage(object, time);
-            var growPoints = points.length * growPercentage;
-
-            points = points.slice(0, growPoints);
-
             var scale = mapState.ruleSet.getCircleSize() / 128;
             var opacity = mapState.ruleSet.getObjectOpacity(object, time);
 
             c.globalAlpha = opacity;
             renderSliderTrack(points, object, mapState, skin);
 
-            var sliderBallGraphic  = skin.assetManager.get('sliderb0', 'image-set')
+            var sliderBallGraphic = skin.assetManager.get('sliderb0', 'image-set');
             var sliderBallFrame = 0;
 
-            var sliderBallPosition = object.getSliderBallPosition(time, mapState.ruleSet);
+            var visibility = mapState.ruleSet.getObjectVisibilityAtTime(object, time);
 
-            if (sliderBallPosition) {
-                c.save();
-                c.translate(sliderBallPosition[0], sliderBallPosition[1]);
-                c.scale(scale, scale);
-                drawImageCentred(sliderBallGraphic[sliderBallFrame]);
-                c.restore();
+            if (visibility === 'during') {
+                var sliderBallPosition = object.curve.getSliderBallPosition(time, time - object.time, mapState.ruleSet);
+
+                if (sliderBallPosition) {
+                    c.save();
+                    c.translate(sliderBallPosition[0], sliderBallPosition[1]);
+                    c.scale(scale, scale);
+                    drawImageCentred(sliderBallGraphic[sliderBallFrame]);
+                    c.restore();
+                }
             }
 
             c.translate(object.x, object.y);

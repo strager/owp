@@ -1,6 +1,6 @@
 /*jslint bitwise: false */
 /*jshint bitwise: false */
-define('mapFile', [ 'RuleSet', 'HitCircle', 'Slider', 'Map', 'Combo', 'MapInfo', 'Storyboard', 'Skin' ], function (RuleSet, HitCircle, Slider, Map, Combo, MapInfo, Storyboard, Skin) {
+define('mapFile', [ 'RuleSet', 'HitCircle', 'Slider', 'Map', 'Combo', 'MapInfo', 'Storyboard', 'Skin', 'BezierSliderCurve' ], function (RuleSet, HitCircle, Slider, Map, Combo, MapInfo, Storyboard, Skin, BezierSliderCurve) {
     var readSkin = function (assetConfig, assetManager) {
         return Skin.fromSettings(assetManager, {
             name:   assetConfig.General.values.Name,
@@ -45,7 +45,7 @@ define('mapFile', [ 'RuleSet', 'HitCircle', 'Slider', 'Map', 'Combo', 'MapInfo',
         return combos;
     };
 
-    var readCurve = function (curveString, x, y, maxLength) {
+    var readCurve = function (curveString, x, y, maxLength, repeats) {
         var parts = curveString.split('|');
         var curveType = parts.shift();
         var curvePoints = parts.map(function (pointString) {
@@ -59,12 +59,7 @@ define('mapFile', [ 'RuleSet', 'HitCircle', 'Slider', 'Map', 'Combo', 'MapInfo',
         switch (curveType) {
         case 'B':
             // Bezier
-            return function () {
-                // Magic number; this is what osu! uses, so whatever
-                var stepCount = 50 * (curvePoints.length - 1);
-
-                return Slider.bezier.call(this, curvePoints, stepCount, maxLength);
-            };
+            return new BezierSliderCurve(curvePoints, maxLength, repeats);
 
         default:
             throw new Error('Unknown slider type: ' + curveType);
@@ -92,7 +87,7 @@ define('mapFile', [ 'RuleSet', 'HitCircle', 'Slider', 'Map', 'Combo', 'MapInfo',
 
             object.length = parseInt(list[7], 10);
             object.repeats = parseInt(list[6], 10);
-            object.renderPoints = readCurve(list[5], x, y, object.length);
+            object.curve = readCurve(list[5], x, y, object.length, object.repeats);
 
             break;
 
