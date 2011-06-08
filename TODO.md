@@ -2,6 +2,10 @@
 
 * Sliders
   * Rendering
+    * Slider ticks
+    * **Efficiency**
+    * Slider ball rotation
+    * Slider ends beautifying
   * Mouse handling
 * Spinners
   * Rendering
@@ -11,3 +15,4 @@
 * HP bar
 * Combo counter
 * OpenGL rendering
+* Note stacking
