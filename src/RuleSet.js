@@ -55,11 +55,14 @@ define('RuleSet', [ 'Util/util', 'Slider' ], function (util, Slider) {
             var duration = 0;
 
             if (object instanceof Slider) {
-                duration = 1000 * object.length * object.repeats /
-                    this.getEffectiveSliderSpeed(object.time);
+                duration = object.repeats * this.getSliderRepeatLength(object.time, object.length);
             }
 
             return this.getObjectStartTime(object) + duration;
+        },
+
+        getSliderRepeatLength: function (time, sliderLength) {
+            return 1000 * sliderLength / this.getEffectiveSliderSpeed(time);
         },
 
         /*

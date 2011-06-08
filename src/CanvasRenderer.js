@@ -211,6 +211,19 @@ define('CanvasRenderer', [ 'HitCircle', 'Slider', 'HitMarker', 'Util/Cache', 'ca
             c.globalAlpha = opacity;
             renderSliderTrack(points, object, mapState, skin);
 
+            var sliderBallGraphic  = skin.assetManager.get('sliderb0', 'image-set')
+            var sliderBallFrame = 0;
+
+            var sliderBallPosition = object.getSliderBallPosition(time, mapState.ruleSet);
+
+            if (sliderBallPosition) {
+                c.save();
+                c.translate(sliderBallPosition[0], sliderBallPosition[1]);
+                c.scale(scale, scale);
+                drawImageCentred(sliderBallGraphic[sliderBallFrame]);
+                c.restore();
+            }
+
             c.translate(object.x, object.y);
             c.scale(scale, scale);
             renderHitCircle(object, skin, time);
