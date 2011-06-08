@@ -185,29 +185,44 @@ define('CanvasRenderer', [ 'HitCircle', 'HitMarker', 'Util/Cache', 'canvasShader
             renderer(object, mapState, skin, time);
         };
 
+        var backgroundCache = new Cache();
+
         var renderBackground = function (graphic) {
-            // TODO Split?
+            var key = [ graphic, c.canvas.width, c.canvas.height ];
 
-            var canvasAR = c.canvas.width / c.canvas.height;
-            var imageAR = graphic.width / graphic.height;
-            var scale;
+            var backgroundGraphic = backgroundCache.get(key, function () {
+                // TODO Split?
 
-            if (imageAR > canvasAR) {
-                // Image is wider
-                scale = c.canvas.width / graphic.width;
-            } else {
-                // Image is taller
-                scale = c.canvas.height / graphic.height;
-            }
+                var canvasAR = c.canvas.width / c.canvas.height;
+                var imageAR = graphic.width / graphic.height;
+                var scale;
 
-            c.save();
-            c.translate(
-                (c.canvas.width - graphic.width * scale) / 2,
-                (c.canvas.height - graphic.height * scale) / 2
-            );
-            c.scale(scale, scale);
-            c.drawImage(graphic, 0, 0);
-            c.restore();
+                if (imageAR > canvasAR) {
+                    // Image is wider
+                    scale = c.canvas.width / graphic.width;
+                } else {
+                    // Image is taller
+                    scale = c.canvas.height / graphic.height;
+                }
+
+                var backgroundCanvas = document.createElement('canvas');
+                backgroundCanvas.width = c.canvas.width;
+                backgroundCanvas.height = c.canvas.height;
+
+                var bc = backgroundCanvas.getContext('2d');
+
+                bc.globalCompositeOperation = 'copy';
+                bc.translate(
+                    (backgroundCanvas.width - graphic.width * scale) / 2,
+                    (backgroundCanvas.height - graphic.height * scale) / 2
+                );
+                bc.scale(scale, scale);
+                bc.drawImage(graphic, 0, 0);
+
+                return backgroundCanvas;
+            });
+
+            c.drawImage(backgroundGraphic, 0, 0);
         };
 
         return {
