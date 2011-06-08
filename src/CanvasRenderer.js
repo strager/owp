@@ -216,7 +216,7 @@ define('CanvasRenderer', [ 'HitCircle', 'Slider', 'HitMarker', 'Util/Cache', 'ca
 
         var renderSliderObject = function (object, mapState, skin, time) {
             var growPercentage = mapState.ruleSet.getSliderGrowPercentage(object, time);
-            var points = object.curve.render(null, growPercentage * object.curve.length);
+            var points = object.curve.render(null, growPercentage);
 
             if (!points.length) {
                 return;
