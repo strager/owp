@@ -1,4 +1,4 @@
-define('RuleSet', [ 'Util/util' ], function (util) {
+define('RuleSet', [ 'Util/util', 'Slider' ], function (util, Slider) {
     var RuleSet = function () {
         this.approachRate = 5;
         this.overallDifficulty = 5;
@@ -10,7 +10,7 @@ define('RuleSet', [ 'Util/util' ], function (util) {
         var ruleSet = new RuleSet();
 
         var fields = (
-            'approachRate,overallDifficulty,hpDrain,circleSize'
+            'approachRate,overallDifficulty,hpDrain,circleSize,sliderMultiplier'
         ).split(',');
 
         util.extendObjectWithFields(ruleSet, fields, settings);
@@ -52,7 +52,17 @@ define('RuleSet', [ 'Util/util' ], function (util) {
         },
 
         getObjectEndTime: function (object) {
-            return this.getObjectStartTime(object) + (object.duration || 0);
+            var duration = 0;
+
+            if (object instanceof Slider) {
+                duration = object.repeats * this.getSliderRepeatLength(object.time, object.length);
+            }
+
+            return this.getObjectStartTime(object) + duration;
+        },
+
+        getSliderRepeatLength: function (time, sliderLength) {
+            return 1000 * sliderLength / this.getEffectiveSliderSpeed(time);
         },
 
         /*
@@ -93,6 +103,11 @@ define('RuleSet', [ 'Util/util' ], function (util) {
             } else {
                 return 0;
             }
+        },
+
+        getSliderGrowPercentage: function (object, time) {
+            // TODO Real calculations
+            return this.getObjectOpacity(object, time);
         },
 
         getObjectApproachProgress: function (object, time) {
@@ -165,6 +180,26 @@ define('RuleSet', [ 'Util/util' ], function (util) {
             }
 
             return 0;   // TODO Return "shouldn't be hit" or throw or something
+        },
+
+        getEffectiveSliderSpeed: function (time) {
+            // Gives osu!pixels per second
+
+            // Beats per minute
+            var bpm = this.getEffectiveBPM(time);
+
+            // 100ths of osu!pixels per beat
+            var velocity = this.sliderMultiplier;
+
+            // (beats/minute) * ((1/100) pixel/beat) = (1/100) pixel/minute
+            var pixelsPerMinute = bpm * velocity * 100;
+
+            return pixelsPerMinute / 60; // Pixels per second
+        },
+
+        getEffectiveBPM: function (time) {
+            // TODO
+            return 140;
         }
     };
 

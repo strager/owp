@@ -30,7 +30,8 @@ define('Skin', [ 'Util/util' ], function (util) {
                     'hit100',
                     'hit100k',
                     'hit300k',
-                    'hit300'
+                    'hit300',
+                    'sliderb0'
                 ]
             };
 

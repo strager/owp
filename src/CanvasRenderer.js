@@ -1,4 +1,4 @@
-define('CanvasRenderer', [ 'HitCircle', 'HitMarker', 'Util/Cache', 'canvasShaders', 'MapState' ], function (HitCircle, HitMarker, Cache, shaders, MapState) {
+define('CanvasRenderer', [ 'HitCircle', 'Slider', 'HitMarker', 'Util/Cache', 'canvasShaders', 'MapState' ], function (HitCircle, Slider, HitMarker, Cache, shaders, MapState) {
     var CanvasRenderer = function (context) {
         var c = context;
 
@@ -163,10 +163,82 @@ define('CanvasRenderer', [ 'HitCircle', 'HitMarker', 'Util/Cache', 'canvasShader
             renderHitMarker(object, skin, time);
         };
 
+        var renderSliderTrack = function (points, object, mapState, skin) {
+            var sliderImage = document.createElement('canvas');
+            sliderImage.width = c.canvas.width;
+            sliderImage.height = c.canvas.height;
+
+            var sc = sliderImage.getContext('2d');
+
+            var hitCircleGraphic = getShadedGraphic(
+                skin, 'hitcircle',
+                shaders.multiplyByColor, object.combo.color
+            );
+
+            var hitCircleFrame = 0;
+
+            var g = hitCircleGraphic[hitCircleFrame];
+            var scale = mapState.ruleSet.getCircleSize() / 128;
+
+            points.forEach(function (point) {
+                sc.save();
+                sc.translate(point[0], point[1]);
+                sc.scale(scale, scale);
+                sc.drawImage(g, -g.width / 2, -g.height / 2);
+                sc.restore();
+            });
+
+            c.drawImage(sliderImage, 0, 0);
+        };
+
+        var renderSliderObject = function (object, mapState, skin, time) {
+            var growPercentage = mapState.ruleSet.getSliderGrowPercentage(object, time);
+            var points = object.curve.render(null, growPercentage * object.curve.length);
+
+            if (!points.length) {
+                return;
+            }
+
+            c.save();
+
+            var scale = mapState.ruleSet.getCircleSize() / 128;
+            var opacity = mapState.ruleSet.getObjectOpacity(object, time);
+
+            c.globalAlpha = opacity;
+            renderSliderTrack(points, object, mapState, skin);
+
+            var sliderBallGraphic = skin.assetManager.get('sliderb0', 'image-set');
+            var sliderBallFrame = 0;
+
+            var visibility = mapState.ruleSet.getObjectVisibilityAtTime(object, time);
+
+            if (visibility === 'during') {
+                var sliderBallPosition = object.curve.getSliderBallPosition(time, time - object.time, mapState.ruleSet);
+
+                if (sliderBallPosition) {
+                    c.save();
+                    c.translate(sliderBallPosition[0], sliderBallPosition[1]);
+                    c.scale(scale, scale);
+                    drawImageCentred(sliderBallGraphic[sliderBallFrame]);
+                    c.restore();
+                }
+            }
+
+            c.translate(object.x, object.y);
+            c.scale(scale, scale);
+            renderHitCircle(object, skin, time);
+
+            var approachProgress = mapState.ruleSet.getObjectApproachProgress(object, time);
+            renderApproachCircle(object, skin, approachProgress);
+
+            c.restore();
+        };
+
         var getObjectRenderer = function (object) {
             var renderers = [
                 [ HitCircle, renderHitCircleObject ],
-                [ HitMarker, renderHitMarkerObject ]
+                [ HitMarker, renderHitMarkerObject ],
+                [ Slider,    renderSliderObject ]
             ];
 
             var objectRenderers = renderers.filter(function (r) {
