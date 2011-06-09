@@ -26,6 +26,14 @@ require([ 'jQuery', 'CanvasRenderer', 'AssetManager', 'q', 'Game', 'Util/Framera
         innerLoop();
     };
 
+    var hardLoop = function (callback, interval) {
+        var timer = setInterval(function () {
+            if (callback() === false) {
+                clearInterval(timer);
+            }
+        }, interval);
+    };
+
     var renderFps = new FramerateCounter();
     var gameUpdateFps = new FramerateCounter();
 
@@ -36,11 +44,11 @@ require([ 'jQuery', 'CanvasRenderer', 'AssetManager', 'q', 'Game', 'Util/Framera
         game.setSkin(skinAssetManager);
         game.startMap(mapAssetManager, 'map');
 
-        loop(function () {
+        hardLoop(function () {
             game.render(io.renderer);
 
             renderFps.addTick();
-        }, 20);
+        }, 1000 / 60);
 
         loop(function () {
             game.update();
