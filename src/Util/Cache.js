@@ -26,6 +26,10 @@ define('Util/Cache', [ 'Util/Map' ], function (Map) {
             this.map.set(key, value);
         },
 
+        unset: function (key) {
+            this.map.unset(key);
+        },
+
         contains: function (key) {
             return this.map.contains(key);
         }

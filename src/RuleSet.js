@@ -107,7 +107,9 @@ define('RuleSet', [ 'Util/util', 'Slider' ], function (util, Slider) {
 
         getSliderGrowPercentage: function (object, time) {
             // TODO Real calculations
-            return this.getObjectOpacity(object, time);
+            var x = this.getObjectOpacity(object, time);
+
+            return Math.sqrt(x);
         },
 
         getObjectApproachProgress: function (object, time) {

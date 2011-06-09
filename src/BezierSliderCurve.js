@@ -83,7 +83,7 @@ define('BezierSliderCurve', [ ], function () {
         return this.points.reduce(processPoint, [ 0, 0 ]);
     };
 
-    BezierSliderCurve.prototype.render = function (stepCount, maxLength) {
+    BezierSliderCurve.prototype.render = function (stepCount, maxSize) {
         // Estimates a bezier curve
         // TODO Linear control points (osu!-specific)
 
@@ -98,45 +98,28 @@ define('BezierSliderCurve', [ ], function () {
             return [ ];
         }
 
-        maxLength = Math.min(this.length, maxLength);
-
-        if (isNaN(maxLength)) {
-            // Math.min returns NaN if one argument isn't a number
-            maxLength = this.length;
+        if (isNaN(maxSize)) {
+            maxSize = 1;
         }
 
         var out = [ ];
 
         var step, curPoint;
         var t = { };
-        var lastPoint = null;
-
-        var currentLengthSquared = 0;
-        var maxLengthSquared = maxLength * maxLength;
 
         var processPoint = pointProcessor(t, points.length);
 
         for (step = 0; step <= stepCount; ++step) { 
             t.target = step / stepCount; // Affects processPoint
 
-            curPoint = points.reduce(processPoint, [ 0, 0 ]);
-
-            if (lastPoint) {
-                // Stop giving points before the max length is reached
-                var x2 = curPoint[0] - lastPoint[0];
-                var y2 = curPoint[1] - lastPoint[1];
-
-                currentLengthSquared += x2 * x2 + y2 * y2;
-
-                if (currentLengthSquared > maxLengthSquared) {
-                    break;
-                }
+            if (t.target >= maxSize) {
+                break;
             }
+
+            curPoint = points.reduce(processPoint, [ 0, 0 ]);
 
             // WTB generators/coroutines/yield/whatever...
             out.push(curPoint);
-
-            lastPoint = curPoint;
         }
 
         return out;
