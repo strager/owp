@@ -1,93 +1,4 @@
 define('CanvasRenderer', [ 'HitCircle', 'Slider', 'HitMarker', 'Util/Cache', 'canvasShaders', 'MapState' ], function (HitCircle, Slider, HitMarker, Cache, shaders, MapState) {
-    var CanvasRenderer = function (context) {
-        var c = context;
-
-        var caches = {
-            // [ 'graphic-name', skin, shader, shaderData ] => graphic
-            graphics: new Cache(),
-
-            // [ graphic, canvasWidth, canvasHeight ] => graphic
-            background: new Cache(),
-
-            // [ sliderObject, mapState, skin ] => { image, pointCount }
-            sliderTrack: new Cache(),
-        };
-
-        var renderBackground = function (graphic) {
-            var key = [ graphic, c.canvas.width, c.canvas.height ];
-
-            var backgroundGraphic = caches.background.get(key, function () {
-                // TODO Split?
-
-                var canvasAR = c.canvas.width / c.canvas.height;
-                var imageAR = graphic.width / graphic.height;
-                var scale;
-
-                if (imageAR > canvasAR) {
-                    // Image is wider
-                    scale = c.canvas.width / graphic.width;
-                } else {
-                    // Image is taller
-                    scale = c.canvas.height / graphic.height;
-                }
-
-                var backgroundCanvas = document.createElement('canvas');
-                backgroundCanvas.width = c.canvas.width;
-                backgroundCanvas.height = c.canvas.height;
-
-                var bc = backgroundCanvas.getContext('2d');
-
-                bc.globalCompositeOperation = 'copy';
-                bc.translate(
-                    (backgroundCanvas.width - graphic.width * scale) / 2,
-                    (backgroundCanvas.height - graphic.height * scale) / 2
-                );
-                bc.scale(scale, scale);
-                bc.drawImage(graphic, 0, 0);
-
-                return backgroundCanvas;
-            });
-
-            c.drawImage(backgroundGraphic, 0, 0);
-        };
-
-        return {
-            beginRender: function () {
-                c.save();
-
-                c.clearRect(0, 0, 640, 480);
-            },
-
-            endRender: function () {
-                c.restore();
-            },
-
-            renderMap: function (mapState, skin, time) {
-                renderMap({
-                    mapState: mapState,
-                    skin: skin,
-                    time: time,
-                    context: c,
-                    caches: caches,
-                });
-            },
-
-            renderStoryboard: function (storyboard, assetManager, time) {
-                // Background
-                var background = storyboard.getBackground(time);
-                var backgroundGraphic;
-
-                if (background) {
-                    backgroundGraphic = assetManager.get(background.fileName, 'image');
-
-                    renderBackground(backgroundGraphic);
-                }
-
-                // TODO Real storyboard stuff
-            }
-        };
-    };
-
     var renderMap = function (vars) {
         var mapState = vars.mapState;
         var ruleSet = mapState.ruleSet;
@@ -103,11 +14,11 @@ define('CanvasRenderer', [ 'HitCircle', 'Slider', 'HitMarker', 'Util/Cache', 'ca
                 var images = skin.assetManager.get(graphicName, 'image-set');
                 var shadedImages = [ ], i;
 
-                for (i = 0; i < images.length; ++i) {
+                images.forEach(function (image) {
                     shadedImages.push(
-                        shaders.applyShaderToImage(shader, shaderData, images[i])
+                        shaders.applyShaderToImage(shader, shaderData, image)
                     );
-                }
+                });
 
                 return shadedImages;
             });
@@ -129,20 +40,17 @@ define('CanvasRenderer', [ 'HitCircle', 'Slider', 'HitMarker', 'Util/Cache', 'ca
             var i, digit, graphic;
             var frame = 0;
 
-            for (i = 0; i < digits.length; ++i) {
-                digit = digits[i];
-
+            digits.split('').forEach(function (digit) {
                 graphic = skin.assetManager.get('default-' + digit, 'image-set');
 
                 images.push(graphic[frame]);
-            }
+            });
 
             return images;
         };
 
         var renderComboNumber = function (number) {
             var images = getNumberImages(number);
-            var totalWidth = 0;
             var spacing = skin.hitCircleFontSpacing;
 
             if (images.length === 0) {
@@ -152,9 +60,9 @@ define('CanvasRenderer', [ 'HitCircle', 'Slider', 'HitMarker', 'Util/Cache', 'ca
 
             var i;
 
-            for (i = 0; i < images.length; ++i) {
-                totalWidth += images[i].width;
-            }
+            var totalWidth = images.reduce(function (acc, image) {
+                return acc + image.width;
+            }, 0);
 
             totalWidth += spacing * (images.length - 1);
 
@@ -164,15 +72,11 @@ define('CanvasRenderer', [ 'HitCircle', 'Slider', 'HitMarker', 'Util/Cache', 'ca
             c.scale(scale, scale);
             c.translate(-totalWidth / 2, 0);
 
-            var image;
-
-            for (i = 0; i < images.length; ++i) {
-                image = images[i];
-
+            images.forEach(function (image) {
                 c.drawImage(image, 0, -image.height / 2);
 
                 c.translate(image.width + spacing, 0);
-            }
+            });
 
             c.restore();
         };
@@ -267,7 +171,7 @@ define('CanvasRenderer', [ 'HitCircle', 'Slider', 'HitMarker', 'Util/Cache', 'ca
 
                 return {
                     image: sliderImage,
-                    pointCount: 0,
+                    pointCount: 0
                 };
             });
 
@@ -303,6 +207,9 @@ define('CanvasRenderer', [ 'HitCircle', 'Slider', 'HitMarker', 'Util/Cache', 'ca
 
             cachedTrack.pointCount = points.length;
 
+            // TODO Possible optimization: only render the part of the image
+            // which contains slider data; currently it's the same size as the
+            // playfield (ew! but easy!), which is (probably) inefficient
             c.drawImage(cachedTrack.image, 0, 0);
         };
 
@@ -415,6 +322,95 @@ define('CanvasRenderer', [ 'HitCircle', 'Slider', 'HitMarker', 'Util/Cache', 'ca
         getObjectsToRender().forEach(function (object) {
             renderObject(object);
         });
+    };
+
+    var CanvasRenderer = function (context) {
+        var c = context;
+
+        var caches = {
+            // [ 'graphic-name', skin, shader, shaderData ] => graphic
+            graphics: new Cache(),
+
+            // [ graphic, canvasWidth, canvasHeight ] => graphic
+            background: new Cache(),
+
+            // [ sliderObject, mapState, skin ] => { image, pointCount }
+            sliderTrack: new Cache()
+        };
+
+        var renderBackground = function (graphic) {
+            var key = [ graphic, c.canvas.width, c.canvas.height ];
+
+            var backgroundGraphic = caches.background.get(key, function () {
+                // TODO Split?
+
+                var canvasAR = c.canvas.width / c.canvas.height;
+                var imageAR = graphic.width / graphic.height;
+                var scale;
+
+                if (imageAR > canvasAR) {
+                    // Image is wider
+                    scale = c.canvas.width / graphic.width;
+                } else {
+                    // Image is taller
+                    scale = c.canvas.height / graphic.height;
+                }
+
+                var backgroundCanvas = document.createElement('canvas');
+                backgroundCanvas.width = c.canvas.width;
+                backgroundCanvas.height = c.canvas.height;
+
+                var bc = backgroundCanvas.getContext('2d');
+
+                bc.globalCompositeOperation = 'copy';
+                bc.translate(
+                    (backgroundCanvas.width - graphic.width * scale) / 2,
+                    (backgroundCanvas.height - graphic.height * scale) / 2
+                );
+                bc.scale(scale, scale);
+                bc.drawImage(graphic, 0, 0);
+
+                return backgroundCanvas;
+            });
+
+            c.drawImage(backgroundGraphic, 0, 0);
+        };
+
+        return {
+            beginRender: function () {
+                c.save();
+
+                c.clearRect(0, 0, 640, 480);
+            },
+
+            endRender: function () {
+                c.restore();
+            },
+
+            renderMap: function (mapState, skin, time) {
+                renderMap({
+                    mapState: mapState,
+                    skin: skin,
+                    time: time,
+                    context: c,
+                    caches: caches
+                });
+            },
+
+            renderStoryboard: function (storyboard, assetManager, time) {
+                // Background
+                var background = storyboard.getBackground(time);
+                var backgroundGraphic;
+
+                if (background) {
+                    backgroundGraphic = assetManager.get(background.fileName, 'image');
+
+                    renderBackground(backgroundGraphic);
+                }
+
+                // TODO Real storyboard stuff
+            }
+        };
     };
 
     return CanvasRenderer;
