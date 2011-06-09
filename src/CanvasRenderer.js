@@ -130,9 +130,12 @@ define('CanvasRenderer', [ 'HitCircle', 'Slider', 'HitMarker', 'Util/Cache', 'ca
             }
         };
 
-        var renderHitMarker = function (hitMarker, skin, time) {
+        var renderHitMarker = function (hitMarker, skin, time, mapState) {
             c.save();
             c.translate(hitMarker.hitObject.x, hitMarker.hitObject.y);
+
+            var scale = mapState.ruleSet.getHitMarkerScale(hitMarker, time);
+            c.scale(scale, scale);
 
             // Hit marker
             var hitMarkerGraphic = skin.assetManager.get('hit' + hitMarker.score, 'image-set');
@@ -160,7 +163,7 @@ define('CanvasRenderer', [ 'HitCircle', 'Slider', 'HitMarker', 'Util/Cache', 'ca
         };
 
         var renderHitMarkerObject = function (object, mapState, skin, time) {
-            renderHitMarker(object, skin, time);
+            renderHitMarker(object, skin, time, mapState);
         };
 
         var sliderTrackCache = new Cache();

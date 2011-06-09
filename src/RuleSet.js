@@ -184,6 +184,11 @@ define('RuleSet', [ 'Util/util', 'Slider' ], function (util, Slider) {
             return 0;   // TODO Return "shouldn't be hit" or throw or something
         },
 
+        getHitMarkerScale: function (hitMarker, time) {
+            // TODO
+            return 0.5;
+        },
+
         getEffectiveSliderSpeed: function (time) {
             // Gives osu!pixels per second
 
