@@ -189,6 +189,18 @@ define('RuleSet', [ 'Util/util', 'Slider' ], function (util, Slider) {
             return 0.5;
         },
 
+        getTotalAccuracy: function (hitMarkers) {
+            var maxScoreValue = 0;
+            var currentScoreValue = 0;
+
+            hitMarkers.forEach(function (hitMarker) {
+                maxScoreValue += 300;
+                currentScoreValue += hitMarker.score;
+            });
+
+            return currentScoreValue / maxScoreValue;
+        },
+
         getTotalScore: function (hitMarkers) {
             hitMarkers = hitMarkers.sort(function (a, b) {
                 return a.time > b.time ? 1 : -1;

@@ -63,11 +63,15 @@ define('Game', [ 'q', 'MapState', 'Util/PubSub' ], function (Q, MapState, PubSub
             var play = function () {
                 var getMapTime = null;
                 var score = 0;
+                var accuracy = 0;
 
                 setState({
                     render: function (renderer) {
                         var time = getMapTime();
-                        score = mapState.getScore(time); // FIXME shouldn't be here exactly
+
+                        // FIXME shouldn't be here exactly
+                        accuracy = mapState.getAccuracy(time);
+                        score = mapState.getScore(time);
 
                         renderer.renderStoryboard(mapInfo.storyboard, mapAssetManager, time);
                         renderer.renderMap(mapState, skin.valueOf(), time);
@@ -97,6 +101,7 @@ define('Game', [ 'q', 'MapState', 'Util/PubSub' ], function (Q, MapState, PubSub
                     debugInfo: function () {
                         return {
                             'current map time (ms)': getMapTime(),
+                            'current accuracy': accuracy * 100,
                             'current score': score,
                         };
                     }
