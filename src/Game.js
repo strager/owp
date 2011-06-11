@@ -3,8 +3,6 @@ define('Game', [ 'q', 'MapState', 'Util/PubSub' ], function (Q, MapState, PubSub
         var currentState = null;
         var skin = null;
 
-        var getMapTime = null;
-
         var events = new PubSub();
 
         var render = function (renderer) {
@@ -63,9 +61,13 @@ define('Game', [ 'q', 'MapState', 'Util/PubSub' ], function (Q, MapState, PubSub
             var boundEvents = [ ];
 
             var play = function () {
+                var getMapTime = null;
+                var score = 0;
+
                 setState({
                     render: function (renderer) {
                         var time = getMapTime();
+                        score = mapState.getScore(time); // FIXME shouldn't be here exactly
 
                         renderer.renderStoryboard(mapInfo.storyboard, mapAssetManager, time);
                         renderer.renderMap(mapState, skin.valueOf(), time);
@@ -91,6 +93,12 @@ define('Game', [ 'q', 'MapState', 'Util/PubSub' ], function (Q, MapState, PubSub
                         boundEvents.forEach(function (be) {
                             be.unsubscribe();
                         });
+                    },
+                    debugInfo: function () {
+                        return {
+                            'current map time (ms)': getMapTime(),
+                            'current score': score,
+                        };
                     }
                 });
             };
@@ -128,9 +136,9 @@ define('Game', [ 'q', 'MapState', 'Util/PubSub' ], function (Q, MapState, PubSub
         };
 
         var debugInfo = function () {
-            return {
-                'current map time (ms)': getMapTime && getMapTime()
-            };
+            if (currentState && currentState.debugInfo) {
+                return currentState.debugInfo();
+            }
         };
 
         return {
