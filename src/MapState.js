@@ -75,6 +75,18 @@ define('MapState', [ 'Util/Timeline', 'Util/Map', 'HitMarker', 'Util/PubSub' ], 
             return this.unhitObjects.indexOf(object) >= 0;
         },
 
+        getAccuracy: function (time) {
+            var hitMarkers = this.timeline.getAllInTimeRange(0, time, MapState.HIT_MARKER_CREATION);
+
+            return this.ruleSet.getTotalAccuracy(hitMarkers);
+        },
+
+        getScore: function (time) {
+            var hitMarkers = this.timeline.getAllInTimeRange(0, time, MapState.HIT_MARKER_CREATION);
+
+            return this.ruleSet.getTotalScore(hitMarkers);
+        },
+
         clickAt: function (x, y, time) {
             this.events.publish(MapState.HIT_MADE, { x: x, y: y, time: time });
         },

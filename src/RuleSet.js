@@ -189,6 +189,49 @@ define('RuleSet', [ 'Util/util', 'Slider' ], function (util, Slider) {
             return 0.5;
         },
 
+        getTotalAccuracy: function (hitMarkers) {
+            var maxScoreValue = 0;
+            var currentScoreValue = 0;
+
+            hitMarkers.forEach(function (hitMarker) {
+                maxScoreValue += 300;
+                currentScoreValue += hitMarker.score;
+            });
+
+            return currentScoreValue / maxScoreValue;
+        },
+
+        getTotalScore: function (hitMarkers) {
+            hitMarkers = hitMarkers.sort(function (a, b) {
+                return a.time > b.time ? 1 : -1;
+            });
+
+            // TODO Calculate these multipliers
+            var difficultyMultiplier = 4;
+            var modMultiplier = 1;
+
+            var currentCombo = 0;
+            var currentScore = 0;
+
+            hitMarkers.forEach(function (hitMarker) {
+                if (hitMarker.score === 0) {
+                    currentCombo = 0;
+
+                    return;
+                }
+
+                currentScore += hitMarker.score * (1 + (
+                    Math.max(currentCombo - 1, 0) *
+                    difficultyMultiplier *
+                    modMultiplier
+                ) / 25);
+
+                ++currentCombo;
+            });
+
+            return currentScore;
+        },
+
         getEffectiveSliderSpeed: function (time) {
             // Gives osu!pixels per second
 
