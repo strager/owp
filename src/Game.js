@@ -1,4 +1,4 @@
-define('Game', [ 'q', 'MapState', 'Util/PubSub' ], function (Q, MapState, PubSub) {
+define('Game', [ 'q', 'MapState', 'Util/PubSub', 'Soundboard' ], function (Q, MapState, PubSub, Soundboard) {
     var Game = function () {
         var currentState = null;
         var skin = null;
@@ -61,9 +61,13 @@ define('Game', [ 'q', 'MapState', 'Util/PubSub' ], function (Q, MapState, PubSub
             var boundEvents = [ ];
 
             var play = function () {
+                var soundboard = new Soundboard(skin.valueOf().assetManager);
+
                 var getMapTime = null;
                 var score = 0;
                 var accuracy = 0;
+
+                var lastUpdateTime = 0;
 
                 setState({
                     render: function (renderer) {
@@ -80,6 +84,16 @@ define('Game', [ 'q', 'MapState', 'Util/PubSub' ], function (Q, MapState, PubSub
                         var time = getMapTime();
 
                         mapState.processMisses(time);
+
+                        if (lastUpdateTime < time) {
+                            mapState.getSounds(lastUpdateTime, time).forEach(function (sound) {
+                                soundboard.playSoundAt(sound.soundName, sound.time);
+                            });
+                        }
+
+                        soundboard.update(time);
+
+                        lastUpdateTime = time;
                     },
                     enter: function () {
                         audio.currentTime = 33; // XXX TEMP

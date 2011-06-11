@@ -43,6 +43,22 @@ define('Util/Timeline', [ ], function () {
             this.items.push(item);
         },
 
+        remove: function (key, value) {
+            validateKey(key);
+
+            this.items = this.items.filter(function (item) {
+                return item.key !== key && item.value !== value;
+            });
+        },
+
+        removeMany: function (key, values) {
+            validateKey(key);
+
+            this.items = this.items.filter(function (item) {
+                return item.key !== key || values.indexOf(item.value) < 0;
+            });
+        },
+
         getAllAtTime: function (time, key) {
             var filterFunc = null;
 

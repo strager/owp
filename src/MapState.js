@@ -70,6 +70,19 @@ define('MapState', [ 'Util/Timeline', 'Util/Map', 'HitMarker', 'Util/PubSub' ], 
             return rawHittables.filter(this.isObjectHittable, this);
         },
 
+        getSounds: function (startTime, endTime) {
+            var hitMarkers = this.timeline.getAllInTimeRange(startTime, endTime, MapState.HIT_MARKER_CREATION);
+
+            return hitMarkers.filter(function (hitMarker) {
+                return hitMarker.score > 0;
+            }).map(function (hitMarker) {
+                return {
+                    time: hitMarker.time,
+                    soundName: 'normal-hitnormal.wav'
+                };
+            });
+        },
+
         isObjectHittable: function (object) {
             // If the object is unhit, it's hittable
             return this.unhitObjects.indexOf(object) >= 0;
