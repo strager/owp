@@ -72,15 +72,22 @@ define('MapState', [ 'Util/Timeline', 'Util/Map', 'HitMarker', 'Util/PubSub' ], 
 
         getSounds: function (startTime, endTime) {
             var hitMarkers = this.timeline.getAllInTimeRange(startTime, endTime, MapState.HIT_MARKER_CREATION);
+            var ruleSet = this.ruleSet;
 
-            return hitMarkers.filter(function (hitMarker) {
+            var sounds = [ ];
+
+            hitMarkers.filter(function (hitMarker) {
                 return hitMarker.score > 0;
-            }).map(function (hitMarker) {
-                return {
-                    time: hitMarker.time,
-                    soundName: 'normal-hitnormal.wav'
-                };
+            }).forEach(function (hitMarker) {
+                ruleSet.getHitSoundNames(hitMarker).forEach(function (soundName) {
+                    sounds.push({
+                        time: hitMarker.time,
+                        soundName: soundName
+                    });
+                });
             });
+
+            return sounds;
         },
 
         isObjectHittable: function (object) {
