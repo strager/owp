@@ -1,10 +1,4 @@
 define('BezierSliderCurve', [ ], function () {
-    var BezierSliderCurve = function (points, length, repeats) {
-        this.points = points.slice();
-        this.length = length;
-        this.repeats = repeats;
-    };
-
     var factorialTable = (function () {
         // Precalculate factorials into a look-up table
         var lutSize = 16;
@@ -41,22 +35,63 @@ define('BezierSliderCurve', [ ], function () {
         return choose(n, v) * Math.pow(x, v) * Math.pow((1 - x), (n - v));
     };
 
-    var pointProcessor = function (targetObject, pointCount) {
-        var pointCountMinusOne = pointCount - 1;
+    var render = function (rawPoints, stepCount, maxLength) {
+        // Estimates a bezier curve
+        // TODO Linear control points (osu!-specific)
 
-        return function (acc, point, pointIndex) {
-            var basis = bernstein(pointCountMinusOne, pointIndex, targetObject.target);
+        var out = [ ];
+
+        var step, curPoint;
+        var t = 0;
+
+        var pointCountMinusOne = rawPoints.length - 1;
+
+        var processPoint = function (acc, point, pointIndex) {
+            var basis = bernstein(pointCountMinusOne, pointIndex, t);
 
             return [
                 basis * point[0] + acc[0],
                 basis * point[1] + acc[1]
             ];
         };
+
+        var lastPoint = null;
+
+        var currentLength = 0;
+
+        for (step = 0; step <= stepCount; ++step) { 
+            t = step / stepCount; // Affects processPoint
+
+            curPoint = rawPoints.reduce(processPoint, [ 0, 0 ]);
+
+            if (lastPoint) {
+                var deltaX = curPoint[0] - lastPoint[0];
+                var deltaY = curPoint[1] - lastPoint[1];
+
+                currentLength += Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+            }
+
+            curPoint[2] = currentLength;
+
+            // WTB generators/coroutines/yield/whatever...
+            if (currentLength >= maxLength) {
+                break;
+            }
+
+            out.push(curPoint);
+
+            lastPoint = curPoint;
+        }
+
+        return out;
     };
 
-    BezierSliderCurve.prototype.getSliderBallPercentage = function (time, timeOffset, ruleSet) {
-        var repeatLength = ruleSet.getSliderRepeatLength(time, this.length);
+    var BezierSliderCurve = function (rawPoints, sliderLength, repeatCount) {
+        this.length = sliderLength;
+        this.points = render(rawPoints, (rawPoints.length - 1) * 50, this.length);
+    };
 
+    var getSliderBallPercentage = function (repeatLength, timeOffset) {
         var rawTarget = timeOffset / repeatLength;
 
         // Perform repeat:
@@ -75,54 +110,29 @@ define('BezierSliderCurve', [ ], function () {
         return target;
     };
 
-    BezierSliderCurve.prototype.getSliderBallPosition = function (time, timeOffset, ruleSet) {
-        var target = this.getSliderBallPercentage(time, timeOffset, ruleSet);
+    BezierSliderCurve.prototype.getSliderBallPosition = function (object, time, ruleSet) {
+        var repeatLength = ruleSet.getSliderRepeatLength(time, object.length);
 
-        var processPoint = pointProcessor({ target: target }, this.points.length);
+        var startTime = ruleSet.getObjectStartTime(object);
+        var timeOffset = time - startTime;
 
-        return this.points.reduce(processPoint, [ 0, 0 ]);
-    };
-
-    BezierSliderCurve.prototype.render = function (stepCount, maxSize) {
-        // Estimates a bezier curve
-        // TODO Linear control points (osu!-specific)
+        var targetLength = getSliderBallPercentage(repeatLength, timeOffset) * this.length;
 
         var points = this.points;
+        var i;
 
-        if (!stepCount && stepCount !== 0) {
-            // No step count given; create our own
-            stepCount = (points.length - 1) * 50;
-        }
-
-        if (stepCount <= 0) {
-            return [ ];
-        }
-
-        if (isNaN(maxSize)) {
-            maxSize = 1;
-        }
-
-        var out = [ ];
-
-        var step, curPoint;
-        var t = { };
-
-        var processPoint = pointProcessor(t, points.length);
-
-        for (step = 0; step <= stepCount; ++step) { 
-            t.target = step / stepCount; // Affects processPoint
-
-            if (t.target >= maxSize) {
-                break;
+        for (i = 0; i < points.length; ++i) {
+            if (points[i][2] > targetLength) {
+                return points[i - 1];
             }
-
-            curPoint = points.reduce(processPoint, [ 0, 0 ]);
-
-            // WTB generators/coroutines/yield/whatever...
-            out.push(curPoint);
         }
 
-        return out;
+        return null;
+    };
+
+    BezierSliderCurve.prototype.render = function (percentage) {
+        // TODO percentage whatever
+        return this.points.slice();
     };
 
     return BezierSliderCurve;
