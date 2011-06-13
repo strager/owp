@@ -92,7 +92,7 @@ define('RuleSet', [ 'Util/util', 'Slider' ], function (util, Slider) {
             var startTime     = this.getObjectStartTime(object);
             var disappearTime = this.getObjectDisappearTime(object);
 
-            var opaqueTime = (appearTime + startTime) * 0.5;
+            var opaqueTime = (appearTime * 2 + startTime * 1) / 3;
 
             if (time < appearTime) {
                 return 0;

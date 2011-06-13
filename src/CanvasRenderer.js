@@ -213,9 +213,26 @@ define('CanvasRenderer', [ 'HitCircle', 'Slider', 'HitMarker', 'Util/Cache', 'ca
             c.drawImage(cachedTrack.image, 0, 0);
         };
 
+        var renderSliderBall = function (object) {
+            var sliderBallPosition = object.curve.getSliderBallPosition(object, time, ruleSet);
+
+            if (sliderBallPosition) {
+                var scale = ruleSet.getCircleSize() / 128;
+
+                var sliderBallGraphic = skin.assetManager.get('sliderb0', 'image-set');
+                var sliderBallFrame = 0;
+
+                c.save();
+                c.translate(sliderBallPosition[0], sliderBallPosition[1]);
+                c.scale(scale, scale);
+                drawImageCentred(sliderBallGraphic[sliderBallFrame]);
+                c.restore();
+            }
+        };
+
         var renderSliderObject = function (object) {
             var growPercentage = ruleSet.getSliderGrowPercentage(object, time);
-            var points = object.curve.render(null, growPercentage);
+            var points = object.curve.render(growPercentage);
 
             if (!points.length) {
                 return;
@@ -229,29 +246,24 @@ define('CanvasRenderer', [ 'HitCircle', 'Slider', 'HitMarker', 'Util/Cache', 'ca
             c.globalAlpha = opacity;
             renderSliderTrack(points, object);
 
-            var sliderBallGraphic = skin.assetManager.get('sliderb0', 'image-set');
-            var sliderBallFrame = 0;
+            c.save();
+            c.translate(object.x, object.y);
+            c.scale(scale, scale);
+            renderHitCircle(object);
+            c.restore();
 
             var visibility = ruleSet.getObjectVisibilityAtTime(object, time);
 
             if (visibility === 'during') {
-                var sliderBallPosition = object.curve.getSliderBallPosition(time, time - object.time, ruleSet);
-
-                if (sliderBallPosition) {
-                    c.save();
-                    c.translate(sliderBallPosition[0], sliderBallPosition[1]);
-                    c.scale(scale, scale);
-                    drawImageCentred(sliderBallGraphic[sliderBallFrame]);
-                    c.restore();
-                }
+                renderSliderBall(object);
             }
 
+            var approachProgress = ruleSet.getObjectApproachProgress(object, time);
+            c.save();
             c.translate(object.x, object.y);
             c.scale(scale, scale);
-            renderHitCircle(object);
-
-            var approachProgress = ruleSet.getObjectApproachProgress(object, time);
             renderApproachCircle(object, approachProgress);
+            c.restore();
 
             c.restore();
         };
