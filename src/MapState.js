@@ -1,5 +1,5 @@
 define('MapState', [ 'Util/Timeline', 'Util/Map', 'HitMarker', 'Util/PubSub' ], function (Timeline, Map, HitMarker, PubSub) {
-    var MapState = function (ruleSet, objects) {
+    var MapState = function (ruleSet, objects, timeline) {
         var reactToHit = function (hit) {
             var hittableObjects = this.getHittableObjects(hit.time);
 
@@ -28,7 +28,7 @@ define('MapState', [ 'Util/Timeline', 'Util/Map', 'HitMarker', 'Util/PubSub' ], 
         this.events = new PubSub();
         this.events.subscribe(MapState.HIT_MADE, reactToHit.bind(this));
 
-        var timeline = this.timeline = new Timeline();
+        this.timeline = timeline;
 
         objects.forEach(function (hitObject) {
             var appearTime = ruleSet.getObjectAppearTime(hitObject);
@@ -47,15 +47,15 @@ define('MapState', [ 'Util/Timeline', 'Util/Map', 'HitMarker', 'Util/PubSub' ], 
         this.unhitObjects = objects.slice(); // Copy array
     };
 
-    MapState.HIT_OBJECT_VISIBILITY = { };
-    MapState.HIT_OBJECT_HITABLE = { };
+    MapState.HIT_OBJECT_VISIBILITY = 'hit object visibility';
+    MapState.HIT_OBJECT_HITABLE = 'hit object hitable';
 
-    MapState.HIT_MARKER_CREATION = { };
+    MapState.HIT_MARKER_CREATION = 'hitmarker creation';
 
     MapState.HIT_MADE = { };
 
-    MapState.fromMapInfo = function (mapInfo) {
-        return new MapState(mapInfo.ruleSet, mapInfo.map.objects);
+    MapState.fromMapInfo = function (mapInfo, timeline) {
+        return new MapState(mapInfo.ruleSet, mapInfo.map.objects, timeline);
     };
 
     MapState.prototype = {
@@ -68,26 +68,6 @@ define('MapState', [ 'Util/Timeline', 'Util/Map', 'HitMarker', 'Util/PubSub' ], 
             var unhitObjects = this.unhitObjects;
 
             return rawHittables.filter(this.isObjectHittable, this);
-        },
-
-        getSounds: function (startTime, endTime) {
-            var hitMarkers = this.timeline.getAllInTimeRange(startTime, endTime, MapState.HIT_MARKER_CREATION);
-            var ruleSet = this.ruleSet;
-
-            var sounds = [ ];
-
-            hitMarkers.filter(function (hitMarker) {
-                return hitMarker.score > 0;
-            }).forEach(function (hitMarker) {
-                ruleSet.getHitSoundNames(hitMarker).forEach(function (soundName) {
-                    sounds.push({
-                        time: hitMarker.time,
-                        soundName: soundName
-                    });
-                });
-            });
-
-            return sounds;
         },
 
         isObjectHittable: function (object) {
@@ -108,7 +88,7 @@ define('MapState', [ 'Util/Timeline', 'Util/Map', 'HitMarker', 'Util/PubSub' ], 
         },
 
         clickAt: function (x, y, time) {
-            this.events.publish(MapState.HIT_MADE, { x: x, y: y, time: time });
+            this.events.publishSync(MapState.HIT_MADE, { x: x, y: y, time: time });
         },
 
         applyHitMarker: function (hitMarker) {
@@ -123,6 +103,8 @@ define('MapState', [ 'Util/Timeline', 'Util/Map', 'HitMarker', 'Util/PubSub' ], 
 
             // Add hit marker itself to the timeline
             this.timeline.add(MapState.HIT_MARKER_CREATION, hitMarker, hitMarker.time);
+
+            this.events.publishSync('hitmarker', hitMarker);
         },
 
         processMisses: function (time) {

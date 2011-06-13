@@ -1,29 +1,24 @@
 define('Soundboard', [ 'jQuery', 'Util/Timeline' ], function ($, Timeline) {
-    var PLAY_SOUND = { }; // => soundName
+    var PLAY_SOUND = 'play sound'; // => soundName
 
-    var Soundboard = function (assetManager) {
-        this.timeline = new Timeline();
+    var Soundboard = function (assetManager, timeline) {
+        this.timeline = timeline;
         this.assetManager = assetManager;
+
+        var playSoundNow = function (soundName) {
+            var soundElement = assetManager.get(soundName, 'audio');
+
+            $(soundElement).clone().get(0).play();
+        };
+
+        this.timeline.subscribe(PLAY_SOUND, 'enter', function (soundName) {
+            playSoundNow(soundName);
+        });
     };
 
     Soundboard.prototype = {
         playSoundAt: function (soundName, time) {
             this.timeline.add(PLAY_SOUND, soundName, time);
-        },
-        update: function (time) {
-            var soundNames = this.timeline.getAllInTimeRange(0, time, PLAY_SOUND);
-
-            this.timeline.removeMany(PLAY_SOUND, soundNames);
-
-            var assetManager = this.assetManager;
-
-            var soundElements = soundNames.map(function (soundName) {
-                return assetManager.get(soundName, 'audio');
-            });
-
-            soundElements.forEach(function (soundElement) {
-                $(soundElement).clone().get(0).play();
-            });
         }
     };
 

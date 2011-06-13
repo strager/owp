@@ -1,4 +1,4 @@
-define('Game', [ 'q', 'MapState', 'Util/PubSub', 'Soundboard' ], function (Q, MapState, PubSub, Soundboard) {
+define('Game', [ 'q', 'MapState', 'Util/PubSub', 'Soundboard', 'Util/Timeline' ], function (Q, MapState, PubSub, Soundboard, Timeline) {
     var Game = function () {
         var currentState = null;
         var skin = null;
@@ -58,20 +58,18 @@ define('Game', [ 'q', 'MapState', 'Util/PubSub', 'Soundboard' ], function (Q, Ma
 
         var startMap = function (mapAssetManager, mapName) {
             var mapInfo, mapState, audio;
+            var timeline = null;
             var boundEvents = [ ];
 
             var play = function () {
-                var soundboard = new Soundboard(skin.valueOf().assetManager);
+                var soundboard = new Soundboard(skin.valueOf().assetManager, timeline);
 
-                var getMapTime = null;
                 var score = 0;
                 var accuracy = 0;
 
-                var lastUpdateTime = 0;
-
                 setState({
                     render: function (renderer) {
-                        var time = getMapTime();
+                        var time = timeline.getCurrentTime();
 
                         // FIXME shouldn't be here exactly
                         accuracy = mapState.getAccuracy(time);
@@ -81,30 +79,29 @@ define('Game', [ 'q', 'MapState', 'Util/PubSub', 'Soundboard' ], function (Q, Ma
                         renderer.renderMap(mapState, skin.valueOf(), time);
                     },
                     update: function () {
-                        var time = getMapTime();
+                        var time = timeline.getCurrentTime();
 
                         mapState.processMisses(time);
-
-                        if (lastUpdateTime < time) {
-                            mapState.getSounds(lastUpdateTime, time).forEach(function (sound) {
-                                soundboard.playSoundAt(sound.soundName, sound.time);
-                            });
-                        }
-
-                        soundboard.update(time);
-
-                        lastUpdateTime = time;
                     },
                     enter: function () {
                         audio.currentTime = 33; // XXX TEMP
                         audio.play();
 
-                        getMapTime = function () {
-                            return Math.round(audio.currentTime * 1000);
-                        };
-
                         boundEvents.push(events.subscribe('click', function (e) {
-                            mapState.clickAt(e.x, e.y, getMapTime());
+                            mapState.clickAt(e.x, e.y, timeline.getCurrentTime());
+                        }));
+
+                        boundEvents.push(mapState.events.subscribe('hitmarker', function (hitMarker) {
+                            mapState.ruleSet.getHitSoundNames(hitMarker).forEach(function (soundName) {
+                                soundboard.playSoundAt(soundName, hitMarker.time);
+
+                                // TODO Timeline should do its own updatin'!
+                                // This is super hacky~
+                                //timeline.getEvents('play sound').publishSync('enter', soundName);
+                            });
+
+                            // WHATEVER@!$!@RJe uor89879
+                            timeline.update();
                         }));
                     },
                     leave: function () {
@@ -114,7 +111,7 @@ define('Game', [ 'q', 'MapState', 'Util/PubSub', 'Soundboard' ], function (Q, Ma
                     },
                     debugInfo: function () {
                         return {
-                            'current map time (ms)': getMapTime(),
+                            'current map time (ms)': timeline.getCurrentTime(),
                             'current accuracy': accuracy * 100,
                             'current score': score,
                         };
@@ -131,7 +128,6 @@ define('Game', [ 'q', 'MapState', 'Util/PubSub', 'Soundboard' ], function (Q, Ma
                 Q.when(mapAssetManager.load(mapName, 'map'))
                     .then(function (mapInfo_) {
                         mapInfo = mapInfo_;
-                        mapState = MapState.fromMapInfo(mapInfo);
 
                         return Q.shallow([
                             mapAssetManager.load(mapInfo.audioFile, 'audio'),
@@ -143,6 +139,10 @@ define('Game', [ 'q', 'MapState', 'Util/PubSub', 'Soundboard' ], function (Q, Ma
 
                         audio.controls = 'controls';
                         document.body.appendChild(audio);
+
+                        timeline = new Timeline(audio);
+
+                        mapState = MapState.fromMapInfo(mapInfo, timeline);
                     }),
                 Q.when(skin)
             ]);

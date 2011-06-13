@@ -1,85 +1,130 @@
-define('Util/Timeline', [ ], function () {
-    var Timeline = function () {
-        this.items = [ ];
+define('Util/Timeline', [ 'Util/PubSub' ], function (PubSub) {
+    var Timeline = function (audio) {
+        this.audio = audio;
+        //this.tracks = { }; // TODO...
+        this.cueLists = { };
+        this.events = { };
     };
 
     var validateKey = function (key) {
-        if (typeof key === 'undefined') {
-            throw new TypeError('key must not be undefined');
-        }
-
-        if (typeof key === 'object' && key === null) {
-            throw new TypeError('key must not be null');
-        }
-
-        if (typeof key === 'number' || key instanceof Number) {
-            throw new TypeError('key must not be a number');
+        if (typeof key !== 'string') {
+            throw new TypeError('key must be a string');
         }
     };
 
-    var filter = function (timeline, filterFunc) {
-        return timeline.items.filter(filterFunc).sort(function (a, b) {
-            return a.time < b.time ? -1 : 1;
-        }).map(function (item) {
-            return item.value;
-        });
+    var filter = function (timeline, key, filterFunc) {
+        return timeline.getCueList(key)
+            .filter(filterFunc)
+            .sort(function (a, b) {
+                return a.time < b.time ? -1 : 1;
+            })
+            .map(function (item) {
+                return item.value;
+            });
     };
 
     Timeline.prototype = {
-        add: function (key, value, startTime, endTime) {
+        getCurrentTime: function () {
+            return Math.round(this.audio.currentTime * 1000);
+        },
+
+        getTrack: function (key) {
+            throw new Error('Not implemented');
+
             validateKey(key);
+
+            if (!Object.prototype.hasOwnProperty.call(this.tracks, key)) {
+                this.tracks[key] = this.audio.addTextTrack(key);
+            }
+
+            return this.tracks[key];
+        },
+
+        getCueList: function (key) {
+            validateKey(key);
+
+            if (!Object.prototype.hasOwnProperty.call(this.cueLists, key)) {
+                this.cueLists[key] = [ ];
+            }
+
+            return this.cueLists[key];
+        },
+
+        getEvents: function (key) {
+            validateKey(key);
+
+            if (!Object.prototype.hasOwnProperty.call(this.events, key)) {
+                this.events[key] = new PubSub();
+            }
+
+            return this.events[key];
+        },
+
+        subscribe: function (key, eventKey, callback) {
+            this.getEvents(key).subscribe(eventKey, callback);
+        },
+
+        update: function () {
+            // This is a bit of a hack ...  =\
+            var time = this.getCurrentTime();
+
+            var lastUpdateTime = (this.lastUpdateTime || 0);
+
+            Object.keys(this.events).forEach(function (key) {
+                // FIXME This is pretty broken and doesn't really work as it
+                // should (but it works 'good enough' for the game to
+                // work...)
+                var x = this.getAllInTimeRange(lastUpdateTime, time, key);
+                var events = this.getEvents(key);
+
+                x.forEach(function (value) {
+                    events.publishSync('enter', value);
+                }, this);
+            }, this);
+
+            this.lastUpdateTime = time;
+        },
+
+        add: function (key, value, startTime, endTime) {
+            var cueList = this.getCueList(key);
 
             if (typeof endTime === 'undefined') {
                 endTime = startTime;
             }
 
-            var item = {
-                key: key,
+            cueList.push({
                 value: value,
                 startTime: startTime,
                 endTime: endTime
-            };
-
-            this.items.push(item);
+            });
         },
 
         remove: function (key, value) {
-            validateKey(key);
+            var cueList = this.getCueList(key);
 
-            this.items = this.items.filter(function (item) {
-                return item.key !== key && item.value !== value;
+            this.cueLists[key] = cueList.filter(function (item) {
+                return item.value !== value;
             });
         },
 
         removeMany: function (key, values) {
-            validateKey(key);
+            var cueList = this.getCueList(key);
 
-            this.items = this.items.filter(function (item) {
-                return item.key !== key || values.indexOf(item.value) < 0;
+            this.cueLists[key] = cueList.filter(function (item) {
+                return values.indexOf(item.value) < 0;
             });
         },
 
         getAllAtTime: function (time, key) {
-            var filterFunc = null;
+            var filterFunc = function (item) {
+                return item.startTime <= time && time < item.endTime;
+            };
 
-            if (typeof key === 'undefined') {
-                filterFunc = function (item) {
-                    return item.startTime <= time && time < item.endTime;
-                };
-            } else {
-                validateKey(key);
-
-                filterFunc = function (item) {
-                    return item.startTime <= time && time < item.endTime
-                        && item.key === key;
-                };
-            }
-
-            return filter(this, filterFunc);
+            return filter(this, key, filterFunc);
         },
 
         getAllInTimeRange: function (startTime, endTime, key) {
-            return filter(this, function (item) {
+            return filter(this, key, function (item) {
                 // [] is item; () is arguments
 
                 // [ ] ( )
@@ -89,11 +134,6 @@ define('Util/Timeline', [ ], function () {
 
                 // ( ) [ ]
                 if (endTime < item.startTime) {
-                    return false;
-                }
-
-                // Compare keys
-                if (typeof key !== 'undefined' && item.key !== key) {
                     return false;
                 }
 
