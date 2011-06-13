@@ -38,6 +38,7 @@ define('BezierSliderCurve', [ ], function () {
     var render = function (rawPoints, stepCount, maxLength) {
         // Estimates a bezier curve
         // TODO Linear control points (osu!-specific)
+        // TODO Adaptive rendering (http://antigrain.com/research/adaptive_bezier/)
 
         var out = [ ];
 
