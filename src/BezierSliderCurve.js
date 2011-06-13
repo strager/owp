@@ -110,6 +110,20 @@ define('BezierSliderCurve', [ ], function () {
         return target;
     };
 
+    var getLengthIndex = function (points, length) {
+        // TODO Reverse cache map by length?
+
+        var i;
+
+        for (i = 1; i < points.length; ++i) {
+            if (points[i][2] > length) {
+                return i - 1;
+            }
+        }
+
+        return -1;
+    };
+
     BezierSliderCurve.prototype.getSliderBallPosition = function (object, time, ruleSet) {
         var repeatLength = ruleSet.getSliderRepeatLength(time, object.length);
 
@@ -118,21 +132,23 @@ define('BezierSliderCurve', [ ], function () {
 
         var targetLength = getSliderBallPercentage(repeatLength, timeOffset) * this.length;
 
-        var points = this.points;
-        var i;
+        var index = getLengthIndex(this.points, targetLength);
 
-        for (i = 0; i < points.length; ++i) {
-            if (points[i][2] > targetLength) {
-                return points[i - 1];
-            }
+        if (index >= 0) {
+            return this.points[index];
+        } else {
+            return null;
         }
-
-        return null;
     };
 
     BezierSliderCurve.prototype.render = function (percentage) {
-        // TODO percentage whatever
-        return this.points.slice();
+        var index = getLengthIndex(this.points, this.length * percentage);
+
+        if (index >= 0) {
+            return this.points.slice(0, index);
+        } else {
+            return this.points.slice();
+        }
     };
 
     return BezierSliderCurve;
