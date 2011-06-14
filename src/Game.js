@@ -94,10 +94,6 @@ define('Game', [ 'q', 'MapState', 'Util/PubSub', 'Soundboard', 'Util/Timeline' ]
                         boundEvents.push(mapState.events.subscribe('hitmarker', function (hitMarker) {
                             mapState.ruleSet.getHitSoundNames(hitMarker).forEach(function (soundName) {
                                 soundboard.playSoundAt(soundName, hitMarker.time);
-
-                                // TODO Timeline should do its own updatin'!
-                                // This is super hacky~
-                                //timeline.getEvents('play sound').publishSync('enter', soundName);
                             });
 
                             // WHATEVER@!$!@RJe uor89879
