@@ -11,8 +11,6 @@
   * Rendering
   * Mouse handling
 * Hit sounds
-* Score calculation
 * HP bar
-* Combo counter
 * OpenGL rendering
 * Note stacking

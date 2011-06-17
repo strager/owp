@@ -92,7 +92,7 @@ define('RuleSet', [ 'Util/util', 'Slider' ], function (util, Slider) {
             var startTime     = this.getObjectStartTime(object);
             var disappearTime = this.getObjectDisappearTime(object);
 
-            var opaqueTime = (appearTime + startTime) * 0.5;
+            var opaqueTime = (appearTime * 2 + startTime * 1) / 3;
 
             if (time < appearTime) {
                 return 0;
@@ -107,7 +107,9 @@ define('RuleSet', [ 'Util/util', 'Slider' ], function (util, Slider) {
 
         getSliderGrowPercentage: function (object, time) {
             // TODO Real calculations
-            return this.getObjectOpacity(object, time);
+            var x = this.getObjectOpacity(object, time);
+
+            return Math.sqrt(x);
         },
 
         getObjectApproachProgress: function (object, time) {
@@ -180,6 +182,54 @@ define('RuleSet', [ 'Util/util', 'Slider' ], function (util, Slider) {
             }
 
             return 0;   // TODO Return "shouldn't be hit" or throw or something
+        },
+
+        getHitMarkerScale: function (hitMarker, time) {
+            // TODO
+            return 0.5;
+        },
+
+        getTotalAccuracy: function (hitMarkers) {
+            var maxScoreValue = 0;
+            var currentScoreValue = 0;
+
+            hitMarkers.forEach(function (hitMarker) {
+                maxScoreValue += 300;
+                currentScoreValue += hitMarker.score;
+            });
+
+            return currentScoreValue / maxScoreValue;
+        },
+
+        getTotalScore: function (hitMarkers) {
+            hitMarkers = hitMarkers.sort(function (a, b) {
+                return a.time > b.time ? 1 : -1;
+            });
+
+            // TODO Calculate these multipliers
+            var difficultyMultiplier = 4;
+            var modMultiplier = 1;
+
+            var currentCombo = 0;
+            var currentScore = 0;
+
+            hitMarkers.forEach(function (hitMarker) {
+                if (hitMarker.score === 0) {
+                    currentCombo = 0;
+
+                    return;
+                }
+
+                currentScore += hitMarker.score * (1 + (
+                    Math.max(currentCombo - 1, 0) *
+                    difficultyMultiplier *
+                    modMultiplier
+                ) / 25);
+
+                ++currentCombo;
+            });
+
+            return currentScore;
         },
 
         getEffectiveSliderSpeed: function (time) {
