@@ -1,5 +1,19 @@
 /*global window: false */
 define('AssetManager', [ 'jQuery', 'MapInfo', 'mapFile', 'assetConfig', 'Util/Map', 'Util/Cache', 'q' ], function ($, MapInfo, mapFile, assetConfig, Map, Cache, Q) {
+    function setAudioSourceType(source) {
+        var types = {
+            'audio/mpeg': /\.mp3$/i,
+            'audio/x-wav': /\.wav$/i,
+            'application/ogg': /\.ogg$/i
+        };
+
+        Object.keys(types).forEach(function (mimeType) {
+            if (types[mimeType].test(source.src)) {
+                source.type = mimeType;
+            }
+        });
+    }
+
     var AssetManager = function (root) {
         this.root = root;
         this.cache = new Cache();
@@ -31,11 +45,21 @@ define('AssetManager', [ 'jQuery', 'MapInfo', 'mapFile', 'assetConfig', 'Util/Ma
 
             var originalTrack = document.createElement('source');
             originalTrack.src = assetManager.root + '/' + name;
+            setAudioSourceType(originalTrack);
 
             var vorbisTrack = document.createElement('source');
             vorbisTrack.src = assetManager.root + '/' + name + '.ogg';
+            setAudioSourceType(vorbisTrack);
 
             var audio = new window.Audio();
+            audio.autobuffer = true;
+            audio.preload = 'auto';
+
+            var fail = function (event) {
+                if (audio.networkState === audio.NETWORK_NO_SOURCE) {
+                    ret.reject(new Error('NETWORK_NO_SOURCE'));
+                }
+            };
 
             $(audio)
                 .append(originalTrack)
@@ -43,9 +67,10 @@ define('AssetManager', [ 'jQuery', 'MapInfo', 'mapFile', 'assetConfig', 'Util/Ma
                 .one('canplaythrough', function () {
                     ret.resolve(audio);
                 })
-                .one('error', function (event) {
-                    ret.reject(event);
-                });
+                .one('error', fail);
+
+            $(originalTrack).one('error', fail);
+            $(vorbisTrack).one('error', fail);
 
             audio.load();
 
