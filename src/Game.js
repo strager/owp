@@ -75,6 +75,10 @@ define('Game', [ 'q', 'MapState', 'Util/PubSub', 'Soundboard', 'Util/Timeline', 
                         }));
 
                         boundEvents.push(timeline.subscribe(MapState.HIT_MARKER_CREATION, function (hitMarker) {
+                            if (!hitMarker.score) {
+                                return;
+                            }
+
                             mapState.ruleSet.getHitSoundNames(hitMarker).forEach(function (soundName) {
                                 soundboard.playSound(soundName);
                             });
