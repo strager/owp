@@ -34,7 +34,7 @@ require([ 'jQuery', 'CanvasRenderer', 'AssetManager', 'q', 'Game', 'Util/Framera
         }, interval);
     };
 
-    var infLoop = function(callback) {
+    var infLoop = function (callback) {
         hardLoop(function () {
             var i;
 

@@ -109,7 +109,7 @@ define('BezierSliderCurve', [ ], function () {
 
         var processPoint = pointProcessor(t, points.length);
 
-        for (step = 0; step <= stepCount; ++step) { 
+        for (step = 0; step <= stepCount; ++step) {
             t.target = step / stepCount; // Affects processPoint
 
             if (t.target >= maxSize) {

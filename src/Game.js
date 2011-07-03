@@ -100,7 +100,7 @@ define('Game', [ 'q', 'MapState', 'Util/PubSub', 'Soundboard', 'Util/Timeline', 
                         return {
                             'current map time (ms)': timeline.getCurrentTime(),
                             'current accuracy': accuracy * 100,
-                            'current score': score,
+                            'current score': score
                         };
                     }
                 });

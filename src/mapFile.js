@@ -1,4 +1,3 @@
-/*jslint bitwise: false */
 /*jshint bitwise: false */
 define('mapFile', [ 'RuleSet', 'HitCircle', 'Slider', 'Map', 'Combo', 'MapInfo', 'Storyboard', 'Skin', 'BezierSliderCurve' ], function (RuleSet, HitCircle, Slider, Map, Combo, MapInfo, Storyboard, Skin, BezierSliderCurve) {
     var readSkin = function (assetConfig, assetManager) {
@@ -226,7 +225,7 @@ define('mapFile', [ 'RuleSet', 'HitCircle', 'Slider', 'Map', 'Combo', 'MapInfo',
 
         var combos = readCombos(assetConfig);
 
-        var map = new Map(); 
+        var map = new Map();
         map.objects = readHitObjects(assetConfig, combos);
 
         var storyboard = readStoryboard(assetConfig);
