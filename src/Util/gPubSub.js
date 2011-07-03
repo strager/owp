@@ -7,7 +7,7 @@ define('Util/gPubSub', [ 'Util/PubSub' ], function (PubSub) {
         if (event.data && event.data.secret === secret) {
             events.publishSync.apply(
                 events,
-                [ event.data.key ].concat(event.data.args)
+                event.data.args
             );
 
             event.preventDefault();
@@ -16,14 +16,14 @@ define('Util/gPubSub', [ 'Util/PubSub' ], function (PubSub) {
     }, false);
 
     return {
-        publish: function (key) {
+        publish: function () {
             var args = Array.prototype.slice.call(arguments, 1);
 
-            window.postMessage({ secret: secret, key: key, args: args }, '*');
+            window.postMessage({ secret: secret, args: args }, '*');
         },
 
-        subscribe: function (key, callback) {
-            return events.subscribe(key, callback);
+        subscribe: function (callback) {
+            return events.subscribe(callback);
         }
     };
 });

@@ -1,34 +1,9 @@
 define('MapState', [ 'Util/Timeline', 'Util/Map', 'HitMarker', 'Util/PubSub' ], function (Timeline, Map, HitMarker, PubSub) {
     var MapState = function (ruleSet, objects, timeline) {
-        var reactToHit = function (hit) {
-            var hittableObjects = this.getHittableObjects(hit.time);
-
-            var i, object;
-            var hitMarker;
-
-            for (i = 0; i < hittableObjects.length; ++i) {
-                object = hittableObjects[i];
-
-                if (this.ruleSet.canHitObject(object, hit.x, hit.y, hit.time)) {
-                    hitMarker = HitMarker.create(
-                        object,
-                        hit.time,
-                        this.ruleSet
-                    );
-
-                    this.applyHitMarker(hitMarker);
-
-                    return;
-                }
-            }
-        };
-
         this.ruleSet = ruleSet;
+        this.timeline = timeline;
 
         this.events = new PubSub();
-        this.events.subscribe(MapState.HIT_MADE, reactToHit.bind(this));
-
-        this.timeline = timeline;
 
         objects.forEach(function (hitObject) {
             var appearTime = ruleSet.getObjectAppearTime(hitObject);
@@ -56,8 +31,6 @@ define('MapState', [ 'Util/Timeline', 'Util/Map', 'HitMarker', 'Util/PubSub' ], 
 
     MapState.HIT_MARKER_CREATION = 'hitmarker creation';
 
-    MapState.HIT_MADE = { };
-
     MapState.fromMapInfo = function (mapInfo, timeline) {
         return new MapState(mapInfo.ruleSet, mapInfo.map.objects, timeline);
     };
@@ -74,9 +47,22 @@ define('MapState', [ 'Util/Timeline', 'Util/Map', 'HitMarker', 'Util/PubSub' ], 
             return rawHittables.filter(this.isObjectHittable, this);
         },
 
+        getUnhitObjectIndex: function (object) {
+            var i;
+
+            // Object is now hit; remove it from unhit objects list
+            for (i = 0; i < this.unhitObjects.length; ++i) {
+                if (this.unhitObjects[i][0] === object) {
+                    return i;
+                }
+            }
+
+            return -1;
+        },
+
         isObjectHittable: function (object) {
             // If the object is unhit, it's hittable
-            return this.unhitObjects.indexOf(object) >= 0;
+            return this.getUnhitObjectIndex(object) >= 0;
         },
 
         getAccuracy: function (time) {
@@ -92,31 +78,44 @@ define('MapState', [ 'Util/Timeline', 'Util/Map', 'HitMarker', 'Util/PubSub' ], 
         },
 
         clickAt: function (x, y, time) {
-            this.events.publishSync(MapState.HIT_MADE, { x: x, y: y, time: time });
+            var hittableObjects = this.getHittableObjects(time);
+
+            var i, object;
+            var hitMarker;
+
+            for (i = 0; i < hittableObjects.length; ++i) {
+                object = hittableObjects[i];
+
+                if (this.ruleSet.canHitObject(object, x, y, time)) {
+                    hitMarker = HitMarker.create(
+                        object,
+                        time,
+                        this.ruleSet
+                    );
+
+                    this.applyHitMarker(hitMarker);
+
+                    return;
+                }
+            }
         },
 
         applyHitMarkerNoRemove: function (hitMarker) {
             // Add hit marker itself to the timeline
             this.timeline.add(MapState.HIT_MARKER_CREATION, hitMarker, hitMarker.time);
 
-            this.events.publishSync('hitmarker', hitMarker);
+            this.events.publishSync(hitMarker);
         },
 
         applyHitMarker: function (hitMarker, removeObject) {
-            var unhitIndex;
-
             // Object is now hit; remove it from unhit objects list
-            for (unhitIndex = 0; unhitIndex < this.unhitObjects.length; ++unhitIndex) {
-                if (this.unhitObjects[unhitIndex][0] === hitMarker.hitObject) {
-                    break;
-                }
-            }
+            var index = this.getUnhitObjectIndex(hitMarker.hitObject);
 
-            if (unhitIndex >= this.unhitObjects.length) {
+            if (index < 0) {
                 throw new Error('Bad map state; oh dear!');
             }
 
-            this.unhitObjects.splice(unhitIndex, 1);
+            this.unhitObjects.splice(index, 1);
 
             this.applyHitMarkerNoRemove(hitMarker);
         },

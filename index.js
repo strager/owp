@@ -72,7 +72,7 @@ require([ 'jQuery', 'CanvasRenderer', 'AssetManager', 'q', 'Game', 'Util/Framera
             var x = e.pageX - this.offsetLeft;
             var y = e.pageY - this.offsetTop;
 
-            game.event('click', { x: x, y: y });
+            game.click({ x: x, y: y });
         });
 
         $(io.playArea).mousemove(function (e) {
@@ -81,7 +81,7 @@ require([ 'jQuery', 'CanvasRenderer', 'AssetManager', 'q', 'Game', 'Util/Framera
         });
 
         $('body').keydown(function (e) {
-            game.event('click', { x: mouseX, y: mouseY });
+            game.click({ x: mouseX, y: mouseY });
         });
     };
 

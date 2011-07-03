@@ -3,7 +3,7 @@ define('Game', [ 'q', 'MapState', 'Util/PubSub', 'Soundboard', 'Util/Timeline', 
         var currentState = null;
         var skin = null;
 
-        var events = new PubSub();
+        var clickPubSub = new PubSub();
 
         var render = function (renderer) {
             renderer.beginRender();
@@ -69,11 +69,11 @@ define('Game', [ 'q', 'MapState', 'Util/PubSub', 'Soundboard', 'Util/Timeline', 
                         audio.currentTime = 33; // XXX TEMP
                         audio.play();
 
-                        boundEvents.push(events.subscribe('click', function (e) {
+                        boundEvents.push(clickPubSub.subscribe(function (e) {
                             mapState.clickAt(e.x, e.y, timeline.getCurrentTime());
                         }));
 
-                        boundEvents.push(timeline.subscribe(MapState.HIT_MARKER_CREATION, 'enter', function (hitMarker) {
+                        boundEvents.push(timeline.subscribe(MapState.HIT_MARKER_CREATION, function (hitMarker) {
                             mapState.ruleSet.getHitSoundNames(hitMarker).forEach(function (soundName) {
                                 soundboard.playSound(soundName);
                             });
@@ -81,7 +81,7 @@ define('Game', [ 'q', 'MapState', 'Util/PubSub', 'Soundboard', 'Util/Timeline', 
                             gPubSub.publish('tick');
                         }));
 
-                        gPubSub.subscribe('tick', function () {
+                        gPubSub.subscribe(function () {
                             var time = timeline.getCurrentTime();
 
                             mapState.processMisses(time);
@@ -135,8 +135,8 @@ define('Game', [ 'q', 'MapState', 'Util/PubSub', 'Soundboard', 'Util/Timeline', 
             return Q.when(load).then(play);
         };
 
-        var event = function (key) {
-            events.publishSync.apply(events, arguments);
+        var click = function () {
+            clickPubSub.publishSync.apply(clickPubSub, arguments);
         };
 
         var debugInfo = function () {
@@ -149,7 +149,7 @@ define('Game', [ 'q', 'MapState', 'Util/PubSub', 'Soundboard', 'Util/Timeline', 
             startMap: startMap,
             render: render,
             setSkin: setSkin,
-            event: event,
+            click: click,
             debugInfo: debugInfo
         };
     };

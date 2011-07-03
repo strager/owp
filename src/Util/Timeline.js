@@ -68,8 +68,8 @@ define('Util/Timeline', [ 'Util/PubSub' ], function (PubSub) {
             return this.events[key];
         },
 
-        subscribe: function (key, eventKey, callback) {
-            this.getEvents(key).subscribe(eventKey, callback);
+        subscribe: function (key, callback) {
+            this.getEvents(key).subscribe(callback);
         },
 
         update: function (time) {
@@ -88,7 +88,7 @@ define('Util/Timeline', [ 'Util/PubSub' ], function (PubSub) {
                 var events = this.getEvents(key);
 
                 x.forEach(function (item) {
-                    events.publishSync('enter', item.value);
+                    events.publishSync(item.value);
                 }, this);
             }, this);
 

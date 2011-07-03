@@ -2,35 +2,36 @@ define('Util/PubSub', [ ], function () {
     return function () {
         var subscribers = [ ];
 
-        var getSubscribers = function (key) {
-            return subscribers.filter(function (subscriber) {
-                return subscriber && subscriber.key === key;
-            });
-        };
-
         return {
-            publish: function (key) {
-                var args = Array.prototype.slice.call(arguments, 1);
+            publish: function () {
+                var args = Array.prototype.slice.call(arguments);
 
-                getSubscribers(key).forEach(function (subscriber) {
+                subscribers.forEach(function (subscriber) {
+                    if (!subscriber) {
+                        return;
+                    }
+
                     setTimeout(function () {
-                        subscriber.callback.apply(null, args);
+                        subscriber.apply(null, args);
                     }, 0);
                 });
             },
 
-            publishSync: function (key) {
-                var args = Array.prototype.slice.call(arguments, 1);
+            publishSync: function () {
+                var args = Array.prototype.slice.call(arguments);
 
-                getSubscribers(key).forEach(function (subscriber) {
-                    subscriber.callback.apply(null, args);
+                subscribers.forEach(function (subscriber) {
+                    if (!subscriber) {
+                        return;
+                    }
+
+                    subscriber.apply(null, args);
                 });
             },
 
-            subscribe: function (key, callback) {
+            subscribe: function (callback) {
                 var index = subscribers.length;
-
-                subscribers.push({ key: key, callback: callback });
+                subscribers.push(callback);
 
                 return {
                     unsubscribe: function () {
