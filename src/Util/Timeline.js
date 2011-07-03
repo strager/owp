@@ -23,6 +23,14 @@ define('Util/Timeline', [ 'Util/PubSub' ], function (PubSub) {
             });
     };
 
+    var filter2 = function (timeline, key, filterFunc) {
+        return timeline.getCueList(key)
+            .filter(filterFunc)
+            .sort(function (a, b) {
+                return a.time < b.time ? -1 : 1;
+            });
+    };
+
     Timeline.prototype = {
         getCurrentTime: function () {
             return Math.round(this.audio.currentTime * 1000);
@@ -64,21 +72,23 @@ define('Util/Timeline', [ 'Util/PubSub' ], function (PubSub) {
             this.getEvents(key).subscribe(eventKey, callback);
         },
 
-        update: function () {
+        update: function (time) {
             // This is a bit of a hack ...  =\
-            var time = this.getCurrentTime();
-
             var lastUpdateTime = (this.lastUpdateTime || 0);
+
+            if (lastUpdateTime === time) {
+                return;
+            }
 
             Object.keys(this.events).forEach(function (key) {
                 // FIXME This is pretty broken and doesn't really work as it
                 // should (but it works 'good enough' for the game to
                 // work...)
-                var x = this.getAllInTimeRange(lastUpdateTime, time, key);
+                var x = this.getAllItemsInTimeRange(lastUpdateTime, time, key);
                 var events = this.getEvents(key);
 
-                x.forEach(function (value) {
-                    events.publishSync('enter', value);
+                x.forEach(function (item) {
+                    events.publishSync('enter', item.value);
                 }, this);
             }, this);
 
@@ -125,6 +135,25 @@ define('Util/Timeline', [ 'Util/PubSub' ], function (PubSub) {
 
         getAllInTimeRange: function (startTime, endTime, key) {
             return filter(this, key, function (item) {
+                // [] is item; () is arguments
+
+                // [ ] ( )
+                if (item.endTime < startTime) {
+                    return false;
+                }
+
+                // ( ) [ ]
+                if (endTime < item.startTime) {
+                    return false;
+                }
+
+                // Any other case is an intersection
+                return true;
+            });
+        },
+
+        getAllItemsInTimeRange: function (startTime, endTime, key) {
+            return filter2(this, key, function (item) {
                 // [] is item; () is arguments
 
                 // [ ] ( )

@@ -1,4 +1,4 @@
-require([ 'jQuery', 'CanvasRenderer', 'AssetManager', 'q', 'Game', 'Util/FramerateCounter' ], function ($, CanvasRenderer, AssetManager, Q, Game, FramerateCounter) {
+require([ 'jQuery', 'CanvasRenderer', 'AssetManager', 'q', 'Game', 'Util/FramerateCounter', 'Util/gPubSub' ], function ($, CanvasRenderer, AssetManager, Q, Game, FramerateCounter, gPubSub) {
     var mapAssetManager = new AssetManager('assets');
     var skinAssetManager = new AssetManager('.');
 
@@ -50,11 +50,11 @@ require([ 'jQuery', 'CanvasRenderer', 'AssetManager', 'q', 'Game', 'Util/Framera
             renderFps.addTick();
         }, 1000 / 60);
 
-        loop(function () {
-            game.update();
+        hardLoop(function () {
+            gPubSub.publish('tick');
 
             gameUpdateFps.addTick();
-        }, 20);
+        }, 1000 / 100);
 
         var mouseX, mouseY;
 

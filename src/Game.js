@@ -1,4 +1,4 @@
-define('Game', [ 'q', 'MapState', 'Util/PubSub', 'Soundboard', 'Util/Timeline' ], function (Q, MapState, PubSub, Soundboard, Timeline) {
+define('Game', [ 'q', 'MapState', 'Util/PubSub', 'Soundboard', 'Util/Timeline', 'Util/gPubSub' ], function (Q, MapState, PubSub, Soundboard, Timeline, gPubSub) {
     var Game = function () {
         var currentState = null;
         var skin = null;
@@ -8,24 +8,11 @@ define('Game', [ 'q', 'MapState', 'Util/PubSub', 'Soundboard', 'Util/Timeline' ]
         var render = function (renderer) {
             renderer.beginRender();
 
-            try {
                 if (currentState && currentState.render) {
                     currentState.render.call(null, renderer);
                 }
-            } catch (e) {
-                // wtb `finally`
-                renderer.endRender();
-
-                throw e;
-            }
 
             renderer.endRender();
-        };
-
-        var update = function () {
-            if (currentState && currentState.update) {
-                currentState.update();
-            }
         };
 
         var setSkin = function (skinAssetManager) {
@@ -78,11 +65,6 @@ define('Game', [ 'q', 'MapState', 'Util/PubSub', 'Soundboard', 'Util/Timeline' ]
                         renderer.renderStoryboard(mapInfo.storyboard, mapAssetManager, time);
                         renderer.renderMap(mapState, skin.valueOf(), time);
                     },
-                    update: function () {
-                        var time = timeline.getCurrentTime();
-
-                        mapState.processMisses(time);
-                    },
                     enter: function () {
                         audio.currentTime = 33; // XXX TEMP
                         audio.play();
@@ -96,9 +78,16 @@ define('Game', [ 'q', 'MapState', 'Util/PubSub', 'Soundboard', 'Util/Timeline' ]
                                 soundboard.playSoundAt(soundName, hitMarker.time);
                             });
 
-                            // WHATEVER@!$!@RJe uor89879
-                            timeline.update();
+                            gPubSub.publish('tick');
                         }));
+
+                        gPubSub.subscribe('tick', function () {
+                            var time = timeline.getCurrentTime();
+
+                            mapState.processMisses(time);
+
+                            timeline.update(time);
+                        });
                     },
                     leave: function () {
                         boundEvents.forEach(function (be) {
@@ -159,7 +148,6 @@ define('Game', [ 'q', 'MapState', 'Util/PubSub', 'Soundboard', 'Util/Timeline' ]
         return {
             startMap: startMap,
             render: render,
-            update: update,
             setSkin: setSkin,
             event: event,
             debugInfo: debugInfo

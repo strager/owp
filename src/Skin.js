@@ -33,7 +33,7 @@ define('Skin', [ 'Util/util' ], function (util) {
                     'hit300',
                     'sliderb0'
                 ],
-                'audio': [
+                'sound': [
                     'normal-hitclap.wav',
                     'normal-hitfinish.wav',
                     'normal-hitnormal.wav',
