@@ -38,7 +38,7 @@ define([ 'assert', 'Util/Timeline' ], function (assert, Timeline) {
             var t = new Timeline();
             t.add('', obj, 10, 20);
 
-            assert.deepEqual([ ], t.getAllAtTime(20, ''));
+            assert.deepEqual([ ], t.getAllAtTime(21, ''));
             assert.deepEqual([ ], t.getAllAtTime(200, ''));
         },
 

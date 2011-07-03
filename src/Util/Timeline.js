@@ -1,7 +1,87 @@
 define('Util/Timeline', [ 'Util/PubSub' ], function (PubSub) {
+    var CueList = function () {
+        // Each array corresponds to each other (reverse object).
+        // Arrays are sorted by cue start time.
+        this.cueValues = [ ];
+        this.cueStarts = [ ];
+        this.cueEnds = [ ];
+    };
+
+    function sortIndex(array, value) {
+        var i;
+
+        for (i = 0; i < array.length; ++i) {
+            if (array[i] >= value) {
+                return i;
+            }
+        }
+
+        return array.length;
+    }
+
+    CueList.prototype = {
+        add: function (value, startTime, endTime) {
+            if (typeof endTime === 'undefined') {
+                endTime = startTime;
+            }
+
+            var index = sortIndex(this.cueStarts, startTime);
+            this.cueValues.splice(index, 0, value);
+            this.cueStarts.splice(index, 0, startTime);
+            this.cueEnds  .splice(index, 0, endTime);
+        },
+
+        remove: function (value) {
+            var index = this.cueValues.indexOf(value);
+            this.cueValues.splice(index, 1);
+            this.cueStarts.splice(index, 1);
+            this.cueEnds  .splice(index, 1);
+        },
+
+        removeMany: function (values) {
+            // Because I am lazy...
+            values.forEach(this.remove, this);
+        },
+
+        getAllAtTime: function (time) {
+            return this.getAllInTimeRange(time, time);
+        },
+
+        getAllInTimeRange: function (startTime, endTime) {
+            var values = [ ];
+            var i;
+
+            for (i = 0; i < this.cueValues.length; ++i) {
+                if (this.cueStarts[i] > endTime) {
+                    // Already passed possible cues
+                    break;
+                }
+
+                if (this.cueEnds[i] < startTime) {
+                    // This cue already ended
+                    continue;
+                }
+
+                // Any other case is an intersection
+                values.push(this.cueValues[i]);
+            }
+
+            return values;
+        },
+
+        getTimeRange: function (value) {
+            var index = this.cueValues.indexOf(value);
+
+            if (index < 0) {
+                return null;
+            }
+
+            return [ this.cueStarts[index], this.cueEnds[index] ];
+        }
+    };
+
     var Timeline = function (audio) {
         this.audio = audio;
-        //this.tracks = { }; // TODO...
         this.cueLists = { };
         this.events = { };
     };
@@ -12,47 +92,16 @@ define('Util/Timeline', [ 'Util/PubSub' ], function (PubSub) {
         }
     };
 
-    var filter = function (timeline, key, filterFunc) {
-        return timeline.getCueList(key)
-            .filter(filterFunc)
-            .sort(function (a, b) {
-                return a.time < b.time ? -1 : 1;
-            })
-            .map(function (item) {
-                return item.value;
-            });
-    };
-
-    var filter2 = function (timeline, key, filterFunc) {
-        return timeline.getCueList(key)
-            .filter(filterFunc)
-            .sort(function (a, b) {
-                return a.time < b.time ? -1 : 1;
-            });
-    };
-
     Timeline.prototype = {
         getCurrentTime: function () {
             return Math.round(this.audio.currentTime * 1000);
-        },
-
-        getTrack: function (key) {
-            throw new Error('Not implemented');
-
-            validateKey(key);
-
-            if (!Object.prototype.hasOwnProperty.call(this.tracks, key)) {
-                this.tracks[key] = this.audio.addTextTrack(key);
-            }
-
-            return this.tracks[key];
         },
 
         getCueList: function (key) {
             validateKey(key);
 
             if (!Object.prototype.hasOwnProperty.call(this.cueLists, key)) {
-                this.cueLists[key] = [ ];
+                this.cueLists[key] = new CueList();
             }
 
             return this.cueLists[key];
@@ -84,11 +133,11 @@ define('Util/Timeline', [ 'Util/PubSub' ], function (PubSub) {
                 // FIXME This is pretty broken and doesn't really work as it
                 // should (but it works 'good enough' for the game to
                 // work...)
-                var x = this.getAllItemsInTimeRange(lastUpdateTime, time, key);
+                var x = this.getAllInTimeRange(lastUpdateTime, time, key);
                 var events = this.getEvents(key);
 
                 x.forEach(function (item) {
-                    events.publishSync(item.value);
+                    events.publishSync(item);
                 }, this);
             }, this);
 
@@ -96,79 +145,23 @@ define('Util/Timeline', [ 'Util/PubSub' ], function (PubSub) {
         },
 
         add: function (key, value, startTime, endTime) {
-            var cueList = this.getCueList(key);
-
-            if (typeof endTime === 'undefined') {
-                endTime = startTime;
-            }
-
-            cueList.push({
-                value: value,
-                startTime: startTime,
-                endTime: endTime
-            });
+            return this.getCueList(key).add(value, startTime, endTime);
         },
 
         remove: function (key, value) {
-            var cueList = this.getCueList(key);
-
-            this.cueLists[key] = cueList.filter(function (item) {
-                return item.value !== value;
-            });
+            return this.getCueList(key).remove(value);
         },
 
         removeMany: function (key, values) {
-            var cueList = this.getCueList(key);
-
-            this.cueLists[key] = cueList.filter(function (item) {
-                return values.indexOf(item.value) < 0;
-            });
+            return this.getCueList(key).removeMany(values);
         },
 
         getAllAtTime: function (time, key) {
-            var filterFunc = function (item) {
-                return item.startTime <= time && time < item.endTime;
-            };
-
-            return filter(this, key, filterFunc);
+            return this.getCueList(key).getAllAtTime(time);
         },
 
         getAllInTimeRange: function (startTime, endTime, key) {
-            return filter(this, key, function (item) {
-                // [] is item; () is arguments
-
-                // [ ] ( )
-                if (item.endTime < startTime) {
-                    return false;
-                }
-
-                // ( ) [ ]
-                if (endTime < item.startTime) {
-                    return false;
-                }
-
-                // Any other case is an intersection
-                return true;
-            });
-        },
-
-        getAllItemsInTimeRange: function (startTime, endTime, key) {
-            return filter2(this, key, function (item) {
-                // [] is item; () is arguments
-
-                // [ ] ( )
-                if (item.endTime < startTime) {
-                    return false;
-                }
-
-                // ( ) [ ]
-                if (endTime < item.startTime) {
-                    return false;
-                }
-
-                // Any other case is an intersection
-                return true;
-            });
+            return this.getCueList(key).getAllInTimeRange(startTime, endTime);
         }
     };
 
