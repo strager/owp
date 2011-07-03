@@ -68,7 +68,6 @@ define('Game', [ 'q', 'MapState', 'Util/PubSub', 'Soundboard', 'Util/Timeline', 
                         renderer.renderMap(mapState, skin.valueOf(), time);
                     },
                     enter: function () {
-                        audio.currentTime = 33; // XXX TEMP
                         audio.play();
 
                         boundEvents.push(clickPubSub.subscribe(function (e) {
