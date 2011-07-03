@@ -8,11 +8,13 @@ define('Game', [ 'q', 'MapState', 'Util/PubSub', 'Soundboard', 'Util/Timeline', 
         var render = function (renderer) {
             renderer.beginRender();
 
+            try {
                 if (currentState && currentState.render) {
                     currentState.render.call(null, renderer);
                 }
-
-            renderer.endRender();
+            } finally {
+                renderer.endRender();
+            }
         };
 
         var setSkin = function (skinAssetManager) {
