@@ -44,7 +44,11 @@ define('MapState', [ 'Util/Timeline', 'Util/Map', 'HitMarker', 'Util/PubSub' ], 
             timeline.add(MapState.HIT_OBJECT_HITABLE, hitObject, earliestHitTime, latestHitTime);
         });
 
-        this.unhitObjects = objects.slice(); // Copy array
+        this.unhitObjects = objects.map(function (hitObject) {
+            return [ hitObject, ruleSet.getObjectLatestHitTime(hitObject) ];
+        }).sort(function (a, b) {
+            return a[1] < b[1] ? -1 : 1;
+        });
     };
 
     MapState.HIT_OBJECT_VISIBILITY = 'hit object visibility';
@@ -91,38 +95,57 @@ define('MapState', [ 'Util/Timeline', 'Util/Map', 'HitMarker', 'Util/PubSub' ], 
             this.events.publishSync(MapState.HIT_MADE, { x: x, y: y, time: time });
         },
 
-        applyHitMarker: function (hitMarker) {
-            var unhitIndex = this.unhitObjects.indexOf(hitMarker.hitObject);
-
-            if (unhitIndex < 0) {
-                throw new Error('Bad map state; oh dear!');
-            }
-
-            // Object is now hit; remove it from unhit objects list
-            this.unhitObjects.splice(unhitIndex, 1);
-
+        applyHitMarkerNoRemove: function (hitMarker) {
             // Add hit marker itself to the timeline
             this.timeline.add(MapState.HIT_MARKER_CREATION, hitMarker, hitMarker.time);
 
             this.events.publishSync('hitmarker', hitMarker);
         },
 
+        applyHitMarker: function (hitMarker, removeObject) {
+            var unhitIndex;
+
+            // Object is now hit; remove it from unhit objects list
+            for (unhitIndex = 0; unhitIndex < this.unhitObjects.length; ++unhitIndex) {
+                if (this.unhitObjects[unhitIndex][0] === hitMarker.hitObject) {
+                    break;
+                }
+            }
+
+            if (unhitIndex >= this.unhitObjects.length) {
+                throw new Error('Bad map state; oh dear!');
+            }
+
+            this.unhitObjects.splice(unhitIndex, 1);
+
+            this.applyHitMarkerNoRemove(hitMarker);
+        },
+
         processMisses: function (time) {
-            var self = this;
+            var i;
+            var unhitObject;
+            var hitMarker;
 
-            var missedObjects = this.unhitObjects.filter(function (object) {
-                return self.ruleSet.getObjectLatestHitTime(object) < time;
-            });
+            for (i = 0; i < this.unhitObjects.length; ++i) {
+                unhitObject = this.unhitObjects[i];
 
-            missedObjects.forEach(function (object) {
-                var hitMarker = new HitMarker(
-                    object,
-                    self.ruleSet.getObjectLatestHitTime(object) + 1,
+                if (unhitObject[1] >= time) {
+                    break;
+                }
+
+                hitMarker = new HitMarker(
+                    unhitObject[0],
+                    unhitObject[1] + 1,
                     0
                 );
 
-                self.applyHitMarker(hitMarker);
-            });
+                this.applyHitMarkerNoRemove(hitMarker);
+            }
+
+            // i has the number of unhit objects which were
+            // processed.  We need to remove them ourselves
+            // (because we called applyHitMarkerNoRemove).
+            this.unhitObjects.splice(0, i);
         }
     };
 
