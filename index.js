@@ -1,4 +1,4 @@
-require([ 'jQuery', 'CanvasRenderer', 'AssetManager', 'q', 'Game', 'Util/FramerateCounter' ], function ($, CanvasRenderer, AssetManager, Q, Game, FramerateCounter) {
+require([ 'jQuery', 'CanvasRenderer', 'AssetManager', 'q', 'Game', 'Util/FramerateCounter', 'Util/gPubSub' ], function ($, CanvasRenderer, AssetManager, Q, Game, FramerateCounter, gPubSub) {
     var mapAssetManager = new AssetManager('assets');
     var skinAssetManager = new AssetManager('.');
 
@@ -34,6 +34,23 @@ require([ 'jQuery', 'CanvasRenderer', 'AssetManager', 'q', 'Game', 'Util/Framera
         }, interval);
     };
 
+    var renderLoop = function (callback) {
+        window.requestAnimFrame(function () {
+            callback();
+            renderLoop(callback);
+        }, document.body); // should prolly use the canvas here...
+    };
+
+    var infLoop = function (callback) {
+        hardLoop(function () {
+            var i;
+
+            for (i = 0; i < 10; ++i) {
+                callback();
+            }
+        }, 0);
+    };
+
     var renderFps = new FramerateCounter();
     var gameUpdateFps = new FramerateCounter();
 
@@ -44,17 +61,17 @@ require([ 'jQuery', 'CanvasRenderer', 'AssetManager', 'q', 'Game', 'Util/Framera
         game.setSkin(skinAssetManager);
         game.startMap(mapAssetManager, 'map');
 
-        hardLoop(function () {
+        renderLoop(function () {
             game.render(io.renderer);
 
             renderFps.addTick();
-        }, 1000 / 60);
+        });
 
-        loop(function () {
-            game.update();
+        infLoop(function () {
+            gPubSub.publish('tick');
 
             gameUpdateFps.addTick();
-        }, 20);
+        });
 
         var mouseX, mouseY;
 
@@ -62,7 +79,7 @@ require([ 'jQuery', 'CanvasRenderer', 'AssetManager', 'q', 'Game', 'Util/Framera
             var x = e.pageX - this.offsetLeft;
             var y = e.pageY - this.offsetTop;
 
-            game.event('click', { x: x, y: y });
+            game.click({ x: x, y: y });
         });
 
         $(io.playArea).mousemove(function (e) {
@@ -71,7 +88,7 @@ require([ 'jQuery', 'CanvasRenderer', 'AssetManager', 'q', 'Game', 'Util/Framera
         });
 
         $('body').keydown(function (e) {
-            game.event('click', { x: mouseX, y: mouseY });
+            game.click({ x: mouseX, y: mouseY });
         });
     };
 

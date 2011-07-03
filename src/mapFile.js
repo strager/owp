@@ -1,4 +1,3 @@
-/*jslint bitwise: false */
 /*jshint bitwise: false */
 define('mapFile', [ 'RuleSet', 'HitCircle', 'Slider', 'Map', 'Combo', 'MapInfo', 'Storyboard', 'Skin', 'BezierSliderCurve' ], function (RuleSet, HitCircle, Slider, Map, Combo, MapInfo, Storyboard, Skin, BezierSliderCurve) {
     var readSkin = function (assetConfig, assetManager) {
@@ -43,6 +42,36 @@ define('mapFile', [ 'RuleSet', 'HitCircle', 'Slider', 'Map', 'Combo', 'MapInfo',
         }
 
         return combos;
+    };
+
+    var readHitSounds = function (hitSoundNumber) {
+        var hitSounds = [ ];
+
+        // FIXME No clue if these are correct
+
+        if (hitSoundNumber & 1) {
+            hitSounds.push('hitnormal');
+        }
+
+        if (hitSoundNumber & 2) {
+            hitSounds.push('hitwhistle');
+        }
+
+        if (hitSoundNumber & 4) {
+            hitSounds.push('hitfinish');
+        }
+
+        if (hitSoundNumber & 8) {
+            hitSounds.push('hitclap');
+        }
+
+        if (hitSounds.length === 0) {
+            // normal is the default hitsound,
+            // in case none is specified
+            hitSounds.push('hitnormal');
+        }
+
+        return hitSounds;
     };
 
     var readCurve = function (curveString, x, y, maxLength, repeats) {
@@ -102,6 +131,8 @@ define('mapFile', [ 'RuleSet', 'HitCircle', 'Slider', 'Map', 'Combo', 'MapInfo',
         object.time = parseInt(list[2], 10);
 
         object.newCombo = !!(flags1 & 4);
+
+        object.hitSounds = readHitSounds(parseInt(list[4], 10));
 
         return object;
     };
@@ -194,7 +225,7 @@ define('mapFile', [ 'RuleSet', 'HitCircle', 'Slider', 'Map', 'Combo', 'MapInfo',
 
         var combos = readCombos(assetConfig);
 
-        var map = new Map(); 
+        var map = new Map();
         map.objects = readHitObjects(assetConfig, combos);
 
         var storyboard = readStoryboard(assetConfig);

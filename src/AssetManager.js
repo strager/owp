@@ -52,6 +52,10 @@ define('AssetManager', [ 'jQuery', 'MapInfo', 'mapFile', 'assetConfig', 'Util/Ma
             return ret.promise;
         },
 
+        sound: function (assetManager, name) {
+            return AssetManager.typeHandlers.audio(assetManager, name);
+        },
+
         map: function (assetManager, name) {
             return Q.when(assetManager.load(name + '.osu', 'asset-config'))
                 .then(function (assetConfig) {

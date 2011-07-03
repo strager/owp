@@ -1,9 +1,9 @@
-define('Game', [ 'q', 'MapState', 'Util/PubSub' ], function (Q, MapState, PubSub) {
+define('Game', [ 'q', 'MapState', 'Util/PubSub', 'Soundboard', 'Util/Timeline', 'Util/gPubSub' ], function (Q, MapState, PubSub, Soundboard, Timeline, gPubSub) {
     var Game = function () {
         var currentState = null;
         var skin = null;
 
-        var events = new PubSub();
+        var clickPubSub = new PubSub();
 
         var render = function (renderer) {
             renderer.beginRender();
@@ -12,19 +12,8 @@ define('Game', [ 'q', 'MapState', 'Util/PubSub' ], function (Q, MapState, PubSub
                 if (currentState && currentState.render) {
                     currentState.render.call(null, renderer);
                 }
-            } catch (e) {
-                // wtb `finally`
+            } finally {
                 renderer.endRender();
-
-                throw e;
-            }
-
-            renderer.endRender();
-        };
-
-        var update = function () {
-            if (currentState && currentState.update) {
-                currentState.update();
             }
         };
 
@@ -58,16 +47,18 @@ define('Game', [ 'q', 'MapState', 'Util/PubSub' ], function (Q, MapState, PubSub
 
         var startMap = function (mapAssetManager, mapName) {
             var mapInfo, mapState, audio;
+            var timeline = null;
             var boundEvents = [ ];
 
             var play = function () {
-                var getMapTime = null;
+                var soundboard = new Soundboard(skin.valueOf().assetManager);
+
                 var score = 0;
                 var accuracy = 0;
 
                 setState({
                     render: function (renderer) {
-                        var time = getMapTime();
+                        var time = timeline.getCurrentTime();
 
                         // FIXME shouldn't be here exactly
                         accuracy = mapState.getAccuracy(time);
@@ -76,22 +67,32 @@ define('Game', [ 'q', 'MapState', 'Util/PubSub' ], function (Q, MapState, PubSub
                         renderer.renderStoryboard(mapInfo.storyboard, mapAssetManager, time);
                         renderer.renderMap(mapState, skin.valueOf(), time);
                     },
-                    update: function () {
-                        var time = getMapTime();
-
-                        mapState.processMisses(time);
-                    },
                     enter: function () {
-                        audio.currentTime = 33; // XXX TEMP
                         audio.play();
 
-                        getMapTime = function () {
-                            return Math.round(audio.currentTime * 1000);
-                        };
-
-                        boundEvents.push(events.subscribe('click', function (e) {
-                            mapState.clickAt(e.x, e.y, getMapTime());
+                        boundEvents.push(clickPubSub.subscribe(function (e) {
+                            mapState.clickAt(e.x, e.y, timeline.getCurrentTime());
                         }));
+
+                        boundEvents.push(timeline.subscribe(MapState.HIT_MARKER_CREATION, function (hitMarker) {
+                            if (!hitMarker.score) {
+                                return;
+                            }
+
+                            mapState.ruleSet.getHitSoundNames(hitMarker).forEach(function (soundName) {
+                                soundboard.playSound(soundName);
+                            });
+
+                            gPubSub.publish('tick');
+                        }));
+
+                        gPubSub.subscribe(function () {
+                            var time = timeline.getCurrentTime();
+
+                            mapState.processMisses(time);
+
+                            timeline.update(time);
+                        });
                     },
                     leave: function () {
                         boundEvents.forEach(function (be) {
@@ -100,9 +101,9 @@ define('Game', [ 'q', 'MapState', 'Util/PubSub' ], function (Q, MapState, PubSub
                     },
                     debugInfo: function () {
                         return {
-                            'current map time (ms)': getMapTime(),
+                            'current map time (ms)': timeline.getCurrentTime(),
                             'current accuracy': accuracy * 100,
-                            'current score': score,
+                            'current score': score
                         };
                     }
                 });
@@ -117,7 +118,6 @@ define('Game', [ 'q', 'MapState', 'Util/PubSub' ], function (Q, MapState, PubSub
                 Q.when(mapAssetManager.load(mapName, 'map'))
                     .then(function (mapInfo_) {
                         mapInfo = mapInfo_;
-                        mapState = MapState.fromMapInfo(mapInfo);
 
                         return Q.shallow([
                             mapAssetManager.load(mapInfo.audioFile, 'audio'),
@@ -129,6 +129,10 @@ define('Game', [ 'q', 'MapState', 'Util/PubSub' ], function (Q, MapState, PubSub
 
                         audio.controls = 'controls';
                         document.body.appendChild(audio);
+
+                        timeline = new Timeline(audio);
+
+                        mapState = MapState.fromMapInfo(mapInfo, timeline);
                     }),
                 Q.when(skin)
             ]);
@@ -136,8 +140,8 @@ define('Game', [ 'q', 'MapState', 'Util/PubSub' ], function (Q, MapState, PubSub
             return Q.when(load).then(play);
         };
 
-        var event = function (key) {
-            events.publishSync.apply(events, arguments);
+        var click = function () {
+            clickPubSub.publishSync.apply(clickPubSub, arguments);
         };
 
         var debugInfo = function () {
@@ -149,9 +153,8 @@ define('Game', [ 'q', 'MapState', 'Util/PubSub' ], function (Q, MapState, PubSub
         return {
             startMap: startMap,
             render: render,
-            update: update,
             setSkin: setSkin,
-            event: event,
+            click: click,
             debugInfo: debugInfo
         };
     };

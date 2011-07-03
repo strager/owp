@@ -189,6 +189,23 @@ define('RuleSet', [ 'Util/util', 'Slider' ], function (util, Slider) {
             return 0.5;
         },
 
+        getHitSoundNames: function (hitMarker) {
+            // osu!'s hitsound sections are based on the hitsound time; we
+            // choose to use the hit object's time, as that makes more sense
+            // and is probably what the mapper intended.
+            var time = hitMarker.hitObject.time;
+
+            // TODO Base prefix and suffix on time (normal, soft, custom, etc.)
+            var prefix = 'normal-';
+            var suffix = '.wav';
+
+            // TODO Slider and spinner sounds
+
+            return hitMarker.hitObject.hitSounds.map(function (hitSound) {
+                return prefix + hitSound + suffix;
+            });
+        },
+
         getTotalAccuracy: function (hitMarkers) {
             var maxScoreValue = 0;
             var currentScoreValue = 0;
