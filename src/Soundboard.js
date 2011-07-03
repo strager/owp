@@ -1,6 +1,4 @@
 define('Soundboard', [ 'jQuery', 'SoundPool' ], function ($, SoundPool) {
-    var PLAY_SOUND = 'play sound'; // => soundName
-
     var Soundboard = function (assetManager) {
         this.assetManager = assetManager;
         this.soundPools = { };
