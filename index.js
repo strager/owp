@@ -34,6 +34,13 @@ require([ 'jQuery', 'CanvasRenderer', 'AssetManager', 'q', 'Game', 'Util/Framera
         }, interval);
     };
 
+    var renderLoop = function (callback) {
+        window.requestAnimFrame(function () {
+            callback();
+            renderLoop(callback);
+        }, document.body); // should prolly use the canvas here...
+    };
+
     var infLoop = function (callback) {
         hardLoop(function () {
             var i;
@@ -54,11 +61,11 @@ require([ 'jQuery', 'CanvasRenderer', 'AssetManager', 'q', 'Game', 'Util/Framera
         game.setSkin(skinAssetManager);
         game.startMap(mapAssetManager, 'map');
 
-        hardLoop(function () {
+        renderLoop(function () {
             game.render(io.renderer);
 
             renderFps.addTick();
-        }, 1000 / 60);
+        });
 
         infLoop(function () {
             gPubSub.publish('tick');
