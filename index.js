@@ -34,6 +34,16 @@ require([ 'jQuery', 'CanvasRenderer', 'AssetManager', 'q', 'Game', 'Util/Framera
         }, interval);
     };
 
+    var infLoop = function(callback) {
+        hardLoop(function () {
+            var i;
+
+            for (i = 0; i < 10; ++i) {
+                callback();
+            }
+        }, 0);
+    };
+
     var renderFps = new FramerateCounter();
     var gameUpdateFps = new FramerateCounter();
 
@@ -50,11 +60,11 @@ require([ 'jQuery', 'CanvasRenderer', 'AssetManager', 'q', 'Game', 'Util/Framera
             renderFps.addTick();
         }, 1000 / 60);
 
-        hardLoop(function () {
+        infLoop(function () {
             gPubSub.publish('tick');
 
             gameUpdateFps.addTick();
-        }, 1000 / 100);
+        });
 
         var mouseX, mouseY;
 
