@@ -49,7 +49,7 @@ define('Game', [ 'q', 'MapState', 'Util/PubSub', 'Soundboard', 'Util/Timeline', 
             var boundEvents = [ ];
 
             var play = function () {
-                var soundboard = new Soundboard(skin.valueOf().assetManager, timeline);
+                var soundboard = new Soundboard(skin.valueOf().assetManager);
 
                 var score = 0;
                 var accuracy = 0;
@@ -73,9 +73,9 @@ define('Game', [ 'q', 'MapState', 'Util/PubSub', 'Soundboard', 'Util/Timeline', 
                             mapState.clickAt(e.x, e.y, timeline.getCurrentTime());
                         }));
 
-                        boundEvents.push(mapState.events.subscribe('hitmarker', function (hitMarker) {
+                        boundEvents.push(timeline.subscribe(MapState.HIT_MARKER_CREATION, 'enter', function (hitMarker) {
                             mapState.ruleSet.getHitSoundNames(hitMarker).forEach(function (soundName) {
-                                soundboard.playSoundAt(soundName, hitMarker.time);
+                                soundboard.playSound(soundName);
                             });
 
                             gPubSub.publish('tick');

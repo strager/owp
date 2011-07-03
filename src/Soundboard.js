@@ -1,38 +1,28 @@
-define('Soundboard', [ 'jQuery', 'Util/Timeline', 'SoundPool' ], function ($, Timeline, SoundPool) {
+define('Soundboard', [ 'jQuery', 'SoundPool' ], function ($, SoundPool) {
     var PLAY_SOUND = 'play sound'; // => soundName
 
-    var Soundboard = function (assetManager, timeline) {
-        this.timeline = timeline;
+    var Soundboard = function (assetManager) {
         this.assetManager = assetManager;
+        this.soundPools = { };
+    };
 
-        var soundPools = { };
-
-        var getSoundPool = function (soundName) {
-            if (!Object.prototype.hasOwnProperty.call(soundPools, soundName)) {
-                soundPools[soundName] = new SoundPool(assetManager.get(soundName, 'sound'));
+    Soundboard.prototype = {
+        getSoundPool: function (soundName) {
+            if (!Object.prototype.hasOwnProperty.call(this.soundPools, soundName)) {
+                this.soundPools[soundName] = new SoundPool(this.assetManager.get(soundName, 'sound'));
             }
 
-            return soundPools[soundName];
-        };
+            return this.soundPools[soundName];
+        },
 
-        var playSoundNow = function (soundName) {
-            var soundPool = getSoundPool(soundName);
+        playSound: function (soundName) {
+            var soundPool = this.getSoundPool(soundName);
 
             var sound = soundPool.alloc();
             $(sound).one('ended', function () {
                 soundPool.free(sound);
             });
             sound.play();
-        };
-
-        this.timeline.subscribe(PLAY_SOUND, 'enter', function (soundName) {
-            playSoundNow(soundName);
-        });
-    };
-
-    Soundboard.prototype = {
-        playSoundAt: function (soundName, time) {
-            this.timeline.add(PLAY_SOUND, soundName, time);
         }
     };
 
