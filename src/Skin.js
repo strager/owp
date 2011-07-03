@@ -32,6 +32,29 @@ define('Skin', [ 'Util/util' ], function (util) {
                     'hit300k',
                     'hit300',
                     'sliderb0'
+                ],
+                'sound': [
+                    'normal-hitclap.wav',
+                    'normal-hitfinish.wav',
+                    'normal-hitnormal.wav',
+                    'normal-hitwhistle.wav',
+                    'normal-sliderslide.wav',
+                    'normal-slidertick.wav',
+                    'normal-sliderwhistle.wav',
+
+                    'soft-hitclap.wav',
+                    'soft-hitfinish.wav',
+                    'soft-hitnormal.wav',
+                    'soft-hitwhistle.wav',
+                    'soft-sliderslide.wav',
+                    'soft-slidertick.wav',
+
+                    'spinnerbonus.wav',
+                    'spinnerspin.wav',
+
+                    'menuback.wav',
+                    'menuclick.wav',
+                    'menuhit.wav'
                 ]
             };
 

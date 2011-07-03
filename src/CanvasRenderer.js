@@ -1,4 +1,4 @@
-define('CanvasRenderer', [ 'HitCircle', 'Slider', 'HitMarker', 'Util/Cache', 'canvasShaders', 'MapState' ], function (HitCircle, Slider, HitMarker, Cache, shaders, MapState) {
+define('CanvasRenderer', [ 'HitCircle', 'Slider', 'HitMarker', 'Util/Cache', 'canvasShaders', 'MapState', 'Util/gPubSub' ], function (HitCircle, Slider, HitMarker, Cache, shaders, MapState, gPubSub) {
     var renderMap = function (vars) {
         var mapState = vars.mapState;
         var ruleSet = mapState.ruleSet;
@@ -333,6 +333,8 @@ define('CanvasRenderer', [ 'HitCircle', 'Slider', 'HitMarker', 'Util/Cache', 'ca
 
         getObjectsToRender().forEach(function (object) {
             renderObject(object);
+
+            gPubSub.publish('tick');
         });
     };
 

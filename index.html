@@ -11,6 +11,20 @@
         <script src="vendor/q/lib/q.js"></script>
         <script src="vendor/q/lib/q/util.js"></script>
         <script type="text/javascript">
+            // shim layer with setTimeout fallback
+            window.requestAnimFrame = (function(){
+                function requestAnimationFrame(callback, element) {
+                    window.setTimeout(callback, 1000 / 60);
+                }
+
+                return window.requestAnimationFrame        
+                    || window.webkitRequestAnimationFrame  
+                    || window.mozRequestAnimationFrame     
+                    || window.oRequestAnimationFrame       
+                    || window.msRequestAnimationFrame      
+                    || requestAnimationFrame;
+            }());
+
             window.onload = function() {
                 define('jQuery', [ ], function () {
                     return jQuery.noConflict();
