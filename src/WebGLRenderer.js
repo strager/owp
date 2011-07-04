@@ -70,7 +70,7 @@ define('WebGLRenderer', [ 'HitCircle', 'Slider', 'HitMarker', 'MapState', 'Util/
             radius *= ruleSet.getCircleSize() / 128;
 
             sprite(function (draw) {
-                gl.uniform3f(programs.sprite.uni.color, color[0] / 255, color[1] / 255, color[2] / 255);
+                gl.uniform4f(programs.sprite.uni.color, color[0], color[1], color[2], color[3]);
                 gl.uniform2f(programs.sprite.uni.position, x, y);
                 gl.uniform1f(programs.sprite.uni.scale, radius);
                 gl.uniform2f(programs.sprite.uni.offset, 0, 0);
@@ -107,7 +107,7 @@ define('WebGLRenderer', [ 'HitCircle', 'Slider', 'HitMarker', 'MapState', 'Util/
             var offset = -totalWidth / 2;
 
             sprite(function (draw) {
-                gl.uniform3f(programs.sprite.uni.color, 1, 1, 1);
+                gl.uniform4f(programs.sprite.uni.color, 255, 255, 255, 255);
                 gl.uniform2f(programs.sprite.uni.position, x, y);
                 gl.uniform1f(programs.sprite.uni.scale, scale);
 
@@ -135,15 +135,19 @@ define('WebGLRenderer', [ 'HitCircle', 'Slider', 'HitMarker', 'MapState', 'Util/
         };
 
         var renderHitCircleObject = function (object) {
-            // TODO use alpha
-            var alpha = ruleSet.getObjectOpacity(object, time);
+            // We disable alpha blending because shit looks ugly otherwise
+            // (because each face is blended, not the entire object together).
+            // Will need to fix this sometime...
+            //var alpha = ruleSet.getObjectOpacity(object, time);
+            var alpha = 1;
+            var color = object.combo.color.concat([ alpha * 255 ]);
 
             var scale = ruleSet.getCircleSize() / 128;
 
             // Hit circle background
             sprite(function (draw) {
                 gl.uniform2f(programs.sprite.uni.position, object.x, object.y);
-                gl.uniform3f(programs.sprite.uni.color, object.combo.color[0] / 255, object.combo.color[1] / 255, object.combo.color[2] / 255);
+                gl.uniform4f(programs.sprite.uni.color, color[0], color[1], color[2], color[3]);
                 gl.uniform2f(programs.sprite.uni.offset, 0, 0);
                 gl.uniform1f(programs.sprite.uni.scale, scale);
                 gl.uniform2f(programs.sprite.uni.size, textures.hitCircle.image.width, textures.hitCircle.image.height);
@@ -160,7 +164,8 @@ define('WebGLRenderer', [ 'HitCircle', 'Slider', 'HitMarker', 'MapState', 'Util/
 
             // Hit circle overlay
             sprite(function (draw) {
-                gl.uniform3f(programs.sprite.uni.color, 1, 1, 1);
+                gl.uniform2f(programs.sprite.uni.position, object.x, object.y);
+                gl.uniform4f(programs.sprite.uni.color, 255, 255, 255, 255);
                 gl.uniform2f(programs.sprite.uni.offset, 0, 0);
                 gl.uniform1f(programs.sprite.uni.scale, scale);
                 gl.uniform2f(programs.sprite.uni.size, textures.hitCircleOverlay.image.width, textures.hitCircleOverlay.image.height);
@@ -173,7 +178,7 @@ define('WebGLRenderer', [ 'HitCircle', 'Slider', 'HitMarker', 'MapState', 'Util/
             });
 
             var approachProgress = ruleSet.getObjectApproachProgress(object, time);
-            renderApproachCircle(approachProgress, object.x, object.y, object.combo.color, alpha);
+            renderApproachCircle(approachProgress, object.x, object.y, color);
         };
 
         var renderHitMarkerObject = function (object) {
@@ -279,10 +284,10 @@ define('WebGLRenderer', [ 'HitCircle', 'Slider', 'HitMarker', 'MapState', 'Util/
         'varying vec2 vTextureCoord;',
 
         'uniform sampler2D uSampler;',
-        'uniform vec3 uColor;',
+        'uniform vec4 uColor;',
 
         'void main(void) {',
-            'gl_FragColor = texture2D(uSampler, vec2(vTextureCoord.s, vTextureCoord.t)) * vec4(uColor, 1.0);',
+            'gl_FragColor = texture2D(uSampler, vec2(vTextureCoord.s, vTextureCoord.t)) * (vec4(uColor) / 255.0);',
         '}'
     ].join('\n');
 
