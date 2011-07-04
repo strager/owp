@@ -1,4 +1,4 @@
-define('WebGLRenderer', [ ], function () {
+define('WebGLRenderer', [ 'HitCircle', 'Slider', 'HitMarker', 'MapState', 'Util/gPubSub' ], function (HitCircle, Slider, HitMarker, MapState, gPubSub) {
     var renderMap = function (vars) {
         var mapState = vars.mapState;
         var ruleSet = mapState.ruleSet;
@@ -7,41 +7,173 @@ define('WebGLRenderer', [ ], function () {
         var gl = vars.context;
         var buffers = vars.buffers;
         var programs = vars.programs;
+        var textures = vars.textures;
 
         // TODO Real work
 
-        gl.useProgram(programs.whatever);
+        var renderSliderObject = function (object) {
+            // TODO
+        };
 
-        gl.uniform1f(gl.getUniformLocation(programs.whatever, 'time'), time / 1000);
-        gl.uniform2f(gl.getUniformLocation(programs.whatever, 'resolution'), gl.canvas.width, gl.canvas.height);
+        var renderHitCircle = function (hitCircle, progress) {
+            gl.useProgram(programs.sprite);
 
-        var vertex_position = 0;
+            gl.uniform1f(gl.getUniformLocation(programs.sprite, 'time'), time / 1000);
+            gl.uniform2f(gl.getUniformLocation(programs.sprite, 'resolution'), gl.canvas.width, gl.canvas.height);
 
-        gl.bindBuffer(gl.ARRAY_BUFFER, buffers.spriteVertex);
-        gl.vertexAttribPointer(vertex_position, 2, gl.FLOAT, false, 0, 0);
-        gl.enableVertexAttribArray(vertex_position);
-        gl.drawArrays(gl.TRIANGLES, 0, 6);
-        gl.disableVertexAttribArray(vertex_position);
+            var vertexOffset = 0;
+            var uvOffset = 2 * 3 * 2 * 4; // Skip faces (2x3 pairs, x2 floats, x4 bytes)
+
+            gl.activeTexture(gl.TEXTURE0);
+            gl.bindTexture(gl.TEXTURE_2D, textures.hitcircle);
+            gl.uniform1i(programs.sprite.attr.samplerUniform, 0);
+
+            gl.bindBuffer(gl.ARRAY_BUFFER, buffers.sprite);
+            gl.vertexAttribPointer(programs.sprite.attr.vertexCoord, 2, gl.FLOAT, false, 0, vertexOffset);
+            gl.vertexAttribPointer(programs.sprite.attr.textureCoord, 2, gl.FLOAT, false, 0, uvOffset);
+            gl.enableVertexAttribArray(programs.sprite.attr.vertexCoord);
+            gl.enableVertexAttribArray(programs.sprite.attr.textureCoord);
+            gl.drawArrays(gl.TRIANGLES, 0, 6);
+            gl.disableVertexAttribArray(programs.sprite.attr.vertexCoord);
+            gl.disableVertexAttribArray(programs.sprite.attr.textureCoord);
+return;
+// TODO rest of this crap
+            var scale = ruleSet.getCircleSize() / 128;
+
+            // Hit circle base
+            var hitCircleGraphic = getShadedGraphic(
+                skin, 'hitcircle',
+                shaders.multiplyByColor, hitCircle.combo.color
+            );
+
+            var hitCircleFrame = 0;
+
+            drawImage(
+                hitCircleGraphic[hitCircleFrame],
+                scale,
+                hitCircle.x,
+                hitCircle.y,
+                true
+            );
+
+            // Combo numbering
+            renderComboNumber(hitCircle.comboIndex + 1, hitCircle.x, hitCircle.y);
+
+            // Hit circle overlay
+            var hitCircleOverlayGraphic = skin.assetManager.get('hitcircleoverlay', 'image-set');
+            var hitCircleOverlayFrame = 0;
+
+            drawImage(
+                hitCircleOverlayGraphic[hitCircleOverlayFrame],
+                scale,
+                hitCircle.x,
+                hitCircle.y,
+                true
+            );
+        };
+
+        var renderHitCircleObject = function (object) {
+            // TODO Approach stuff
+
+            renderHitCircle(object);
+        };
+
+        var renderHitMarkerObject = function (object) {
+            // TODO
+        };
+
+        var getObjectRenderer = function (object) {
+            var renderers = [
+                [ HitCircle, renderHitCircleObject ],
+                [ HitMarker, renderHitMarkerObject ],
+                [ Slider,    renderSliderObject ]
+            ];
+
+            var objectRenderers = renderers.filter(function (r) {
+                return object instanceof r[0];
+            });
+
+            if (objectRenderers.length !== 1) {
+                throw new TypeError('Unknown object type');
+            }
+
+            return objectRenderers[0][1];
+        };
+
+        var renderObject = function (object) {
+            var renderer = getObjectRenderer(object);
+            renderer(object);
+        };
+
+        var getObjectsToRender = function () {
+            // Visible objects
+            var objects = mapState.getVisibleObjects(time);
+
+            // Hit markers
+            objects = objects.concat(
+                mapState.timeline.getAllInTimeRange(time - 2000, time, MapState.HIT_MARKER_CREATION)
+            );
+
+            var sortObjectsByZ = function (a, b) {
+                var newA = a;
+                var newB = b;
+
+                // Keep hit marker above object
+                if (a instanceof HitMarker) {
+                    if (b === a.hitObject) {
+                        return 1;
+                    }
+
+                    newA = a.hitObject;
+                }
+
+                if (b instanceof HitMarker) {
+                    if (a === b.hitObject) {
+                        return -1;
+                    }
+
+                    newB = b.hitObject;
+                }
+
+                // Sort by time descending
+                return newA.time > newB.time ? -1 : 1;
+            };
+
+            // Get objects in Z order
+            objects = objects.sort(sortObjectsByZ);
+
+            return objects;
+        };
+
+        getObjectsToRender().forEach(function (object) {
+            renderObject(object);
+
+            gPubSub.publish('tick');
+        });
     };
 
     var positionShader = [
-        'attribute vec3 position;',
+        'attribute vec3 aVertexCoord;',
+        'attribute vec2 aTextureCoord;',
+
+        'varying vec2 vTextureCoord;',
 
         'void main(void) {',
-            'gl_Position = vec4(position, 1.0);',
+            'gl_Position = vec4(aVertexCoord, 1.0);',
+            'vTextureCoord = aTextureCoord;',
         '}'
     ].join('\n');
 
     var colorShader = [
+        'varying vec2 vTextureCoord;',
+
         'uniform float time;',
         'uniform vec2 resolution;',
 
+        'uniform sampler2D uSampler;',
+
         'void main(void) {',
-            'vec2 position = - 1.0 + 2.0 * gl_FragCoord.xy / resolution.xy;',
-            'float red = abs(sin(position.x * position.y + time / 5.0));',
-            'float green = abs(sin(position.x * position.y + time / 4.0));',
-            'float blue = abs(sin(position.x * position.y + time / 3.0));',
-            'gl_FragColor = vec4(red, green, blue, 1.0);',
+            'gl_FragColor = texture2D(uSampler, vec2(vTextureCoord.s, vTextureCoord.t));',
         '}'
     ].join('\n');
 
@@ -50,27 +182,74 @@ define('WebGLRenderer', [ ], function () {
 
         var buffers = { };
         var programs = { };
+        var textures = { };
 
         function init() {
-            buffers.spriteVertex = gl.createBuffer();
-            gl.bindBuffer(gl.ARRAY_BUFFER, buffers.spriteVertex);
+            buffers.sprite = gl.createBuffer();
+            gl.bindBuffer(gl.ARRAY_BUFFER, buffers.sprite);
             gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
-                -1, -1,  1,
-                -1, -1,  1,
-                 1, -1,  1,
-                 1, -1,  1
+                // Faces
+                -1, -1,
+                 1, -1,
+                -1,  1,
+
+                 1, -1,
+                 1,  1,
+                -1,  1,
+
+                 // UV
+                 0, 0,
+                 1, 0,
+                 0, 1,
+
+                 1, 0,
+                 1, 1,
+                 0, 1,
             ]), gl.STATIC_DRAW);
 
-            programs.whatever = createProgram(gl, positionShader, colorShader);
+            programs.sprite = createProgram(gl, positionShader, colorShader);
+            programs.sprite.attr = {
+                vertexCoord: gl.getAttribLocation(programs.sprite, 'aVertexCoord'),
+                textureCoord: gl.getAttribLocation(programs.sprite, 'aTextureCoord'),
+                samplerUniform: gl.getUniformLocation(programs.sprite, 'uSampler')
+            };
 
             resize();
+        };
+
+        var skinInitd = false;
+
+        function initSkin(skin) {
+            if (skinInitd) {
+                return;
+            }
+
+            function makeTexture(image) {
+                var texture = gl.createTexture();
+                texture.image = image;
+
+                gl.bindTexture(gl.TEXTURE_2D, texture);
+                gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+                gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, texture.image);
+                gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+                gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+
+                return texture;
+            }
+
+            var hitCircleGraphic = skin.assetManager.get('hitcircle', 'image-set');
+            var hitCircleFrame = 0;
+
+            textures.hitcircle = makeTexture(hitCircleGraphic[hitCircleFrame]);
+
+            gl.bindTexture(gl.TEXTURE_2D, null);
         }
+
+        init();
 
         function resize() {
             gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
         }
-
-        init();
 
         return {
             beginRender: function () {
@@ -81,13 +260,16 @@ define('WebGLRenderer', [ ], function () {
             },
 
             renderMap: function (mapState, skin, time) {
+                initSkin(skin);
+
                 renderMap({
                     mapState: mapState,
                     skin: skin,
                     time: time,
                     context: context,
                     buffers: buffers,
-                    programs: programs
+                    programs: programs,
+                    textures: textures
                 });
             },
 
