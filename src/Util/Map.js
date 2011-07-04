@@ -1,66 +1,82 @@
 define('Util/Map', [ ], function () {
     var Map = function () {
         this.keys = [ ];
+        this.arrayKeyStrings = { };
         this.values = [ ];
     };
 
-    function isArray(x) {
-        return Object.prototype.toString.call(x) === '[object Array]';
+    function isArray(value) {
+        return value instanceof Array;
+    }
+
+    function getKeyString(key) {
+        return key.join('');
     }
 
     Map.prototype = {
-        areKeysEqual: function (a, b) {
+        areArraysEqual: function (a, b) {
             var i;
 
-            if (isArray(a) && isArray(b)) {
-                // Weak comparison for arrays
-                if (a.length !== b.length) {
+            if (a.length !== b.length) {
+                return false;
+            }
+
+            for (i = 0; i < a.length; ++i) {
+                if (a[i] !== b[i]) {
                     return false;
                 }
-
-                for (i = 0; i < a.length; ++i) {
-                    if (!this.areKeysEqual(a[i], b[i])) {
-                        return false;
-                    }
-                }
-
-                return true;
-            } else {
-                // Strong comparison for non-arrays
-                return a === b;
             }
+
+            return true;
         },
 
         set: function (key, value) {
-            var i, j, data;
-
             // Check if the data already exists in the map
             // If so, just override it
             var index = this.getIndexFromKey(key);
+            var keyString;
 
             if (index >= 0) {
                 this.values[index] = value;
             } else {
                 this.keys.push(key);
                 this.values.push(value);
+
+                if (isArray(key)) {
+                    keyString = getKeyString(key);
+                    index = this.keys.length - 1;
+
+                    if (Object.prototype.hasOwnProperty(this.arrayKeyStrings, keyString)) {
+                        this.arrayKeyStrings[keyString].push(index);
+                    } else {
+                        this.arrayKeyStrings[keyString] = [ index ];
+                    }
+                }
             }
         },
 
         getIndexFromKey: function (key) {
-            // Super fast case: indexOf works (same object)
-            var index = this.keys.indexOf(key);
-
-            if (index >= 0) {
-                return index;
+            // Super fast case: non-arrays
+            if (!isArray(key)) {
+                return this.keys.indexOf(key);
             }
 
-            // Super slow case: manual iteration and comparison
-            var curKey;
+            // Slowish case: check key strings
+            var keyString = getKeyString(key);
 
-            for (index = 0; index < this.keys.length; ++index) {
-                curKey = this.keys[index];
+            if (!Object.prototype.hasOwnProperty.call(this.arrayKeyStrings, keyString)) {
+                return -1;
+            }
 
-                if (this.areKeysEqual(curKey, key)) {
+            // We have a matching key string; check all keys
+            var indices = this.arrayKeyStrings[keyString];
+
+            var i, index;
+
+            for (i = 0; i < indices.length; ++i) {
+                index = indices[i];
+
+                if (this.areArraysEqual(this.keys[index], key)) {
                     return index;
                 }
             }
@@ -98,6 +114,27 @@ define('Util/Map', [ ], function () {
 
             this.keys.splice(index, 1);
             this.values.splice(index, 1);
+
+            var keyString, indices, indexIndex;
+
+            if (isArray(key)) {
+                keyString = getKeyString(key);
+                indices = this.arrayKeyStrings[keyString];
+
+                if (indices.length === 1) {
+                    delete this.arrayKeyStrings[keyString];
+                } else {
+                    indexIndex = indices.indexOf(index);
+                    indices.splice(indexIndex, 1);
+                }
+            }
+
+            // Now shift everything above index down one...
+            Object.keys(this.arrayKeyStrings).forEach(function (keyString) {
+                this.arrayKeyStrings[keyString] = this.arrayKeyStrings[keyString].map(function (i) {
+                    return i < index ? i : i - 1;
+                });
+            }, this);
         },
 
         forEach: function (callback, context) {
