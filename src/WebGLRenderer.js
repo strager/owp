@@ -11,6 +11,16 @@ define('WebGLRenderer', [ 'HitCircle', 'Slider', 'HitMarker', 'MapState', 'Util/
 
         // TODO Real work
 
+        var program = function (program, init, uninit, callback) {
+            // TODO Optimize useProgram and init/uninit calls
+
+            gl.useProgram(program);
+
+            init();
+            callback();
+            uninit();
+        };
+
         var initSprite = function () {
             var vertexOffset = 0;
             var uvOffset = 2 * 3 * 2 * 4; // Skip faces (2x3 pairs, x2 floats, x4 bytes)
@@ -29,60 +39,65 @@ define('WebGLRenderer', [ 'HitCircle', 'Slider', 'HitMarker', 'MapState', 'Util/
         };
 
         var sprite = function (callback) {
-            initSprite();
-            callback(function () {
-                gl.drawArrays(gl.TRIANGLES, 0, 6);
+            program(programs.sprite, initSprite, uninitSprite, function () {
+                gl.uniform2f(programs.sprite.uni.playfield, 640, 480);
+
+                callback(function draw() {
+                    gl.drawArrays(gl.TRIANGLES, 0, 6);
+                });
             });
-            uninitSprite();
         };
 
         var getDigits = function (number) {
             return ('' + number).split('');
         };
 
-        var getNumberImages = function (number) {
+        var getNumberTextures = function (number) {
             return getDigits(number).map(function (digit) {
-                var graphic = skin.assetManager.get('default-' + digit, 'image-set');
-
-                return graphic[0];
+                return textures.digits[digit];
             });
         };
 
-        var renderComboNumber = function (number, draw) {
-            var images = getNumberImages(number);
+        var renderComboNumber = function (number, x, y) {
+            var textures = getNumberTextures(number);
             var spacing = skin.hitCircleFontSpacing;
 
-            if (images.length === 0) {
-                // No images?  Don't render anything.
+            if (textures.length === 0) {
+                // No textures?  Don't render anything.
                 return;
             }
 
-            var totalWidth = images.reduce(function (acc, image) {
-                return acc + image.width;
+            var totalWidth = textures.reduce(function (acc, texture) {
+                return acc + texture.image.width;
             }, 0);
 
-            totalWidth += spacing * (images.length - 1);
+            totalWidth += spacing * (textures.length - 1);
 
-            var scale = Math.pow(images.length, -1 / 4) * 0.9;
+            var scale = Math.pow(textures.length, -1 / 4) * 0.9;
             scale *= ruleSet.getCircleSize() / 128;
             var offset = -totalWidth / 2;
 
-            getDigits(number).forEach(function (digit, i) {
-                var image = images[i];
-                var x = (offset + image.width / 2) * scale;
-                var y = 0;
-
-                gl.uniform2f(programs.sprite.uni.offset, x, y);
+            sprite(function (draw) {
+                gl.uniform3f(programs.sprite.uni.color, 1, 1, 1);
+                gl.uniform2f(programs.sprite.uni.position, x, y);
                 gl.uniform1f(programs.sprite.uni.scale, scale);
-                gl.uniform2f(programs.sprite.uni.size, image.width, image.height);
 
-                gl.activeTexture(gl.TEXTURE0);
-                gl.bindTexture(gl.TEXTURE_2D, textures.digits[digit]);
-                gl.uniform1i(programs.sprite.uni.sampler, 0);
+                textures.forEach(function (texture) {
+                    var image = texture.image;
+                    var x = (offset + image.width / 2) * scale;
+                    var y = 0;
 
-                draw();
+                    gl.uniform2f(programs.sprite.uni.offset, x, y);
+                    gl.uniform2f(programs.sprite.uni.size, image.width, image.height);
 
-                offset += image.width + spacing;
+                    gl.activeTexture(gl.TEXTURE0);
+                    gl.bindTexture(gl.TEXTURE_2D, texture);
+                    gl.uniform1i(programs.sprite.uni.sampler, 0);
+
+                    draw();
+
+                    offset += image.width + spacing;
+                });
             });
         };
 
@@ -91,16 +106,11 @@ define('WebGLRenderer', [ 'HitCircle', 'Slider', 'HitMarker', 'MapState', 'Util/
         };
 
         var renderHitCircle = function (hitCircle, progress) {
-            gl.useProgram(programs.sprite);
+            var scale = ruleSet.getCircleSize() / 128;
 
+            // Hit circle background
             sprite(function (draw) {
-                var scale = ruleSet.getCircleSize() / 128;
-
-                gl.uniform2f(programs.sprite.uni.playfield, 640, 480);
-
                 gl.uniform2f(programs.sprite.uni.position, hitCircle.x, hitCircle.y);
-
-                // Hit circle background
                 gl.uniform3f(programs.sprite.uni.color, hitCircle.combo.color[0] / 255, hitCircle.combo.color[1] / 255, hitCircle.combo.color[2] / 255);
                 gl.uniform2f(programs.sprite.uni.offset, 0, 0);
                 gl.uniform1f(programs.sprite.uni.scale, scale);
@@ -111,13 +121,13 @@ define('WebGLRenderer', [ 'HitCircle', 'Slider', 'HitMarker', 'MapState', 'Util/
                 gl.uniform1i(programs.sprite.uni.sampler, 0);
 
                 draw();
+            });
 
-                // Numbering
-                gl.uniform3f(programs.sprite.uni.color, 1, 1, 1);
+            // Numbering
+            renderComboNumber(hitCircle.comboIndex + 1, hitCircle.x, hitCircle.y);
 
-                renderComboNumber(hitCircle.comboIndex + 1, draw);
-
-                // Hit circle overlay
+            // Hit circle overlay
+            sprite(function (draw) {
                 gl.uniform3f(programs.sprite.uni.color, 1, 1, 1);
                 gl.uniform2f(programs.sprite.uni.offset, 0, 0);
                 gl.uniform1f(programs.sprite.uni.scale, scale);
