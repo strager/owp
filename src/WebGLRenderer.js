@@ -58,6 +58,35 @@ define('WebGLRenderer', [ 'HitCircle', 'Slider', 'HitMarker', 'MapState', 'Util/
             });
         };
 
+        var renderApproachCircle = function (progress, x, y, color, alpha) {
+            var radius = 1;
+
+            if (progress > 0) {
+                radius += (1 - progress);
+            } else {
+                radius += (1 - (-progress)) / 4;
+            }
+
+            radius *= ruleSet.getCircleSize() / 128;
+
+            sprite(function (draw) {
+                gl.uniform3f(programs.sprite.uni.color, color[0] / 255, color[1] / 255, color[2] / 255);
+                gl.uniform2f(programs.sprite.uni.position, x, y);
+                gl.uniform1f(programs.sprite.uni.scale, radius);
+                gl.uniform2f(programs.sprite.uni.offset, 0, 0);
+
+                var texture = textures.approachCircle;
+
+                gl.uniform2f(programs.sprite.uni.size, texture.image.width, texture.image.height);
+
+                gl.activeTexture(gl.TEXTURE0);
+                gl.bindTexture(gl.TEXTURE_2D, texture);
+                gl.uniform1i(programs.sprite.uni.sampler, 0);
+
+                draw();
+            });
+        };
+
         var renderComboNumber = function (number, x, y) {
             var textures = getNumberTextures(number);
             var spacing = skin.hitCircleFontSpacing;
@@ -105,13 +134,16 @@ define('WebGLRenderer', [ 'HitCircle', 'Slider', 'HitMarker', 'MapState', 'Util/
             // TODO
         };
 
-        var renderHitCircle = function (hitCircle, progress) {
+        var renderHitCircleObject = function (object) {
+            // TODO use alpha
+            var alpha = ruleSet.getObjectOpacity(object, time);
+
             var scale = ruleSet.getCircleSize() / 128;
 
             // Hit circle background
             sprite(function (draw) {
-                gl.uniform2f(programs.sprite.uni.position, hitCircle.x, hitCircle.y);
-                gl.uniform3f(programs.sprite.uni.color, hitCircle.combo.color[0] / 255, hitCircle.combo.color[1] / 255, hitCircle.combo.color[2] / 255);
+                gl.uniform2f(programs.sprite.uni.position, object.x, object.y);
+                gl.uniform3f(programs.sprite.uni.color, object.combo.color[0] / 255, object.combo.color[1] / 255, object.combo.color[2] / 255);
                 gl.uniform2f(programs.sprite.uni.offset, 0, 0);
                 gl.uniform1f(programs.sprite.uni.scale, scale);
                 gl.uniform2f(programs.sprite.uni.size, textures.hitCircle.image.width, textures.hitCircle.image.height);
@@ -124,7 +156,7 @@ define('WebGLRenderer', [ 'HitCircle', 'Slider', 'HitMarker', 'MapState', 'Util/
             });
 
             // Numbering
-            renderComboNumber(hitCircle.comboIndex + 1, hitCircle.x, hitCircle.y);
+            renderComboNumber(object.comboIndex + 1, object.x, object.y);
 
             // Hit circle overlay
             sprite(function (draw) {
@@ -139,12 +171,9 @@ define('WebGLRenderer', [ 'HitCircle', 'Slider', 'HitMarker', 'MapState', 'Util/
 
                 draw();
             });
-        };
 
-        var renderHitCircleObject = function (object) {
-            // TODO Approach stuff
-
-            renderHitCircle(object);
+            var approachProgress = ruleSet.getObjectApproachProgress(object, time);
+            renderApproachCircle(approachProgress, object.x, object.y, object.combo.color, alpha);
         };
 
         var renderHitMarkerObject = function (object) {
@@ -331,9 +360,11 @@ define('WebGLRenderer', [ 'HitCircle', 'Slider', 'HitMarker', 'MapState', 'Util/
 
             var hitCircleGraphic = skin.assetManager.get('hitcircle', 'image-set');
             var hitCircleOverlayGraphic = skin.assetManager.get('hitcircleoverlay', 'image-set');
+            var approachCircleGraphic = skin.assetManager.get('approachcircle', 'image-set');
 
             textures.hitCircle = makeTexture(hitCircleGraphic[0]);
             textures.hitCircleOverlay = makeTexture(hitCircleOverlayGraphic[0]);
+            textures.approachCircle = makeTexture(approachCircleGraphic[0]);
 
             var i;
             var digitGraphic;
