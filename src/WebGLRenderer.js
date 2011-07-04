@@ -231,6 +231,9 @@ return;
                 color: gl.getUniformLocation(programs.sprite, 'uColor'),
             };
 
+            gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+            gl.enable(gl.BLEND);
+
             resize();
         };
 
