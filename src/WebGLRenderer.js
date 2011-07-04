@@ -42,7 +42,15 @@ define('WebGLRenderer', [ 'HitCircle', 'Slider', 'HitMarker', 'MapState', 'Util/
             program(programs.sprite, initSprite, uninitSprite, function () {
                 gl.uniform2f(programs.sprite.uni.playfield, 640, 480);
 
-                callback(function draw() {
+                callback(function draw(texture) {
+                    if (typeof texture !== 'undefined') {
+                        gl.uniform2f(programs.sprite.uni.size, texture.image.width, texture.image.height);
+
+                        gl.activeTexture(gl.TEXTURE0);
+                        gl.bindTexture(gl.TEXTURE_2D, texture);
+                        gl.uniform1i(programs.sprite.uni.sampler, 0);
+                    }
+
                     gl.drawArrays(gl.TRIANGLES, 0, 6);
                 });
             });
@@ -75,15 +83,7 @@ define('WebGLRenderer', [ 'HitCircle', 'Slider', 'HitMarker', 'MapState', 'Util/
                 gl.uniform1f(programs.sprite.uni.scale, radius);
                 gl.uniform2f(programs.sprite.uni.offset, 0, 0);
 
-                var texture = textures.approachCircle;
-
-                gl.uniform2f(programs.sprite.uni.size, texture.image.width, texture.image.height);
-
-                gl.activeTexture(gl.TEXTURE0);
-                gl.bindTexture(gl.TEXTURE_2D, texture);
-                gl.uniform1i(programs.sprite.uni.sampler, 0);
-
-                draw();
+                draw(textures.approachCircle);
             });
         };
 
@@ -112,20 +112,15 @@ define('WebGLRenderer', [ 'HitCircle', 'Slider', 'HitMarker', 'MapState', 'Util/
                 gl.uniform1f(programs.sprite.uni.scale, scale);
 
                 textures.forEach(function (texture) {
-                    var image = texture.image;
-                    var x = (offset + image.width / 2) * scale;
+                    var width = texture.image.width;
+                    var x = (offset + width / 2) * scale;
                     var y = 0;
 
                     gl.uniform2f(programs.sprite.uni.offset, x, y);
-                    gl.uniform2f(programs.sprite.uni.size, image.width, image.height);
 
-                    gl.activeTexture(gl.TEXTURE0);
-                    gl.bindTexture(gl.TEXTURE_2D, texture);
-                    gl.uniform1i(programs.sprite.uni.sampler, 0);
+                    draw(texture);
 
-                    draw();
-
-                    offset += image.width + spacing;
+                    offset += width + spacing;
                 });
             });
         };
@@ -150,13 +145,8 @@ define('WebGLRenderer', [ 'HitCircle', 'Slider', 'HitMarker', 'MapState', 'Util/
                 gl.uniform4f(programs.sprite.uni.color, color[0], color[1], color[2], color[3]);
                 gl.uniform2f(programs.sprite.uni.offset, 0, 0);
                 gl.uniform1f(programs.sprite.uni.scale, scale);
-                gl.uniform2f(programs.sprite.uni.size, textures.hitCircle.image.width, textures.hitCircle.image.height);
 
-                gl.activeTexture(gl.TEXTURE0);
-                gl.bindTexture(gl.TEXTURE_2D, textures.hitCircle);
-                gl.uniform1i(programs.sprite.uni.sampler, 0);
-
-                draw();
+                draw(textures.hitCircle);
             });
 
             // Numbering
@@ -168,13 +158,8 @@ define('WebGLRenderer', [ 'HitCircle', 'Slider', 'HitMarker', 'MapState', 'Util/
                 gl.uniform4f(programs.sprite.uni.color, 255, 255, 255, 255);
                 gl.uniform2f(programs.sprite.uni.offset, 0, 0);
                 gl.uniform1f(programs.sprite.uni.scale, scale);
-                gl.uniform2f(programs.sprite.uni.size, textures.hitCircleOverlay.image.width, textures.hitCircleOverlay.image.height);
 
-                gl.activeTexture(gl.TEXTURE0);
-                gl.bindTexture(gl.TEXTURE_2D, textures.hitCircleOverlay);
-                gl.uniform1i(programs.sprite.uni.sampler, 0);
-
-                draw();
+                draw(textures.hitCircleOverlay);
             });
 
             var approachProgress = ruleSet.getObjectApproachProgress(object, time);
