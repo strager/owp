@@ -11,6 +11,81 @@ define('WebGLRenderer', [ 'HitCircle', 'Slider', 'HitMarker', 'MapState', 'Util/
 
         // TODO Real work
 
+        var initSprite = function () {
+            var vertexOffset = 0;
+            var uvOffset = 2 * 3 * 2 * 4; // Skip faces (2x3 pairs, x2 floats, x4 bytes)
+
+            gl.bindBuffer(gl.ARRAY_BUFFER, buffers.sprite);
+            gl.vertexAttribPointer(programs.sprite.attr.vertexCoord, 2, gl.FLOAT, false, 0, vertexOffset);
+            gl.vertexAttribPointer(programs.sprite.attr.textureCoord, 2, gl.FLOAT, false, 0, uvOffset);
+            gl.enableVertexAttribArray(programs.sprite.attr.vertexCoord);
+            gl.enableVertexAttribArray(programs.sprite.attr.textureCoord);
+        };
+
+        var uninitSprite = function () {
+            gl.disableVertexAttribArray(programs.sprite.attr.textureCoord);
+            gl.disableVertexAttribArray(programs.sprite.attr.vertexCoord);
+            gl.bindBuffer(gl.ARRAY_BUFFER, null);
+        };
+
+        var sprite = function (callback) {
+            initSprite();
+            callback(function () {
+                gl.drawArrays(gl.TRIANGLES, 0, 6);
+            });
+            uninitSprite();
+        };
+
+        var getDigits = function (number) {
+            return ('' + number).split('');
+        };
+
+        var getNumberImages = function (number) {
+            return getDigits(number).map(function (digit) {
+                var graphic = skin.assetManager.get('default-' + digit, 'image-set');
+
+                return graphic[0];
+            });
+        };
+
+        var renderComboNumber = function (number, draw) {
+            var images = getNumberImages(number);
+            var spacing = skin.hitCircleFontSpacing;
+
+            if (images.length === 0) {
+                // No images?  Don't render anything.
+                return;
+            }
+
+            var totalWidth = images.reduce(function (acc, image) {
+                return acc + image.width;
+            }, 0);
+
+            totalWidth += spacing * (images.length - 1);
+
+            var scale = Math.pow(images.length, -1 / 4) * 0.9;
+            scale *= ruleSet.getCircleSize() / 128;
+            var offset = -totalWidth / 2;
+
+            getDigits(number).forEach(function (digit, i) {
+                var image = images[i];
+                var x = (offset + image.width / 2) * scale;
+                var y = 0;
+
+                gl.uniform2f(programs.sprite.uni.offset, x, y);
+                gl.uniform1f(programs.sprite.uni.scale, scale);
+                gl.uniform2f(programs.sprite.uni.size, image.width, image.height);
+
+                gl.activeTexture(gl.TEXTURE0);
+                gl.bindTexture(gl.TEXTURE_2D, textures.digits[digit]);
+                gl.uniform1i(programs.sprite.uni.sampler, 0);
+
+                draw();
+
+                offset += image.width + spacing;
+            });
+        };
+
         var renderSliderObject = function (object) {
             // TODO
         };
@@ -18,60 +93,42 @@ define('WebGLRenderer', [ 'HitCircle', 'Slider', 'HitMarker', 'MapState', 'Util/
         var renderHitCircle = function (hitCircle, progress) {
             gl.useProgram(programs.sprite);
 
-            gl.uniform2f(programs.sprite.uni.position, hitCircle.x, hitCircle.y);
-            gl.uniform2f(programs.sprite.uni.size, 640, 480);
-            gl.uniform1f(programs.sprite.uni.scale, ruleSet.getCircleSize());
-            gl.uniform3f(programs.sprite.uni.color, hitCircle.combo.color[0] / 255, hitCircle.combo.color[1] / 255, hitCircle.combo.color[2] / 255);
+            sprite(function (draw) {
+                var scale = ruleSet.getCircleSize() / 128;
 
-            var vertexOffset = 0;
-            var uvOffset = 2 * 3 * 2 * 4; // Skip faces (2x3 pairs, x2 floats, x4 bytes)
+                gl.uniform2f(programs.sprite.uni.playfield, 640, 480);
 
-            gl.activeTexture(gl.TEXTURE0);
-            gl.bindTexture(gl.TEXTURE_2D, textures.hitcircle);
-            gl.uniform1i(programs.sprite.uni.sampler, 0);
+                gl.uniform2f(programs.sprite.uni.position, hitCircle.x, hitCircle.y);
 
-            gl.bindBuffer(gl.ARRAY_BUFFER, buffers.sprite);
-            gl.vertexAttribPointer(programs.sprite.attr.vertexCoord, 2, gl.FLOAT, false, 0, vertexOffset);
-            gl.vertexAttribPointer(programs.sprite.attr.textureCoord, 2, gl.FLOAT, false, 0, uvOffset);
-            gl.enableVertexAttribArray(programs.sprite.attr.vertexCoord);
-            gl.enableVertexAttribArray(programs.sprite.attr.textureCoord);
-            gl.drawArrays(gl.TRIANGLES, 0, 6);
-            gl.disableVertexAttribArray(programs.sprite.attr.vertexCoord);
-            gl.disableVertexAttribArray(programs.sprite.attr.textureCoord);
-return;
-// TODO rest of this crap
-            var scale = ruleSet.getCircleSize() / 128;
+                // Hit circle background
+                gl.uniform3f(programs.sprite.uni.color, hitCircle.combo.color[0] / 255, hitCircle.combo.color[1] / 255, hitCircle.combo.color[2] / 255);
+                gl.uniform2f(programs.sprite.uni.offset, 0, 0);
+                gl.uniform1f(programs.sprite.uni.scale, scale);
+                gl.uniform2f(programs.sprite.uni.size, textures.hitCircle.image.width, textures.hitCircle.image.height);
 
-            // Hit circle base
-            var hitCircleGraphic = getShadedGraphic(
-                skin, 'hitcircle',
-                shaders.multiplyByColor, hitCircle.combo.color
-            );
+                gl.activeTexture(gl.TEXTURE0);
+                gl.bindTexture(gl.TEXTURE_2D, textures.hitCircle);
+                gl.uniform1i(programs.sprite.uni.sampler, 0);
 
-            var hitCircleFrame = 0;
+                draw();
 
-            drawImage(
-                hitCircleGraphic[hitCircleFrame],
-                scale,
-                hitCircle.x,
-                hitCircle.y,
-                true
-            );
+                // Numbering
+                gl.uniform3f(programs.sprite.uni.color, 1, 1, 1);
 
-            // Combo numbering
-            renderComboNumber(hitCircle.comboIndex + 1, hitCircle.x, hitCircle.y);
+                renderComboNumber(hitCircle.comboIndex + 1, draw);
 
-            // Hit circle overlay
-            var hitCircleOverlayGraphic = skin.assetManager.get('hitcircleoverlay', 'image-set');
-            var hitCircleOverlayFrame = 0;
+                // Hit circle overlay
+                gl.uniform3f(programs.sprite.uni.color, 1, 1, 1);
+                gl.uniform2f(programs.sprite.uni.offset, 0, 0);
+                gl.uniform1f(programs.sprite.uni.scale, scale);
+                gl.uniform2f(programs.sprite.uni.size, textures.hitCircleOverlay.image.width, textures.hitCircleOverlay.image.height);
 
-            drawImage(
-                hitCircleOverlayGraphic[hitCircleOverlayFrame],
-                scale,
-                hitCircle.x,
-                hitCircle.y,
-                true
-            );
+                gl.activeTexture(gl.TEXTURE0);
+                gl.bindTexture(gl.TEXTURE_2D, textures.hitCircleOverlay);
+                gl.uniform1i(programs.sprite.uni.sampler, 0);
+
+                draw();
+            });
         };
 
         var renderHitCircleObject = function (object) {
@@ -158,21 +215,23 @@ return;
         'attribute vec3 aVertexCoord;',
         'attribute vec2 aTextureCoord;',
 
+        'uniform vec2 uPlayfield;',
         'uniform vec2 uSize;',
         'uniform vec2 uPosition;',
+        'uniform vec2 uOffset;',
         'uniform float uScale;',
 
         'varying vec2 vTextureCoord;',
 
         'mat4 projection = mat4(',
-            '2.0 / uSize.x, 0.0, 0.0, -1.0,',
-            '0.0, -2.0 / uSize.y, 0.0, 1.0,',
+            '2.0 / uPlayfield.x, 0.0, 0.0, -1.0,',
+            '0.0, -2.0 / uPlayfield.y, 0.0, 1.0,',
             '0.0, 0.0,-2.0,-0.0,',
             '0.0, 0.0, 0.0, 1.0',
         ');',
 
         'void main(void) {',
-            'gl_Position = (vec4(aVertexCoord / 2.0, 1.0) * vec4(uScale, uScale, 1.0, 1.0) + vec4(uPosition, 0.0, 0.0)) * projection;',
+            'gl_Position = (vec4(aVertexCoord / 2.0, 1.0) * vec4(uSize * uScale, 1.0, 1.0) + vec4(uPosition + uOffset, 0.0, 0.0)) * projection;',
             'vTextureCoord = aTextureCoord;',
         '}'
     ].join('\n');
@@ -225,8 +284,10 @@ return;
             };
             programs.sprite.uni = {
                 sampler: gl.getUniformLocation(programs.sprite, 'uSampler'),
+                playfield: gl.getUniformLocation(programs.sprite, 'uPlayfield'),
                 size: gl.getUniformLocation(programs.sprite, 'uSize'),
                 position: gl.getUniformLocation(programs.sprite, 'uPosition'),
+                offset: gl.getUniformLocation(programs.sprite, 'uOffset'),
                 scale: gl.getUniformLocation(programs.sprite, 'uScale'),
                 color: gl.getUniformLocation(programs.sprite, 'uColor'),
             };
@@ -249,20 +310,34 @@ return;
                 texture.image = image;
 
                 gl.bindTexture(gl.TEXTURE_2D, texture);
-                gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
                 gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, texture.image);
                 gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
                 gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+                gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+                gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
 
                 return texture;
             }
 
             var hitCircleGraphic = skin.assetManager.get('hitcircle', 'image-set');
-            var hitCircleFrame = 0;
+            var hitCircleOverlayGraphic = skin.assetManager.get('hitcircleoverlay', 'image-set');
 
-            textures.hitcircle = makeTexture(hitCircleGraphic[hitCircleFrame]);
+            textures.hitCircle = makeTexture(hitCircleGraphic[0]);
+            textures.hitCircleOverlay = makeTexture(hitCircleOverlayGraphic[0]);
+
+            var i;
+            var digitGraphic;
+
+            textures.digits = [ ];
+
+            for (i = 0; i < 10; ++i) {
+                digitGraphic = skin.assetManager.get('default-' + i, 'image-set');
+                textures.digits[i] = makeTexture(digitGraphic[0]);
+            }
 
             gl.bindTexture(gl.TEXTURE_2D, null);
+
+            skinInitd = true;
         }
 
         init();
