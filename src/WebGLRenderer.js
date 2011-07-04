@@ -18,15 +18,16 @@ define('WebGLRenderer', [ 'HitCircle', 'Slider', 'HitMarker', 'MapState', 'Util/
         var renderHitCircle = function (hitCircle, progress) {
             gl.useProgram(programs.sprite);
 
-            gl.uniform1f(gl.getUniformLocation(programs.sprite, 'time'), time / 1000);
-            gl.uniform2f(gl.getUniformLocation(programs.sprite, 'resolution'), gl.canvas.width, gl.canvas.height);
+            gl.uniform2f(programs.sprite.uni.position, hitCircle.x, hitCircle.y);
+            gl.uniform2f(programs.sprite.uni.size, 640, 480);
+            gl.uniform1f(programs.sprite.uni.scale, ruleSet.getCircleSize());
 
             var vertexOffset = 0;
             var uvOffset = 2 * 3 * 2 * 4; // Skip faces (2x3 pairs, x2 floats, x4 bytes)
 
             gl.activeTexture(gl.TEXTURE0);
             gl.bindTexture(gl.TEXTURE_2D, textures.hitcircle);
-            gl.uniform1i(programs.sprite.attr.samplerUniform, 0);
+            gl.uniform1i(programs.sprite.uni.sampler, 0);
 
             gl.bindBuffer(gl.ARRAY_BUFFER, buffers.sprite);
             gl.vertexAttribPointer(programs.sprite.attr.vertexCoord, 2, gl.FLOAT, false, 0, vertexOffset);
@@ -156,19 +157,27 @@ return;
         'attribute vec3 aVertexCoord;',
         'attribute vec2 aTextureCoord;',
 
+        'uniform vec2 uSize;',
+        'uniform vec2 uPosition;',
+        'uniform float uScale;',
+
         'varying vec2 vTextureCoord;',
 
+        'mat4 projection = mat4(',
+            '2.0 / uSize.x, 0.0, 0.0, -1.0,',
+            '0.0, -2.0 / uSize.y, 0.0, 1.0,',
+            '0.0, 0.0,-2.0,-0.0,',
+            '0.0, 0.0, 0.0, 1.0',
+        ');',
+
         'void main(void) {',
-            'gl_Position = vec4(aVertexCoord, 1.0);',
+            'gl_Position = (vec4(aVertexCoord / 2.0, 1.0) * vec4(uScale, uScale, 1.0, 1.0) + vec4(uPosition, 0.0, 0.0)) * projection;',
             'vTextureCoord = aTextureCoord;',
         '}'
     ].join('\n');
 
     var colorShader = [
         'varying vec2 vTextureCoord;',
-
-        'uniform float time;',
-        'uniform vec2 resolution;',
 
         'uniform sampler2D uSampler;',
 
@@ -210,8 +219,13 @@ return;
             programs.sprite = createProgram(gl, positionShader, colorShader);
             programs.sprite.attr = {
                 vertexCoord: gl.getAttribLocation(programs.sprite, 'aVertexCoord'),
-                textureCoord: gl.getAttribLocation(programs.sprite, 'aTextureCoord'),
-                samplerUniform: gl.getUniformLocation(programs.sprite, 'uSampler')
+                textureCoord: gl.getAttribLocation(programs.sprite, 'aTextureCoord')
+            };
+            programs.sprite.uni = {
+                sampler: gl.getUniformLocation(programs.sprite, 'uSampler'),
+                size: gl.getUniformLocation(programs.sprite, 'uSize'),
+                position: gl.getUniformLocation(programs.sprite, 'uPosition'),
+                scale: gl.getUniformLocation(programs.sprite, 'uScale'),
             };
 
             resize();
