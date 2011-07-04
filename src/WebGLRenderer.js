@@ -21,6 +21,7 @@ define('WebGLRenderer', [ 'HitCircle', 'Slider', 'HitMarker', 'MapState', 'Util/
             gl.uniform2f(programs.sprite.uni.position, hitCircle.x, hitCircle.y);
             gl.uniform2f(programs.sprite.uni.size, 640, 480);
             gl.uniform1f(programs.sprite.uni.scale, ruleSet.getCircleSize());
+            gl.uniform3f(programs.sprite.uni.color, hitCircle.combo.color[0] / 255, hitCircle.combo.color[1] / 255, hitCircle.combo.color[2] / 255);
 
             var vertexOffset = 0;
             var uvOffset = 2 * 3 * 2 * 4; // Skip faces (2x3 pairs, x2 floats, x4 bytes)
@@ -180,9 +181,10 @@ return;
         'varying vec2 vTextureCoord;',
 
         'uniform sampler2D uSampler;',
+        'uniform vec3 uColor;',
 
         'void main(void) {',
-            'gl_FragColor = texture2D(uSampler, vec2(vTextureCoord.s, vTextureCoord.t));',
+            'gl_FragColor = texture2D(uSampler, vec2(vTextureCoord.s, vTextureCoord.t)) * vec4(uColor, 1.0);',
         '}'
     ].join('\n');
 
@@ -226,6 +228,7 @@ return;
                 size: gl.getUniformLocation(programs.sprite, 'uSize'),
                 position: gl.getUniformLocation(programs.sprite, 'uPosition'),
                 scale: gl.getUniformLocation(programs.sprite, 'uScale'),
+                color: gl.getUniformLocation(programs.sprite, 'uColor'),
             };
 
             resize();
