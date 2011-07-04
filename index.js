@@ -1,4 +1,4 @@
-require([ 'jQuery', 'CanvasRenderer', 'AssetManager', 'q', 'Game', 'Util/FramerateCounter', 'Util/gPubSub' ], function ($, CanvasRenderer, AssetManager, Q, Game, FramerateCounter, gPubSub) {
+require([ 'jQuery', 'WebGLRenderer', 'AssetManager', 'q', 'Game', 'Util/FramerateCounter', 'Util/gPubSub' ], function ($, WebGLRenderer, AssetManager, Q, Game, FramerateCounter, gPubSub) {
     var mapAssetManager = new AssetManager('assets');
     var skinAssetManager = new AssetManager('.');
 
@@ -8,10 +8,10 @@ require([ 'jQuery', 'CanvasRenderer', 'AssetManager', 'q', 'Game', 'Util/Framera
         canvas.height = 480;
         $(canvas).appendTo(document.body);
 
-        var canvasRenderer = new CanvasRenderer(canvas.getContext('2d'));
+        var renderer = new WebGLRenderer(canvas.getContext('experimental-webgl'));
 
         return {
-            renderer: canvasRenderer,
+            renderer: renderer,
             playArea: canvas
         };
     };
