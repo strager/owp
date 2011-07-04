@@ -1,17 +1,6 @@
 define('WebGLRenderer', [ 'HitCircle', 'Slider', 'HitMarker', 'MapState', 'Util/gPubSub' ], function (HitCircle, Slider, HitMarker, MapState, gPubSub) {
-    var renderMap = function (vars) {
-        var mapState = vars.mapState;
-        var ruleSet = mapState.ruleSet;
-        var skin = vars.skin;
-        var time = vars.time;
-        var gl = vars.context;
-        var buffers = vars.buffers;
-        var programs = vars.programs;
-        var textures = vars.textures;
-
-        // TODO Real work
-
-        var program = function (program, init, uninit, callback) {
+    var drawers = function (gl, buffers, programs) {
+        function program (program, init, uninit, callback) {
             // TODO Optimize useProgram and init/uninit calls
 
             gl.useProgram(program);
@@ -19,9 +8,9 @@ define('WebGLRenderer', [ 'HitCircle', 'Slider', 'HitMarker', 'MapState', 'Util/
             init();
             callback();
             uninit();
-        };
+        }
 
-        var initSprite = function () {
+        function initSprite () {
             var vertexOffset = 0;
             var uvOffset = 2 * 3 * 2 * 4; // Skip faces (2x3 pairs, x2 floats, x4 bytes)
 
@@ -30,15 +19,15 @@ define('WebGLRenderer', [ 'HitCircle', 'Slider', 'HitMarker', 'MapState', 'Util/
             gl.vertexAttribPointer(programs.sprite.attr.textureCoord, 2, gl.FLOAT, false, 0, uvOffset);
             gl.enableVertexAttribArray(programs.sprite.attr.vertexCoord);
             gl.enableVertexAttribArray(programs.sprite.attr.textureCoord);
-        };
+        }
 
-        var uninitSprite = function () {
+        function uninitSprite () {
             gl.disableVertexAttribArray(programs.sprite.attr.textureCoord);
             gl.disableVertexAttribArray(programs.sprite.attr.vertexCoord);
             gl.bindBuffer(gl.ARRAY_BUFFER, null);
-        };
+        }
 
-        var sprite = function (callback) {
+        function sprite(callback) {
             program(programs.sprite, initSprite, uninitSprite, function () {
                 gl.uniform2f(programs.sprite.uni.playfield, 640, 480);
 
@@ -54,7 +43,27 @@ define('WebGLRenderer', [ 'HitCircle', 'Slider', 'HitMarker', 'MapState', 'Util/
                     gl.drawArrays(gl.TRIANGLES, 0, 6);
                 });
             });
+        }
+
+        return {
+            program: program,
+            sprite: sprite
         };
+    };
+
+    var renderMap = function (vars) {
+        var mapState = vars.mapState;
+        var ruleSet = mapState.ruleSet;
+        var skin = vars.skin;
+        var time = vars.time;
+        var gl = vars.context;
+        var buffers = vars.buffers;
+        var programs = vars.programs;
+        var textures = vars.textures;
+
+        var draw = drawers(gl, buffers, programs);
+
+        // TODO Real work
 
         var getDigits = function (number) {
             return ('' + number).split('');
@@ -77,7 +86,7 @@ define('WebGLRenderer', [ 'HitCircle', 'Slider', 'HitMarker', 'MapState', 'Util/
 
             radius *= ruleSet.getCircleSize() / 128;
 
-            sprite(function (draw) {
+            draw.sprite(function (draw) {
                 gl.uniform4f(programs.sprite.uni.color, color[0], color[1], color[2], color[3]);
                 gl.uniform2f(programs.sprite.uni.position, x, y);
                 gl.uniform1f(programs.sprite.uni.scale, radius);
@@ -106,7 +115,7 @@ define('WebGLRenderer', [ 'HitCircle', 'Slider', 'HitMarker', 'MapState', 'Util/
             scale *= ruleSet.getCircleSize() / 128;
             var offset = -totalWidth / 2;
 
-            sprite(function (draw) {
+            draw.sprite(function (draw) {
                 gl.uniform4f(programs.sprite.uni.color, 255, 255, 255, 255);
                 gl.uniform2f(programs.sprite.uni.position, x, y);
                 gl.uniform1f(programs.sprite.uni.scale, scale);
@@ -140,7 +149,7 @@ define('WebGLRenderer', [ 'HitCircle', 'Slider', 'HitMarker', 'MapState', 'Util/
             var scale = ruleSet.getCircleSize() / 128;
 
             // Hit circle background
-            sprite(function (draw) {
+            draw.sprite(function (draw) {
                 gl.uniform2f(programs.sprite.uni.position, object.x, object.y);
                 gl.uniform4f(programs.sprite.uni.color, color[0], color[1], color[2], color[3]);
                 gl.uniform2f(programs.sprite.uni.offset, 0, 0);
@@ -153,7 +162,7 @@ define('WebGLRenderer', [ 'HitCircle', 'Slider', 'HitMarker', 'MapState', 'Util/
             renderComboNumber(object.comboIndex + 1, object.x, object.y);
 
             // Hit circle overlay
-            sprite(function (draw) {
+            draw.sprite(function (draw) {
                 gl.uniform2f(programs.sprite.uni.position, object.x, object.y);
                 gl.uniform4f(programs.sprite.uni.color, 255, 255, 255, 255);
                 gl.uniform2f(programs.sprite.uni.offset, 0, 0);
