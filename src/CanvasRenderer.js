@@ -32,6 +32,48 @@ define('CanvasRenderer', [ 'HitCircle', 'Slider', 'HitMarker', 'Util/Cache', 'ca
             );
         };
 
+        var getCoord = function (x) {
+            return Math.floor(x);
+        };
+
+        var drawImage = function (image, scale, x, y, cache) {
+            var key = [ image, scale ];
+
+            var scaledWidth = Math.ceil(image.width * scale);
+            var scaledHeight = Math.ceil(image.height * scale);
+
+            if (!cache) {
+                c.drawImage(
+                    image,
+                    getCoord(x - scaledWidth / 2),
+                    getCoord(y - scaledHeight / 2),
+                    scaledWidth,
+                    scaledHeight
+                );
+
+                return;
+            }
+
+            var scaledImage = caches.scaledImages.get(key, function () {
+                // Cache scaled image
+                var newCanvas = document.createElement('canvas');
+                newCanvas.width = scaledWidth;
+                newCanvas.height = scaledHeight;
+
+                var newContext = newCanvas.getContext('2d');
+                newContext.globalCompositeOperation = 'copy',
+                newContext.drawImage(image, 0, 0, scaledWidth, scaledHeight);
+
+                return newCanvas;
+            });
+
+            c.drawImage(
+                scaledImage,
+                getCoord(x - scaledImage.width / 2),
+                getCoord(y - scaledImage.height / 2)
+            );
+        };
+
         var getNumberImages = function (number) {
             var digits = '' + number;
 
@@ -49,7 +91,7 @@ define('CanvasRenderer', [ 'HitCircle', 'Slider', 'HitMarker', 'Util/Cache', 'ca
             return images;
         };
 
-        var renderComboNumber = function (number) {
+        var renderComboNumber = function (number, x, y) {
             var images = getNumberImages(number);
             var spacing = skin.hitCircleFontSpacing;
 
@@ -58,8 +100,6 @@ define('CanvasRenderer', [ 'HitCircle', 'Slider', 'HitMarker', 'Util/Cache', 'ca
                 return;
             }
 
-            var i;
-
             var totalWidth = images.reduce(function (acc, image) {
                 return acc + image.width;
             }, 0);
@@ -67,21 +107,25 @@ define('CanvasRenderer', [ 'HitCircle', 'Slider', 'HitMarker', 'Util/Cache', 'ca
             totalWidth += spacing * (images.length - 1);
 
             var scale = Math.pow(images.length, -1 / 4) * 0.9;
-
-            c.save();
-            c.scale(scale, scale);
-            c.translate(-totalWidth / 2, 0);
+            scale *= ruleSet.getCircleSize() / 128;
+            var offset = -totalWidth / 2;
 
             images.forEach(function (image) {
-                c.drawImage(image, 0, -image.height / 2);
+                drawImage(
+                    image,
+                    scale,
+                    x + (offset + image.width / 2) * scale,
+                    y,
+                    true
+                );
 
-                c.translate(image.width + spacing, 0);
+                offset += image.width + spacing;
             });
-
-            c.restore();
         };
 
         var renderHitCircle = function (hitCircle, progress) {
+            var scale = ruleSet.getCircleSize() / 128;
+
             // Hit circle base
             var hitCircleGraphic = getShadedGraphic(
                 skin, 'hitcircle',
@@ -90,19 +134,31 @@ define('CanvasRenderer', [ 'HitCircle', 'Slider', 'HitMarker', 'Util/Cache', 'ca
 
             var hitCircleFrame = 0;
 
-            drawImageCentred(hitCircleGraphic[hitCircleFrame]);
+            drawImage(
+                hitCircleGraphic[hitCircleFrame],
+                scale,
+                hitCircle.x,
+                hitCircle.y,
+                true
+            );
 
             // Combo numbering
-            renderComboNumber(hitCircle.comboIndex + 1);
+            renderComboNumber(hitCircle.comboIndex + 1, hitCircle.x, hitCircle.y);
 
             // Hit circle overlay
             var hitCircleOverlayGraphic = skin.assetManager.get('hitcircleoverlay', 'image-set');
             var hitCircleOverlayFrame = 0;
 
-            drawImageCentred(hitCircleOverlayGraphic[hitCircleOverlayFrame]);
+            drawImage(
+                hitCircleOverlayGraphic[hitCircleOverlayFrame],
+                scale,
+                hitCircle.x,
+                hitCircle.y,
+                true
+            );
         };
 
-        var renderApproachCircle = function (hitObject, progress, x, y) {
+        var renderApproachCircle = function (hitObject, progress) {
             var radius = 1;
 
             if (progress > 0) {
@@ -111,7 +167,7 @@ define('CanvasRenderer', [ 'HitCircle', 'Slider', 'HitMarker', 'Util/Cache', 'ca
                 radius += (1 - (-progress)) / 4;
             }
 
-            c.scale(radius, radius);
+            radius *= ruleSet.getCircleSize() / 128;
 
             var approachCircleGraphic = getShadedGraphic(
                 skin, 'approachcircle',
@@ -120,41 +176,37 @@ define('CanvasRenderer', [ 'HitCircle', 'Slider', 'HitMarker', 'Util/Cache', 'ca
 
             var approachCircleFrame = 0;
 
-            if (approachCircleGraphic) {
-                drawImageCentred(approachCircleGraphic[approachCircleFrame]);
-            }
+            drawImage(
+                approachCircleGraphic[approachCircleFrame],
+                radius,
+                hitObject.x, hitObject.y,
+                false
+            );
         };
 
         var renderHitMarker = function (hitMarker) {
-            c.save();
-            c.translate(hitMarker.hitObject.x, hitMarker.hitObject.y);
-
             var scale = ruleSet.getHitMarkerScale(hitMarker, time);
-            c.scale(scale, scale);
 
             // Hit marker
             var hitMarkerGraphic = skin.assetManager.get('hit' + hitMarker.score, 'image-set');
             var hitMarkerFrame = 0;
 
-            drawImageCentred(hitMarkerGraphic[hitMarkerFrame]);
-
-            c.restore();
+            drawImage(
+                hitMarkerGraphic[hitMarkerFrame],
+                scale,
+                hitMarker.hitObject.x,
+                hitMarker.hitObject.y,
+                true
+            );
         };
 
         var renderHitCircleObject = function (object) {
-            var scale = ruleSet.getCircleSize() / 128;
             var approachProgress = ruleSet.getObjectApproachProgress(object, time);
-
-            c.save();
-            c.translate(object.x, object.y);
-            c.scale(scale, scale);
 
             c.globalAlpha = ruleSet.getObjectOpacity(object, time);
 
             renderHitCircle(object);
             renderApproachCircle(object, approachProgress);
-
-            c.restore();
         };
 
         var renderHitMarkerObject = function (object) {
@@ -222,11 +274,13 @@ define('CanvasRenderer', [ 'HitCircle', 'Slider', 'HitMarker', 'Util/Cache', 'ca
                 var sliderBallGraphic = skin.assetManager.get('sliderb0', 'image-set');
                 var sliderBallFrame = 0;
 
-                c.save();
-                c.translate(sliderBallPosition[0], sliderBallPosition[1]);
-                c.scale(scale, scale);
-                drawImageCentred(sliderBallGraphic[sliderBallFrame]);
-                c.restore();
+                drawImage(
+                    sliderBallGraphic[sliderBallFrame],
+                    scale,
+                    sliderBallPosition[0],
+                    sliderBallPosition[1],
+                    true
+                );
             }
         };
 
@@ -246,11 +300,7 @@ define('CanvasRenderer', [ 'HitCircle', 'Slider', 'HitMarker', 'Util/Cache', 'ca
             c.globalAlpha = opacity;
             renderSliderTrack(points, object);
 
-            c.save();
-            c.translate(object.x, object.y);
-            c.scale(scale, scale);
             renderHitCircle(object);
-            c.restore();
 
             var visibility = ruleSet.getObjectVisibilityAtTime(object, time);
 
@@ -259,11 +309,7 @@ define('CanvasRenderer', [ 'HitCircle', 'Slider', 'HitMarker', 'Util/Cache', 'ca
             }
 
             var approachProgress = ruleSet.getObjectApproachProgress(object, time);
-            c.save();
-            c.translate(object.x, object.y);
-            c.scale(scale, scale);
             renderApproachCircle(object, approachProgress);
-            c.restore();
 
             c.restore();
         };
@@ -349,7 +395,10 @@ define('CanvasRenderer', [ 'HitCircle', 'Slider', 'HitMarker', 'Util/Cache', 'ca
             background: new Cache(),
 
             // [ sliderObject, mapState, skin ] => { image, pointCount }
-            sliderTrack: new Cache()
+            sliderTrack: new Cache(),
+
+            // [ graphic, scale ] => graphic
+            scaledImages: new Cache()
         };
 
         var renderBackground = function (graphic) {
