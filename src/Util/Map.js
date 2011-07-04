@@ -1,13 +1,18 @@
 define('Util/Map', [ ], function () {
     var Map = function () {
-        this.data = [ ];
+        this.keys = [ ];
+        this.values = [ ];
     };
+
+    function isArray(x) {
+        return Object.prototype.toString.call(x) === '[object Array]';
+    }
 
     Map.prototype = {
         areKeysEqual: function (a, b) {
             var i;
 
-            if (a instanceof Array && b instanceof Array) {
+            if (isArray(a) && isArray(b)) {
                 // Weak comparison for arrays
                 if (a.length !== b.length) {
                     return false;
@@ -31,30 +36,32 @@ define('Util/Map', [ ], function () {
 
             // Check if the data already exists in the map
             // If so, just override it
-            for (i = 0; i < this.data.length; ++i) {
-                data = this.data[i];
+            var index = this.getIndexFromKey(key);
 
-                if (this.areKeysEqual(data.key, key)) {
-                    data.value = value;
-
-                    return;
-                }
+            if (index >= 0) {
+                this.values[index] = value;
+            } else {
+                this.keys.push(key);
+                this.values.push(value);
             }
-
-            this.data.unshift({
-                key: key,
-                value: value
-            });
         },
 
         getIndexFromKey: function (key) {
-            var i, data;
+            // Super fast case: indexOf works (same object)
+            var index = this.keys.indexOf(key);
 
-            for (i = 0; i < this.data.length; ++i) {
-                data = this.data[i];
+            if (index >= 0) {
+                return index;
+            }
 
-                if (this.areKeysEqual(data.key, key)) {
-                    return i;
+            // Super slow case: manual iteration and comparison
+            var curKey;
+
+            for (index = 0; index < this.keys.length; ++index) {
+                curKey = this.keys[index];
+
+                if (this.areKeysEqual(curKey, key)) {
+                    return index;
                 }
             }
 
@@ -72,10 +79,10 @@ define('Util/Map', [ ], function () {
                     return defaultValue;
                 }
 
-                throw 'No such value for key ' + key;
+                throw new Error('No such value for key ' + key);
             }
 
-            return this.data[index].value;
+            return this.values[index];
         },
 
         contains: function (key) {
@@ -86,17 +93,18 @@ define('Util/Map', [ ], function () {
             var index = this.getIndexFromKey(key);
 
             if (index < 0) {
-                throw 'No such value for key ' + key;
+                throw new Error('No such value for key ' + key);
             }
 
-            this.data.splice(index, 1);
+            this.keys.splice(index, 1);
+            this.values.splice(index, 1);
         },
 
         forEach: function (callback, context) {
             var i;
 
-            for (i = 0; i < this.data.length; ++i) {
-                callback.call(context, this.data[i].key, this.data[i].value);
+            for (i = 0; i < this.keys.length; ++i) {
+                callback.call(context, this.keys[i], this.values[i]);
             }
         }
     };
