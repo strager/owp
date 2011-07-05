@@ -94,7 +94,7 @@ define('BezierSliderCurve', [ ], function () {
 
     var BezierSliderCurve = function (rawPoints, sliderLength, repeatCount) {
         this.length = sliderLength;
-        this.points = render(rawPoints, (rawPoints.length - 1) * 5, this.length);
+        this.points = render(rawPoints, (rawPoints.length - 1) * 50, this.length);
     };
 
     var getSliderBallPercentage = function (repeatLength, timeOffset) {
