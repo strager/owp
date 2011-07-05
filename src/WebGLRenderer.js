@@ -207,6 +207,25 @@ define('WebGLRenderer', [ 'HitCircle', 'Slider', 'HitMarker', 'MapState', 'Util/
             });
         };
 
+        var renderSliderBall = function (object) {
+            var sliderBallPosition = object.curve.getSliderBallPosition(object, time, ruleSet);
+
+            if (!sliderBallPosition) {
+                return;
+            }
+
+            var scale = ruleSet.getCircleSize() / 128;
+
+            draw.sprite(function (draw) {
+                gl.uniform2f(programs.sprite.uni.position, sliderBallPosition[0], sliderBallPosition[1]);
+                gl.uniform4f(programs.sprite.uni.color, 255, 255, 255, 255);
+                gl.uniform2f(programs.sprite.uni.offset, 0, 0);
+                gl.uniform1f(programs.sprite.uni.scale, scale);
+
+                draw(textures.sliderBall);
+            });
+        };
+
         var renderSliderObject = function (object) {
             var key = [ object, mapState ];
 
@@ -235,6 +254,12 @@ define('WebGLRenderer', [ 'HitCircle', 'Slider', 'HitMarker', 'MapState', 'Util/
             });
 
             renderHitCircleObject(object);
+
+            var visibility = ruleSet.getObjectVisibilityAtTime(object, time);
+
+            if (visibility === 'during') {
+                renderSliderBall(object);
+            }
         };
 
         var renderHitCircleObject = function (object) {
@@ -509,10 +534,12 @@ define('WebGLRenderer', [ 'HitCircle', 'Slider', 'HitMarker', 'MapState', 'Util/
             var hitCircleGraphic = skin.assetManager.get('hitcircle', 'image-set');
             var hitCircleOverlayGraphic = skin.assetManager.get('hitcircleoverlay', 'image-set');
             var approachCircleGraphic = skin.assetManager.get('approachcircle', 'image-set');
+            var sliderBallGraphic = skin.assetManager.get('sliderb0', 'image-set');
 
             textures.hitCircle = makeTexture(hitCircleGraphic[0]);
             textures.hitCircleOverlay = makeTexture(hitCircleOverlayGraphic[0]);
             textures.approachCircle = makeTexture(approachCircleGraphic[0]);
+            textures.sliderBall = makeTexture(sliderBallGraphic[0]);
 
             var i;
             var graphic;
