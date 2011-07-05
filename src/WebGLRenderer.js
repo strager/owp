@@ -543,7 +543,7 @@ define('WebGLRenderer', [ 'HitCircle', 'Slider', 'HitMarker', 'MapState', 'Util/
 
             for (i = 0; i < hitScores.length; ++i) {
                 graphic = skin.assetManager.get('hit' + hitScores[i], 'image-set');
-                textures.hitMarkers[i] = makeTexture(graphic[0]);
+                textures.hitMarkers[hitScores[i]] = makeTexture(graphic[0]);
             }
 
             gl.bindTexture(gl.TEXTURE_2D, null);
