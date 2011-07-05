@@ -254,21 +254,23 @@ define('WebGLRenderer', [ 'HitCircle', 'Slider', 'HitMarker', 'MapState', 'Util/
                 draw(Math.round(c.vertexCount * growPercentage));
             });
 
-            renderHitCircleObject(object);
-
-            // End
-            draw.sprite(function (draw) {
-                var lastPoint = object.curve.render(growPercentage).slice(-1)[0];
-
-                gl.uniform2f(programs.sprite.uni.position, lastPoint[0], lastPoint[1]);
-                gl.uniform4f(programs.sprite.uni.color, color[0], color[1], color[2], color[3]);
-                gl.uniform2f(programs.sprite.uni.offset, 0, 0);
-                gl.uniform1f(programs.sprite.uni.scale, scale);
-
-                draw(textures.hitCircle);
-            });
-
             var visibility = ruleSet.getObjectVisibilityAtTime(object, time);
+
+            var lastPoint = object.curve.render(growPercentage).slice(-1)[0];
+
+            if (lastPoint) {
+                // End
+                draw.sprite(function (draw) {
+                    gl.uniform2f(programs.sprite.uni.position, lastPoint[0], lastPoint[1]);
+                    gl.uniform4f(programs.sprite.uni.color, color[0], color[1], color[2], color[3]);
+                    gl.uniform2f(programs.sprite.uni.offset, 0, 0);
+                    gl.uniform1f(programs.sprite.uni.scale, scale);
+
+                    draw(textures.hitCircle);
+                });
+            }
+
+            renderHitCircleObject(object);
 
             if (visibility === 'during') {
                 renderSliderBall(object);
