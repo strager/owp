@@ -69,7 +69,12 @@ define('BezierSliderCurve', [ ], function () {
                 var deltaX = curPoint[0] - lastPoint[0];
                 var deltaY = curPoint[1] - lastPoint[1];
 
-                currentLength += Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+                var length = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+
+                curPoint[3] = deltaX / length;
+                curPoint[4] = deltaY / length;
+
+                currentLength += length;
             }
 
             curPoint[2] = currentLength;
@@ -89,7 +94,7 @@ define('BezierSliderCurve', [ ], function () {
 
     var BezierSliderCurve = function (rawPoints, sliderLength, repeatCount) {
         this.length = sliderLength;
-        this.points = render(rawPoints, (rawPoints.length - 1) * 50, this.length);
+        this.points = render(rawPoints, (rawPoints.length - 1) * 5, this.length);
     };
 
     var getSliderBallPercentage = function (repeatLength, timeOffset) {

@@ -1,6 +1,14 @@
-define('WebGLRenderer', [ 'HitCircle', 'Slider', 'HitMarker', 'MapState', 'Util/gPubSub' ], function (HitCircle, Slider, HitMarker, MapState, gPubSub) {
+define('WebGLRenderer', [ 'HitCircle', 'Slider', 'HitMarker', 'MapState', 'Util/gPubSub', 'Util/Cache' ], function (HitCircle, Slider, HitMarker, MapState, gPubSub, Cache) {
     var drawers = function (gl, buffers, programs) {
+        var inProgram = false;
+
         function program (program, init, uninit, callback) {
+            if (inProgram) {
+                throw new Error('Already in program');
+            }
+
+            inProgram = true;
+
             // TODO Optimize useProgram and init/uninit calls
 
             gl.useProgram(program);
@@ -8,6 +16,8 @@ define('WebGLRenderer', [ 'HitCircle', 'Slider', 'HitMarker', 'MapState', 'Util/
             init();
             callback();
             uninit();
+
+            inProgram = false;
         }
 
         function initSprite () {
@@ -45,9 +55,33 @@ define('WebGLRenderer', [ 'HitCircle', 'Slider', 'HitMarker', 'MapState', 'Util/
             });
         }
 
+        function curve(curveId, callback) {
+            function init() {
+                var vertexOffset = 0;
+
+                gl.bindBuffer(gl.ARRAY_BUFFER, buffers.curves[curveId]);
+                gl.vertexAttribPointer(programs.curve.attr.vertexCoord, 2, gl.FLOAT, false, 0, vertexOffset);
+                gl.enableVertexAttribArray(programs.curve.attr.vertexCoord);
+            }
+
+            function uninit() {
+                gl.disableVertexAttribArray(programs.curve.attr.vertexCoord);
+                gl.bindBuffer(gl.ARRAY_BUFFER, null);
+            }
+
+            program(programs.curve, init, uninit, function () {
+                gl.uniform2f(programs.curve.uni.playfield, 640, 480);
+
+                callback(function draw(vertexCount) {
+                    gl.drawArrays(gl.TRIANGLES, 0, vertexCount);
+                });
+            });
+        }
+
         return {
             program: program,
-            sprite: sprite
+            sprite: sprite,
+            curve: curve
         };
     };
 
@@ -60,6 +94,7 @@ define('WebGLRenderer', [ 'HitCircle', 'Slider', 'HitMarker', 'MapState', 'Util/
         var buffers = vars.buffers;
         var programs = vars.programs;
         var textures = vars.textures;
+        var caches = vars.caches;
 
         var draw = drawers(gl, buffers, programs);
 
@@ -73,6 +108,57 @@ define('WebGLRenderer', [ 'HitCircle', 'Slider', 'HitMarker', 'MapState', 'Util/
             return getDigits(number).map(function (digit) {
                 return textures.digits[digit];
             });
+        };
+
+        var createSliderTrack = function (points, radius) {
+            var data = [ ];
+
+            function extrude(point) {
+                // [ x, y, _, dx, dy ] => [ x1, y1, x2, y2 ]
+
+                var x = point[0];
+                var y = point[1];
+                var dx = point[3];
+                var dy = point[4];
+
+                return [
+                    x - dy * radius,
+                    y + dx * radius,
+                    x + dy * radius,
+                    y - dx * radius
+                ];
+            }
+
+            function quad(a, b) {
+                data.push(a[0]); data.push(a[1]);
+                data.push(a[2]); data.push(a[3]);
+                data.push(b[0]); data.push(b[1]);
+
+                data.push(a[2]); data.push(a[3]);
+                data.push(b[0]); data.push(b[1]);
+                data.push(b[2]); data.push(b[3]);
+            }
+
+            var lastP = points[0];
+            var last = extrude(points[0]);
+
+            points.slice(1).forEach(function (point) {
+                var cur = extrude(point);
+
+                quad(last, cur);
+
+                last = cur;
+                lastP = point;
+            });
+
+            var buffer = gl.createBuffer();
+            gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+            gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(data), gl.STATIC_DRAW);
+
+            return {
+                vertexCount: data.length / 2,
+                buffer: buffer
+            };
         };
 
         var renderApproachCircle = function (progress, x, y, color, alpha) {
@@ -135,7 +221,33 @@ define('WebGLRenderer', [ 'HitCircle', 'Slider', 'HitMarker', 'MapState', 'Util/
         };
 
         var renderSliderObject = function (object) {
-            // TODO
+            var key = [ object, mapState ];
+
+            var c = caches.sliderTrack.get(key, function () {
+                var points = object.curve.points;
+
+                var b = createSliderTrack(points, ruleSet.getCircleSize() / 2);
+                var buffer = b.buffer;
+                buffers.curves.push(buffer);
+
+                return {
+                    vertexCount: b.vertexCount,
+                    buffer: buffer,
+                    id: buffers.curves.length - 1
+                };
+            });
+
+            var alpha = 1;
+            var color = object.combo.color.concat([ alpha * 255 ]);
+            var growPercentage = ruleSet.getSliderGrowPercentage(object, time);
+
+            draw.curve(c.id, function (draw) {
+                gl.uniform4f(programs.curve.uni.color, color[0], color[1], color[2], color[3]);
+
+                draw(Math.round(c.vertexCount * growPercentage));
+            });
+
+            renderHitCircleObject(object);
         };
 
         var renderHitCircleObject = function (object) {
@@ -258,8 +370,8 @@ define('WebGLRenderer', [ 'HitCircle', 'Slider', 'HitMarker', 'MapState', 'Util/
         });
     };
 
-    var positionShader = [
-        'attribute vec3 aVertexCoord;',
+    var spriteVertexShader = [
+        'attribute vec2 aVertexCoord;',
         'attribute vec2 aTextureCoord;',
 
         'uniform vec2 uPlayfield;',
@@ -278,12 +390,12 @@ define('WebGLRenderer', [ 'HitCircle', 'Slider', 'HitMarker', 'MapState', 'Util/
         ');',
 
         'void main(void) {',
-            'gl_Position = (vec4(aVertexCoord / 2.0, 1.0) * vec4(uSize * uScale, 1.0, 1.0) + vec4(uPosition + uOffset, 0.0, 0.0)) * projection;',
+            'gl_Position = (vec4(aVertexCoord / 2.0, 0.0, 1.0) * vec4(uSize * uScale, 1.0, 1.0) + vec4(uPosition + uOffset, 0.0, 0.0)) * projection;',
             'vTextureCoord = aTextureCoord;',
         '}'
     ].join('\n');
 
-    var colorShader = [
+    var spriteFragmentShader = [
         'varying vec2 vTextureCoord;',
 
         'uniform sampler2D uSampler;',
@@ -294,12 +406,42 @@ define('WebGLRenderer', [ 'HitCircle', 'Slider', 'HitMarker', 'MapState', 'Util/
         '}'
     ].join('\n');
 
+    var curveVertexShader = [
+        'attribute vec2 aVertexCoord;',
+
+        'uniform vec2 uPlayfield;',
+
+        'mat4 projection = mat4(',
+            '2.0 / uPlayfield.x, 0.0, 0.0, -1.0,',
+            '0.0, -2.0 / uPlayfield.y, 0.0, 1.0,',
+            '0.0, 0.0,-2.0,-0.0,',
+            '0.0, 0.0, 0.0, 1.0',
+        ');',
+
+        'void main(void) {',
+            'gl_Position = vec4(aVertexCoord, 0.0, 1.0) * projection;',
+        '}'
+    ].join('\n');
+
+    var curveFragmentShader = [
+        'uniform vec4 uColor;',
+
+        'void main(void) {',
+            'gl_FragColor = vec4(uColor) / 255.0;',
+        '}'
+    ].join('\n');
+
     var WebGLRenderer = function (context) {
         var gl = context;
 
         var buffers = { };
         var programs = { };
         var textures = { };
+
+        var caches = {
+            // [ sliderObject, mapState, skin ] => curveId
+            sliderTrack: new Cache()
+        };
 
         function init() {
             buffers.sprite = gl.createBuffer();
@@ -324,7 +466,9 @@ define('WebGLRenderer', [ 'HitCircle', 'Slider', 'HitMarker', 'MapState', 'Util/
                  0, 1,
             ]), gl.STATIC_DRAW);
 
-            programs.sprite = createProgram(gl, positionShader, colorShader);
+            buffers.curves = [ ];
+
+            programs.sprite = createProgram(gl, spriteVertexShader, spriteFragmentShader);
             programs.sprite.attr = {
                 vertexCoord: gl.getAttribLocation(programs.sprite, 'aVertexCoord'),
                 textureCoord: gl.getAttribLocation(programs.sprite, 'aTextureCoord')
@@ -337,6 +481,15 @@ define('WebGLRenderer', [ 'HitCircle', 'Slider', 'HitMarker', 'MapState', 'Util/
                 offset: gl.getUniformLocation(programs.sprite, 'uOffset'),
                 scale: gl.getUniformLocation(programs.sprite, 'uScale'),
                 color: gl.getUniformLocation(programs.sprite, 'uColor'),
+            };
+
+            programs.curve = createProgram(gl, curveVertexShader, curveFragmentShader);
+            programs.curve.attr = {
+                vertexCoord: gl.getAttribLocation(programs.curve, 'aVertexCoord'),
+            };
+            programs.curve.uni = {
+                playfield: gl.getUniformLocation(programs.curve, 'uPlayfield'),
+                color: gl.getUniformLocation(programs.curve, 'uColor'),
             };
 
             gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
@@ -436,7 +589,8 @@ define('WebGLRenderer', [ 'HitCircle', 'Slider', 'HitMarker', 'MapState', 'Util/
                     context: context,
                     buffers: buffers,
                     programs: programs,
-                    textures: textures
+                    textures: textures,
+                    caches: caches
                 });
             },
 
