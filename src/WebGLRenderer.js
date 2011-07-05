@@ -73,7 +73,7 @@ define('WebGLRenderer', [ 'HitCircle', 'Slider', 'HitMarker', 'MapState', 'Util/
                 gl.uniform2f(programs.curve.uni.playfield, 640, 480);
 
                 callback(function draw(vertexCount) {
-                    gl.drawArrays(gl.TRIANGLES, 0, vertexCount);
+                    gl.drawArrays(gl.TRIANGLE_STRIP, 0, vertexCount);
                 });
             });
         }
@@ -129,26 +129,13 @@ define('WebGLRenderer', [ 'HitCircle', 'Slider', 'HitMarker', 'MapState', 'Util/
                 ];
             }
 
-            function quad(a, b) {
+            function mark(a) {
                 data.push(a[0]); data.push(a[1]);
                 data.push(a[2]); data.push(a[3]);
-                data.push(b[0]); data.push(b[1]);
-
-                data.push(a[2]); data.push(a[3]);
-                data.push(b[0]); data.push(b[1]);
-                data.push(b[2]); data.push(b[3]);
             }
 
-            var lastP = points[0];
-            var last = extrude(points[0]);
-
-            points.slice(1).forEach(function (point) {
-                var cur = extrude(point);
-
-                quad(last, cur);
-
-                last = cur;
-                lastP = point;
+            points.forEach(function (point) {
+                mark(extrude(point));
             });
 
             var buffer = gl.createBuffer();
