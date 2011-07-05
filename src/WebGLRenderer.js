@@ -336,25 +336,25 @@ define('WebGLRenderer', [ 'HitCircle', 'Slider', 'HitMarker', 'MapState', 'Util/
             resize();
         };
 
+        function makeTexture(image) {
+            var texture = gl.createTexture();
+            texture.image = image;
+
+            gl.bindTexture(gl.TEXTURE_2D, texture);
+            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, texture.image);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+
+            return texture;
+        }
+
         var skinInitd = false;
 
         function initSkin(skin) {
             if (skinInitd) {
                 return;
-            }
-
-            function makeTexture(image) {
-                var texture = gl.createTexture();
-                texture.image = image;
-
-                gl.bindTexture(gl.TEXTURE_2D, texture);
-                gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, texture.image);
-                gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-                gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-                gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-                gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-
-                return texture;
             }
 
             var hitCircleGraphic = skin.assetManager.get('hitcircle', 'image-set');
@@ -378,6 +378,20 @@ define('WebGLRenderer', [ 'HitCircle', 'Slider', 'HitMarker', 'MapState', 'Util/
             gl.bindTexture(gl.TEXTURE_2D, null);
 
             skinInitd = true;
+        }
+
+        var storyboardInitd = false;
+
+        function initStoryboard(storyboard, assetManager) {
+            if (storyboardInitd) {
+                return;
+            }
+
+            // A bit of a HACK
+            var backgroundGraphic = assetManager.get(storyboard.getBackground(0).fileName, 'image');
+            textures.background = makeTexture(backgroundGraphic);
+
+            storyboardInitd = true;
         }
 
         init();
@@ -409,7 +423,42 @@ define('WebGLRenderer', [ 'HitCircle', 'Slider', 'HitMarker', 'MapState', 'Util/
             },
 
             renderStoryboard: function (storyboard, assetManager, time) {
-                // TODO
+                initStoryboard(storyboard, assetManager);
+
+                var draw = drawers(gl, buffers, programs);
+
+                // Background
+                draw.sprite(function (draw) {
+                    // TODO Get background texture at specific time
+                    var texture = textures.background;
+                    var backgroundImage = texture.image;
+
+                    var backgroundWidth = backgroundImage.width;
+                    var backgroundHeight = backgroundImage.height;
+                    var canvasWidth = 640;
+                    var canvasHeight = 480;
+
+                    var canvasAR = canvasWidth / canvasHeight;
+                    var imageAR = backgroundWidth / backgroundHeight;
+                    var scale;
+
+                    if (imageAR > canvasAR) {
+                        // Image is wider
+                        scale = canvasWidth / backgroundWidth;
+                    } else {
+                        // Image is taller
+                        scale = canvasHeight / backgroundHeight;
+                    }
+
+                    gl.uniform4f(programs.sprite.uni.color, 255, 255, 255, 255);
+                    gl.uniform2f(programs.sprite.uni.position, 320, 240);
+                    gl.uniform1f(programs.sprite.uni.scale, scale);
+                    gl.uniform2f(programs.sprite.uni.offset, 0, 0);
+
+                    draw(texture);
+                });
+
+                // TODO Real storyboard stuff
             }
         };
     };
