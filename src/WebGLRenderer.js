@@ -176,7 +176,16 @@ define('WebGLRenderer', [ 'HitCircle', 'Slider', 'HitMarker', 'MapState', 'Util/
         };
 
         var renderHitMarkerObject = function (object) {
-            // TODO
+            var scale = ruleSet.getHitMarkerScale(object, time);
+
+            draw.sprite(function (draw) {
+                gl.uniform2f(programs.sprite.uni.position, object.hitObject.x, object.hitObject.y);
+                gl.uniform4f(programs.sprite.uni.color, 255, 255, 255, 255);
+                gl.uniform2f(programs.sprite.uni.offset, 0, 0);
+                gl.uniform1f(programs.sprite.uni.scale, scale);
+
+                draw(textures.hitMarkers[object.score]);
+            });
         };
 
         var getObjectRenderer = function (object) {
@@ -366,13 +375,22 @@ define('WebGLRenderer', [ 'HitCircle', 'Slider', 'HitMarker', 'MapState', 'Util/
             textures.approachCircle = makeTexture(approachCircleGraphic[0]);
 
             var i;
-            var digitGraphic;
+            var graphic;
 
             textures.digits = [ ];
 
             for (i = 0; i < 10; ++i) {
-                digitGraphic = skin.assetManager.get('default-' + i, 'image-set');
-                textures.digits[i] = makeTexture(digitGraphic[0]);
+                graphic = skin.assetManager.get('default-' + i, 'image-set');
+                textures.digits[i] = makeTexture(graphic[0]);
+            }
+
+            var hitScores = [ 0, 50, 100, 300 ];
+
+            textures.hitMarkers = [ ];
+
+            for (i = 0; i < hitScores.length; ++i) {
+                graphic = skin.assetManager.get('hit' + hitScores[i], 'image-set');
+                textures.hitMarkers[i] = makeTexture(graphic[0]);
             }
 
             gl.bindTexture(gl.TEXTURE_2D, null);
