@@ -169,7 +169,7 @@ define('WebGLRenderer', [ 'HitCircle', 'Slider', 'HitMarker', 'MapState', 'Util/
             });
         };
 
-        var renderComboNumber = function (number, x, y) {
+        var renderComboNumber = function (number, x, y, alpha) {
             var textures = getNumberTextures(number);
             var spacing = skin.hitCircleFontSpacing;
 
@@ -189,7 +189,7 @@ define('WebGLRenderer', [ 'HitCircle', 'Slider', 'HitMarker', 'MapState', 'Util/
             var offset = -totalWidth / 2;
 
             draw.sprite(function (draw) {
-                gl.uniform4f(programs.sprite.uni.color, 255, 255, 255, 255);
+                gl.uniform4f(programs.sprite.uni.color, 255, 255, 255, alpha);
                 gl.uniform2f(programs.sprite.uni.position, x, y);
                 gl.uniform1f(programs.sprite.uni.scale, scale);
 
@@ -243,7 +243,7 @@ define('WebGLRenderer', [ 'HitCircle', 'Slider', 'HitMarker', 'MapState', 'Util/
                 };
             });
 
-            var alpha = 1;
+            var alpha = ruleSet.getObjectOpacity(object, time);
             var color = object.combo.color.concat([ alpha * 255 ]);
             var scale = ruleSet.getCircleSize() / 128;
             var growPercentage = ruleSet.getSliderGrowPercentage(object, time);
@@ -278,11 +278,7 @@ define('WebGLRenderer', [ 'HitCircle', 'Slider', 'HitMarker', 'MapState', 'Util/
         };
 
         var renderHitCircleObject = function (object) {
-            // We disable alpha blending because shit looks ugly otherwise
-            // (because each face is blended, not the entire object together).
-            // Will need to fix this sometime...
-            //var alpha = ruleSet.getObjectOpacity(object, time);
-            var alpha = 1;
+            var alpha = ruleSet.getObjectOpacity(object, time);
             var color = object.combo.color.concat([ alpha * 255 ]);
 
             var scale = ruleSet.getCircleSize() / 128;
@@ -298,12 +294,12 @@ define('WebGLRenderer', [ 'HitCircle', 'Slider', 'HitMarker', 'MapState', 'Util/
             });
 
             // Numbering
-            renderComboNumber(object.comboIndex + 1, object.x, object.y);
+            renderComboNumber(object.comboIndex + 1, object.x, object.y, alpha * 255);
 
             // Hit circle overlay
             draw.sprite(function (draw) {
                 gl.uniform2f(programs.sprite.uni.position, object.x, object.y);
-                gl.uniform4f(programs.sprite.uni.color, 255, 255, 255, 255);
+                gl.uniform4f(programs.sprite.uni.color, 255, 255, 255, alpha * 255);
                 gl.uniform2f(programs.sprite.uni.offset, 0, 0);
                 gl.uniform1f(programs.sprite.uni.scale, scale);
 
@@ -519,8 +515,9 @@ define('WebGLRenderer', [ 'HitCircle', 'Slider', 'HitMarker', 'MapState', 'Util/
                 color: gl.getUniformLocation(programs.curve, 'uColor'),
             };
 
-            gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
             gl.enable(gl.BLEND);
+            gl.blendEquationSeparate(gl.FUNC_ADD, gl.FUNC_ADD);
+            gl.blendFuncSeparate(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA, gl.SRC_ALPHA, gl.ONE);
 
             resize();
         };
