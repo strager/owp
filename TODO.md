@@ -3,7 +3,6 @@
 * Sliders
   * Rendering
     * Slider ticks
-    * **Efficiency**
     * Slider ball rotation
     * Slider ends beautifying
   * Mouse handling
