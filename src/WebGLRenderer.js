@@ -57,11 +57,14 @@ define('WebGLRenderer', [ 'HitCircle', 'Slider', 'HitMarker', 'MapState', 'Util/
 
         function curve(curveId, callback) {
             function init() {
-                var vertexOffset = 0;
+                // Vertex and UV are interleaved
+                var stride = 2 * 4 * 2;
 
                 gl.bindBuffer(gl.ARRAY_BUFFER, buffers.curves[curveId]);
-                gl.vertexAttribPointer(programs.curve.attr.vertexCoord, 2, gl.FLOAT, false, 0, vertexOffset);
+                gl.vertexAttribPointer(programs.curve.attr.vertexCoord, 2, gl.FLOAT, false, stride, 0);
+                gl.vertexAttribPointer(programs.curve.attr.textureCoord, 2, gl.FLOAT, false, stride, 2 * 4);
                 gl.enableVertexAttribArray(programs.curve.attr.vertexCoord);
+                gl.enableVertexAttribArray(programs.curve.attr.textureCoord);
             }
 
             function uninit() {
@@ -130,8 +133,12 @@ define('WebGLRenderer', [ 'HitCircle', 'Slider', 'HitMarker', 'MapState', 'Util/
             }
 
             function mark(a) {
+                // Vertex, UV, vertex, UV
                 data.push(a[0]); data.push(a[1]);
+                data.push(0);    data.push(0);
+
                 data.push(a[2]); data.push(a[3]);
+                data.push(0);    data.push(1);
             }
 
             points.forEach(function (point) {
@@ -143,7 +150,7 @@ define('WebGLRenderer', [ 'HitCircle', 'Slider', 'HitMarker', 'MapState', 'Util/
             gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(data), gl.STATIC_DRAW);
 
             return {
-                vertexCount: data.length / 2,
+                vertexCount: data.length / 4,
                 buffer: buffer
             };
         };
@@ -431,8 +438,11 @@ define('WebGLRenderer', [ 'HitCircle', 'Slider', 'HitMarker', 'MapState', 'Util/
 
     var curveVertexShader = [
         'attribute vec2 aVertexCoord;',
+        'attribute vec2 aTextureCoord;',
 
         'uniform vec2 uPlayfield;',
+
+        'varying vec2 vTextureCoord;',
 
         'mat4 projection = mat4(',
             '2.0 / uPlayfield.x, 0.0, 0.0, -1.0,',
@@ -443,14 +453,18 @@ define('WebGLRenderer', [ 'HitCircle', 'Slider', 'HitMarker', 'MapState', 'Util/
 
         'void main(void) {',
             'gl_Position = vec4(aVertexCoord, 0.0, 1.0) * projection;',
+            'vTextureCoord = aTextureCoord;',
         '}'
     ].join('\n');
 
     var curveFragmentShader = [
         'uniform vec4 uColor;',
 
+        'varying vec2 vTextureCoord;',
+
         'void main(void) {',
-            'gl_FragColor = vec4(uColor) / 255.0;',
+            'float intensity = (abs(vTextureCoord.t - 0.5) + 0.75) / (0.5 + 0.75);',
+            'gl_FragColor = vec4(intensity, intensity, intensity, 1.0) * vec4(uColor) / 255.0;',
         '}'
     ].join('\n');
 
@@ -509,6 +523,7 @@ define('WebGLRenderer', [ 'HitCircle', 'Slider', 'HitMarker', 'MapState', 'Util/
             programs.curve = createProgram(gl, curveVertexShader, curveFragmentShader);
             programs.curve.attr = {
                 vertexCoord: gl.getAttribLocation(programs.curve, 'aVertexCoord'),
+                textureCoord: gl.getAttribLocation(programs.sprite, 'aTextureCoord')
             };
             programs.curve.uni = {
                 playfield: gl.getUniformLocation(programs.curve, 'uPlayfield'),
