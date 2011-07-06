@@ -1,18 +1,43 @@
-require([ 'jQuery', 'CanvasRenderer', 'AssetManager', 'q', 'Game', 'Util/FramerateCounter', 'Util/gPubSub' ], function ($, CanvasRenderer, AssetManager, Q, Game, FramerateCounter, gPubSub) {
+require([ 'jQuery', 'WebGLRenderer', 'CanvasRenderer', 'AssetManager', 'q', 'Game', 'Util/FramerateCounter', 'Util/gPubSub' ], function ($, WebGLRenderer, CanvasRenderer, AssetManager, Q, Game, FramerateCounter, gPubSub) {
     var mapAssetManager = new AssetManager('assets');
     var skinAssetManager = new AssetManager('.');
 
-    var init = function () {
+    var makeCanvas = function () {
         var canvas = document.createElement('canvas');
         canvas.width = 640;
         canvas.height = 480;
         $(canvas).appendTo(document.body);
 
-        var canvasRenderer = new CanvasRenderer(canvas.getContext('2d'));
+        return canvas;
+    };
+
+    var init = function () {
+        var renderers = [ ];
+        var playAreas = [ ];
+
+        try {
+            var twoDCanvas = makeCanvas();
+            var twoDRenderer = new CanvasRenderer(twoDCanvas.getContext('2d'));
+
+            renderers.push(twoDRenderer);
+            playAreas.push(twoDCanvas);
+        } catch (e) {
+            throw e;
+        }
+
+        try {
+            var glCanvas = makeCanvas();
+            var glRenderer = new WebGLRenderer(glCanvas.getContext('experimental-webgl'));
+
+            renderers.push(glRenderer);
+            playAreas.push(glCanvas);
+        } catch (e) {
+            throw e;
+        }
 
         return {
-            renderer: canvasRenderer,
-            playArea: canvas
+            renderers: renderers,
+            playAreas: playAreas
         };
     };
 
@@ -62,7 +87,9 @@ require([ 'jQuery', 'CanvasRenderer', 'AssetManager', 'q', 'Game', 'Util/Framera
         game.startMap(mapAssetManager, 'map');
 
         renderLoop(function () {
-            game.render(io.renderer);
+            io.renderers.forEach(function (renderer) {
+                game.render(renderer);
+            });
 
             renderFps.addTick();
         });
@@ -75,14 +102,14 @@ require([ 'jQuery', 'CanvasRenderer', 'AssetManager', 'q', 'Game', 'Util/Framera
 
         var mouseX, mouseY;
 
-        $(io.playArea).click(function (e) {
+        $(io.playAreas).click(function (e) {
             var x = e.pageX - this.offsetLeft;
             var y = e.pageY - this.offsetTop;
 
             game.click({ x: x, y: y });
         });
 
-        $(io.playArea).mousemove(function (e) {
+        $(io.playAreas).mousemove(function (e) {
             mouseX = e.pageX - this.offsetLeft;
             mouseY = e.pageY - this.offsetTop;
         });
