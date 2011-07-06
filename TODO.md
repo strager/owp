@@ -10,7 +10,6 @@
 * Spinners
   * Rendering
   * Mouse handling
-* Hit sounds
 * HP bar
 * OpenGL rendering
 * Note stacking
