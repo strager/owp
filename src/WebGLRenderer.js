@@ -239,7 +239,9 @@ define('WebGLRenderer', [ 'HitCircle', 'Slider', 'HitMarker', 'MapState', 'Util/
             var c = caches.sliderTrack.get(key, function () {
                 var points = object.curve.points;
 
-                var b = createSliderTrack(points, ruleSet.getCircleSize() / 2);
+                var adjustmentScale = 128 / (128 - 10); // Don't ask...
+
+                var b = createSliderTrack(points, ruleSet.getCircleSize() / adjustmentScale / 2);
                 var buffer = b.buffer;
                 buffers.curves.push(buffer);
 
@@ -274,6 +276,13 @@ define('WebGLRenderer', [ 'HitCircle', 'Slider', 'HitMarker', 'MapState', 'Util/
                     gl.uniform1f(programs.sprite.uni.scale, scale);
 
                     draw(textures.hitCircle);
+
+                    gl.uniform2f(programs.sprite.uni.position, lastPoint[0], lastPoint[1]);
+                    gl.uniform4f(programs.sprite.uni.color, 255, 255, 255, alpha * 255);
+                    gl.uniform2f(programs.sprite.uni.offset, 0, 0);
+                    gl.uniform1f(programs.sprite.uni.scale, scale);
+
+                    draw(textures.hitCircleOverlay);
                 });
             }
 
