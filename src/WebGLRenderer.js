@@ -462,9 +462,21 @@ define('WebGLRenderer', [ 'HitCircle', 'Slider', 'HitMarker', 'MapState', 'Util/
 
         'varying vec2 vTextureCoord;',
 
+        'vec4 getSliderColor(float t, vec4 baseColor) {',
+            'float u = abs(t - 0.5) / 0.5;',
+            'float intensity = 1.0;',
+
+            'if (u > 0.85) {',
+                'baseColor = vec4(1, 1, 1, 1);',
+            '} else {',
+                'intensity = (u + 1.5) / (1.0 + 1.5);',
+            '}',
+
+            'return baseColor * vec4(intensity, intensity, intensity, 1.0);',
+        '}',
+
         'void main(void) {',
-            'float intensity = (abs(vTextureCoord.t - 0.5) + 0.75) / (0.5 + 0.75);',
-            'gl_FragColor = vec4(intensity, intensity, intensity, 1.0) * vec4(uColor) / 255.0;',
+            'gl_FragColor = getSliderColor(vTextureCoord.t, vec4(uColor) / 255.0);',
         '}'
     ].join('\n');
 
