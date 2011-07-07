@@ -6,7 +6,7 @@ require([ 'jQuery', 'WebGLRenderer', 'CanvasRenderer', 'AssetManager', 'q', 'Gam
         var renderers = [ ];
         var playAreas = [ ];
 
-        function makeCanvas(contextName, RendererClass) {
+        function makeCanvas(contextName, RendererClass, attributes) {
             var canvas = document.createElement('canvas');
             canvas.width = 640;
             canvas.height = 480;
@@ -14,7 +14,7 @@ require([ 'jQuery', 'WebGLRenderer', 'CanvasRenderer', 'AssetManager', 'q', 'Gam
             var context;
 
             try {
-                context = canvas.getContext(contextName);
+                context = canvas.getContext(contextName, attributes);
             } catch (e) {
                 // Could not get context; ignore
                 return true;
@@ -36,8 +36,8 @@ require([ 'jQuery', 'WebGLRenderer', 'CanvasRenderer', 'AssetManager', 'q', 'Gam
 
         makeCanvas('2d', CanvasRenderer);
 
-        if (!makeCanvas('webgl', WebGLRenderer)) {
-            makeCanvas('experimental-webgl', WebGLRenderer);
+        if (!makeCanvas('webgl', WebGLRenderer, { antialias: true })) {
+            makeCanvas('experimental-webgl', WebGLRenderer, { antialias: true });
         }
 
         return {
