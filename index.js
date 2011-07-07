@@ -2,37 +2,42 @@ require([ 'jQuery', 'WebGLRenderer', 'CanvasRenderer', 'AssetManager', 'q', 'Gam
     var mapAssetManager = new AssetManager('assets');
     var skinAssetManager = new AssetManager('.');
 
-    var makeCanvas = function () {
-        var canvas = document.createElement('canvas');
-        canvas.width = 640;
-        canvas.height = 480;
-        $(canvas).appendTo(document.body);
-
-        return canvas;
-    };
-
     var init = function () {
         var renderers = [ ];
         var playAreas = [ ];
 
-        try {
-            var twoDCanvas = makeCanvas();
-            var twoDRenderer = new CanvasRenderer(twoDCanvas.getContext('2d'));
+        function makeCanvas(contextName, RendererClass) {
+            var canvas = document.createElement('canvas');
+            canvas.width = 640;
+            canvas.height = 480;
 
-            renderers.push(twoDRenderer);
-            playAreas.push(twoDCanvas);
-        } catch (e) {
-            throw e;
+            var context;
+
+            try {
+                context = canvas.getContext(contextName);
+            } catch (e) {
+                // Could not get context; ignore
+                return true;
+            }
+
+            if (!context) {
+                return false;
+            }
+
+            var renderer = new RendererClass(context);
+
+            renderers.push(renderer);
+            playAreas.push(canvas);
+
+            $(document.body)
+                .append('<h3>' + contextName + '</h3>')
+                .append(canvas);
         }
 
-        try {
-            var glCanvas = makeCanvas();
-            var glRenderer = new WebGLRenderer(glCanvas.getContext('experimental-webgl'));
+        makeCanvas('2d', CanvasRenderer);
 
-            renderers.push(glRenderer);
-            playAreas.push(glCanvas);
-        } catch (e) {
-            throw e;
+        if (!makeCanvas('webgl', WebGLRenderer)) {
+            makeCanvas('experimental-webgl', WebGLRenderer);
         }
 
         return {
