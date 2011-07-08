@@ -43,15 +43,29 @@ define('RuleSet', [ 'Util/util', 'HitMarker', 'Slider', 'SliderTick' ], function
         },
 
         getObjectDisappearTime: function (object) {
-            // Allow players to hit a late 50
-            return this.getObjectEndTime(object) + this.getHitWindow(50);
+            var offset = 0;
+
+            if (!(object instanceof SliderTick)) {
+                // Allow players to hit a late 50
+                //offset = this.getHitWindow(50);
+            }
+
+            return this.getObjectEndTime(object) + offset;
         },
 
         getObjectStartTime: function (object) {
+            if (object instanceof SliderTick) {
+                return this.getObjectStartTime(object.slider);
+            }
+
             return object.time;
         },
 
         getObjectEndTime: function (object) {
+            if (object instanceof SliderTick) {
+                return object.time;
+            }
+
             var duration = 0;
 
             if (object instanceof Slider) {
@@ -316,14 +330,15 @@ define('RuleSet', [ 'Util/util', 'HitMarker', 'Slider', 'SliderTick' ], function
             var tickDuration = this.getTickDuration(startTime);
 
             var tickPositions = slider.curve.getTickPositions(tickLength);
-
+console.log(tickDuration);
             // TODO Take repeats into account
             return tickPositions.map(function (tickPosition, i) {
                 return new SliderTick(
-                    startTime + i * tickDuration,
+                    startTime + (i + 1) * tickDuration,
                     tickPosition[0],
                     tickPosition[1],
-                    slider
+                    slider,
+                    0
                 );
             });
         },
@@ -348,10 +363,10 @@ define('RuleSet', [ 'Util/util', 'HitMarker', 'Slider', 'SliderTick' ], function
             // Beats per tick
             var beatsPerTick = 1 / this.sliderTickRate;
 
-            // (beats/minute) / (beats/tick) = (minutes/tick)
-            var minutesPerTick = bpm / beatsPerTick;
+            // (beats/tick) / (beats/minute) = (minutes/tick)
+            var minutesPerTick = beatsPerTick / bpm;
 
-            return minutesPerTick / 60 * 1000; // Milliseconds per tick
+            return minutesPerTick * 60 * 1000; // Milliseconds per tick
         },
 
         getEffectiveBPM: function (time) {

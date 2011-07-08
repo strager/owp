@@ -20,8 +20,8 @@ define('MapState', [ 'Util/Timeline', 'Util/Map', 'HitMarker', 'Slider', 'Util/P
 
             if (hitObject instanceof Slider) {
                 ruleSet.getSliderTicks(hitObject).forEach(function (tick) {
-                    var appearTime = ruleSet.getObjectAppearTime(tick.slider);
-                    var disappearTime = ruleSet.getObjectDisappearTime(tick.slider);
+                    var appearTime = ruleSet.getObjectAppearTime(tick);
+                    var disappearTime = ruleSet.getObjectDisappearTime(tick);
 
                     timeline.add(MapState.HIT_OBJECT_VISIBILITY, tick, appearTime, disappearTime);
                 });
