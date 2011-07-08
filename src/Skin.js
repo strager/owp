@@ -25,6 +25,8 @@ define('Skin', [ 'Util/util' ], function (util) {
                     'hitcircle',
                     'approachcircle',
                     'hitcircleoverlay',
+                    'cursor',
+                    'cursortrail',
                     'hit0',
                     'hit50',
                     'hit100',

@@ -1,9 +1,9 @@
-define('Game', [ 'q', 'MapState', 'Util/PubSub', 'Soundboard', 'Util/Timeline', 'Util/gPubSub' ], function (Q, MapState, PubSub, Soundboard, Timeline, gPubSub) {
+define('Game', [ 'q', 'MapState', 'Util/PubSub', 'Soundboard', 'Util/Timeline', 'Util/gPubSub', 'Util/History' ], function (Q, MapState, PubSub, Soundboard, Timeline, gPubSub, History) {
     var Game = function () {
         var currentState = null;
         var skin = null;
 
-        var clickPubSub = new PubSub();
+        var mousePubSub = new PubSub();
 
         var render = function (renderer) {
             renderer.beginRender();
@@ -56,6 +56,11 @@ define('Game', [ 'q', 'MapState', 'Util/PubSub', 'Soundboard', 'Util/Timeline', 
                 var score = 0;
                 var accuracy = 0;
 
+                var mouseHistory = new History();
+                var isLeftDown = false;
+                var isRightDown = false;
+                var trackMouse = true;
+
                 setState({
                     render: function (renderer) {
                         var time = timeline.getCurrentTime();
@@ -65,13 +70,28 @@ define('Game', [ 'q', 'MapState', 'Util/PubSub', 'Soundboard', 'Util/Timeline', 
                         score = mapState.getScore(time);
 
                         renderer.renderStoryboard(mapInfo.storyboard, mapAssetManager, time);
-                        renderer.renderMap(mapState, skin.valueOf(), time);
+                        renderer.renderMap({
+                            mapState: mapState,
+                            skin: skin.valueOf(),
+                            mouseHistory: mouseHistory
+                        }, time);
                     },
                     enter: function () {
                         audio.play();
 
-                        boundEvents.push(clickPubSub.subscribe(function (e) {
-                            mapState.clickAt(e.x, e.y, timeline.getCurrentTime());
+                        boundEvents.push(mousePubSub.subscribe(function (e) {
+                            var time = timeline.getCurrentTime();
+
+                            if (trackMouse) {
+                                mouseHistory.add(time, e);
+                            }
+
+                            if (e.left && !isLeftDown || e.right && !isRightDown) {
+                                mapState.clickAt(e.x, e.y, time);
+                            }
+
+                            isLeftDown = e.left;
+                            isRightDown = e.right;
                         }));
 
                         boundEvents.push(timeline.subscribe(MapState.HIT_MARKER_CREATION, function (hitMarker) {
@@ -89,7 +109,7 @@ define('Game', [ 'q', 'MapState', 'Util/PubSub', 'Soundboard', 'Util/Timeline', 
                         gPubSub.subscribe(function () {
                             var time = timeline.getCurrentTime();
 
-                            mapState.processMisses(time);
+                            mapState.processMisses(time, mouseHistory);
 
                             timeline.update(time);
                         });
@@ -140,10 +160,6 @@ define('Game', [ 'q', 'MapState', 'Util/PubSub', 'Soundboard', 'Util/Timeline', 
             return Q.when(load).then(play);
         };
 
-        var click = function () {
-            clickPubSub.publishSync.apply(clickPubSub, arguments);
-        };
-
         var debugInfo = function () {
             if (currentState && currentState.debugInfo) {
                 return currentState.debugInfo();
@@ -154,7 +170,9 @@ define('Game', [ 'q', 'MapState', 'Util/PubSub', 'Soundboard', 'Util/Timeline', 
             startMap: startMap,
             render: render,
             setSkin: setSkin,
-            click: click,
+            mouse: function (e) {
+                mousePubSub.publishSync(e);
+            },
             debugInfo: debugInfo
         };
     };

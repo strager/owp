@@ -6,6 +6,7 @@ define('CanvasRenderer', [ 'HitCircle', 'Slider', 'HitMarker', 'Util/Cache', 'ca
         var time = vars.time;
         var c = vars.context;
         var caches = vars.caches;
+        var mouseHistory = vars.mouseHistory;
 
         var getShadedGraphic = function (skin, graphicName, shader, shaderData) {
             var key = [ graphicName, skin, shader, shaderData ];
@@ -337,6 +338,30 @@ define('CanvasRenderer', [ 'HitCircle', 'Slider', 'HitMarker', 'Util/Cache', 'ca
             renderer(object);
         };
 
+        var renderCursor = function (state) {
+            if (!state) {
+                return;
+            }
+
+            var cursorGraphic = skin.assetManager.get('cursor', 'image-set');
+            var cursorFrame = 0;
+
+            drawImage(cursorGraphic[cursorFrame], 1, state.x, state.y, false);
+        };
+
+        var renderCursorTrail = function (state, alpha) {
+            if (!state) {
+                return;
+            }
+
+            var cursorTrailGraphic = skin.assetManager.get('cursortrail', 'image-set');
+            var cursorTrailFrame = 0;
+
+            c.globalAlpha = alpha;
+
+            drawImage(cursorTrailGraphic[cursorTrailFrame], 1, state.x, state.y, false);
+        };
+
         var getObjectsToRender = function () {
             // Visible objects
             var objects = mapState.getVisibleObjects(time);
@@ -382,6 +407,14 @@ define('CanvasRenderer', [ 'HitCircle', 'Slider', 'HitMarker', 'Util/Cache', 'ca
 
             gPubSub.publish('tick');
         });
+
+        var i;
+
+        for (i = 0; i < 5; ++i) {
+            renderCursorTrail(mouseHistory.getDataAtTime(time - (6 - i) * 30), i / 5);
+        }
+
+        renderCursor(mouseHistory.getDataAtTime(time));
     };
 
     var CanvasRenderer = function (context) {
@@ -450,10 +483,11 @@ define('CanvasRenderer', [ 'HitCircle', 'Slider', 'HitMarker', 'Util/Cache', 'ca
                 c.restore();
             },
 
-            renderMap: function (mapState, skin, time) {
+            renderMap: function (state, time) {
                 renderMap({
-                    mapState: mapState,
-                    skin: skin,
+                    mapState: state.mapState,
+                    skin: state.skin,
+                    mouseHistory: state.mouseHistory,
                     time: time,
                     context: c,
                     caches: caches

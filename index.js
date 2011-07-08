@@ -10,6 +10,7 @@ require([ 'jQuery', 'WebGLRenderer', 'CanvasRenderer', 'AssetManager', 'q', 'Gam
             var canvas = document.createElement('canvas');
             canvas.width = 640;
             canvas.height = 480;
+            canvas.style.cursor = 'none';
 
             var context;
 
@@ -106,21 +107,46 @@ require([ 'jQuery', 'WebGLRenderer', 'CanvasRenderer', 'AssetManager', 'q', 'Gam
         });
 
         var mouseX, mouseY;
+        var isLeftDown = false;
+        var isRightDown = false;
 
-        $(io.playAreas).click(function (e) {
-            var x = e.pageX - this.offsetLeft;
-            var y = e.pageY - this.offsetTop;
+        function mouseStateChanged() {
+            game.mouse({
+                x: mouseX,
+                y: mouseY,
+                left: isLeftDown,
+                right: isRightDown
+            });
+        }
 
-            game.click({ x: x, y: y });
+        $(io.playAreas).mousedown(function (e) {
+            mouseX = e.pageX - this.offsetLeft;
+            mouseY = e.pageY - this.offsetTop;
+            isLeftDown = true;
+            mouseStateChanged();
+        });
+
+        $(io.playAreas).mouseup(function (e) {
+            mouseX = e.pageX - this.offsetLeft;
+            mouseY = e.pageY - this.offsetTop;
+            isLeftDown = false;
+            mouseStateChanged();
         });
 
         $(io.playAreas).mousemove(function (e) {
             mouseX = e.pageX - this.offsetLeft;
             mouseY = e.pageY - this.offsetTop;
+            mouseStateChanged();
         });
 
         $('body').keydown(function (e) {
-            game.click({ x: mouseX, y: mouseY });
+            isLeftDown = true;
+            mouseStateChanged();
+        });
+
+        $('body').keyup(function (e) {
+            isLeftDown = false;
+            mouseStateChanged();
         });
     };
 

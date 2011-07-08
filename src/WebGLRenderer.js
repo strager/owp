@@ -98,6 +98,7 @@ define('WebGLRenderer', [ 'HitCircle', 'Slider', 'HitMarker', 'MapState', 'Util/
         var programs = vars.programs;
         var textures = vars.textures;
         var caches = vars.caches;
+        var mouseHistory = vars.mouseHistory;
 
         var draw = drawers(gl, buffers, programs);
 
@@ -362,6 +363,36 @@ define('WebGLRenderer', [ 'HitCircle', 'Slider', 'HitMarker', 'MapState', 'Util/
             renderer(object);
         };
 
+        var renderCursor = function (state) {
+            if (!state) {
+                return;
+            }
+
+            draw.sprite(function (draw) {
+                gl.uniform2f(programs.sprite.uni.position, state.x, state.y);
+                gl.uniform4f(programs.sprite.uni.color, 255, 255, 255, 255);
+                gl.uniform2f(programs.sprite.uni.offset, 0, 0);
+                gl.uniform1f(programs.sprite.uni.scale, 1);
+
+                draw(textures.cursor);
+            });
+        };
+
+        var renderCursorTrail = function (state, alpha) {
+            if (!state) {
+                return;
+            }
+
+            draw.sprite(function (draw) {
+                gl.uniform2f(programs.sprite.uni.position, state.x, state.y);
+                gl.uniform4f(programs.sprite.uni.color, 255, 255, 255, alpha * 255);
+                gl.uniform2f(programs.sprite.uni.offset, 0, 0);
+                gl.uniform1f(programs.sprite.uni.scale, 1);
+
+                draw(textures.cursorTrail);
+            });
+        };
+
         var getObjectsToRender = function () {
             // Visible objects
             var objects = mapState.getVisibleObjects(time);
@@ -407,6 +438,14 @@ define('WebGLRenderer', [ 'HitCircle', 'Slider', 'HitMarker', 'MapState', 'Util/
 
             gPubSub.publish('tick');
         });
+
+        var i;
+
+        for (i = 0; i < 5; ++i) {
+            renderCursorTrail(mouseHistory.getDataAtTime(time - (6 - i) * 30), i / 5);
+        }
+
+        renderCursor(mouseHistory.getDataAtTime(time));
     };
 
     var spriteVertexShader = [
@@ -582,12 +621,16 @@ define('WebGLRenderer', [ 'HitCircle', 'Slider', 'HitMarker', 'MapState', 'Util/
             var hitCircleGraphic = skin.assetManager.get('hitcircle', 'image-set');
             var hitCircleOverlayGraphic = skin.assetManager.get('hitcircleoverlay', 'image-set');
             var approachCircleGraphic = skin.assetManager.get('approachcircle', 'image-set');
-            var sliderBallGraphic = skin.assetManager.get('sliderb0', 'image-set');
+            var sliderBallGraphic = skin.assetManager.get('sliderb0', 'image-set');Graphic = skin.assetManager.get('sliderb0', 'image-set');
+            var cursorGraphic = skin.assetManager.get('cursor', 'image-set');Graphic = skin.assetManager.get('sliderb0', 'image-set');
+            var cursorTrailGraphic = skin.assetManager.get('cursortrail', 'image-set');
 
             textures.hitCircle = makeTexture(hitCircleGraphic[0]);
             textures.hitCircleOverlay = makeTexture(hitCircleOverlayGraphic[0]);
             textures.approachCircle = makeTexture(approachCircleGraphic[0]);
             textures.sliderBall = makeTexture(sliderBallGraphic[0]);
+            textures.cursor = makeTexture(cursorGraphic[0]);
+            textures.cursorTrail = makeTexture(cursorTrailGraphic[0]);
 
             var i;
             var graphic;
@@ -641,12 +684,13 @@ define('WebGLRenderer', [ 'HitCircle', 'Slider', 'HitMarker', 'MapState', 'Util/
             endRender: function () {
             },
 
-            renderMap: function (mapState, skin, time) {
-                initSkin(skin);
+            renderMap: function (state, time) {
+                initSkin(state.skin);
 
                 renderMap({
-                    mapState: mapState,
-                    skin: skin,
+                    mapState: state.mapState,
+                    skin: state.skin,
+                    mouseHistory: state.mouseHistory,
                     time: time,
                     context: context,
                     buffers: buffers,
