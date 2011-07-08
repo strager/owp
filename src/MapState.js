@@ -1,4 +1,4 @@
-define('MapState', [ 'Util/Timeline', 'Util/Map', 'HitMarker', 'HitCircle', 'Slider', 'Util/PubSub' ], function (Timeline, Map, HitMarker, HitCircle, Slider, PubSub) {
+define('MapState', [ 'Util/Timeline', 'Util/Map', 'HitMarker', 'HitCircle', 'Slider', 'SliderTick', 'Util/PubSub' ], function (Timeline, Map, HitMarker, HitCircle, Slider, SliderTick, PubSub) {
     var MapState = function (ruleSet, objects, timeline) {
         this.ruleSet = ruleSet;
         this.timeline = timeline;
@@ -133,6 +133,61 @@ define('MapState', [ 'Util/Timeline', 'Util/Map', 'HitMarker', 'HitCircle', 'Sli
             this.unhitObjects.splice(index, 1);
 
             this.applyHitMarkerNoRemove(hitMarker);
+        },
+
+        processSlides: function (time, mouseHistory) {
+            var removedUnhitObjects = [ ];
+
+            var i;
+            var unhitObject;
+            var hitMarker;
+            var mouseState = null;
+            var score;
+
+            for (i = 0; i < this.unhitObjects.length; ++i) {
+                unhitObject = this.unhitObjects[i];
+
+                if (unhitObject[1] >= time) {
+                    break;
+                }
+
+                if (!(unhitObject[0] instanceof SliderTick)) {
+                    continue;
+                }
+
+                mouseState = mouseHistory.getDataAtTime(unhitObject[0].time);
+
+                if (mouseState && (mouseState.left || mouseState.right)) {
+                    if (this.ruleSet.canHitObject(
+                        unhitObject[0],
+                        mouseState.x,
+                        mouseState.y,
+                        unhitObject[0].time
+                    )) {
+                        score = 10;
+                    } else {
+                        score = 0;
+                    }
+                } else {
+                    score = 0;
+                }
+
+                hitMarker = new HitMarker(
+                    unhitObject[0],
+                    unhitObject[0].time,
+                    score
+                );
+
+                this.applyHitMarkerNoRemove(hitMarker);
+
+                removedUnhitObjects.push(i);
+            }
+
+            // We iterate backwards because otherwise we have to
+            // keep track of index changes while removing items.
+            for (i = removedUnhitObjects.length; i --> 0; ) {
+                this.unhitObjects.splice(removedUnhitObjects[i], 1);
+            }
         },
 
         processMisses: function (time) {

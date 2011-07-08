@@ -165,6 +165,27 @@ define('RuleSet', [ 'Util/util', 'HitCircle', 'HitMarker', 'Slider', 'SliderTick
             return -(this.circleSize - 5) * 16 + 64;
         },
 
+        getHitMarkerImageName: function (hitMarker) {
+            return this.getHitMarkerScoreImageName(hitMarker.score);
+        },
+
+        getHitMarkerScoreImageName: function (score) {
+            var imageNames = {
+                300: 'hit300',
+                100: 'hit100',
+                50: 'hit50',
+                30: 'sliderpoint30',
+                10: 'sliderpoint10',
+                0: 'hit0'
+            };
+
+            if (!imageNames.hasOwnProperty(score)) {
+                throw new Error('Invalid hit score ' + score);
+            }
+
+            return imageNames[score];
+        },
+
         getHitWindow: function (score) {
             var windows = {
                 300: [  80,  50,  20 ],
@@ -213,6 +234,11 @@ define('RuleSet', [ 'Util/util', 'HitCircle', 'HitMarker', 'Slider', 'SliderTick
             var suffix = '.wav';
 
             // TODO Slider and spinner sounds
+
+            if (!hitMarker.hitObject.hitSounds) {
+                // TODO This should never happen (I think)
+                return [ ];
+            }
 
             return hitMarker.hitObject.hitSounds.map(function (hitSound) {
                 return prefix + hitSound + suffix;

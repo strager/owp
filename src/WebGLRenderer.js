@@ -599,7 +599,7 @@ define('WebGLRenderer', [ 'HitCircle', 'Slider', 'SliderTick', 'HitMarker', 'Map
 
         var skinInitd = false;
 
-        function initSkin(skin) {
+        function initSkin(skin, ruleSet) {
             if (skinInitd) {
                 return;
             }
@@ -630,12 +630,12 @@ define('WebGLRenderer', [ 'HitCircle', 'Slider', 'SliderTick', 'HitMarker', 'Map
                 textures.digits[i] = makeTexture(graphic[0]);
             }
 
-            var hitScores = [ 0, 50, 100, 300 ];
+            var hitScores = [ 0, 10, 30, 50, 100, 300 ];
 
             textures.hitMarkers = [ ];
 
             for (i = 0; i < hitScores.length; ++i) {
-                graphic = skin.assetManager.get('hit' + hitScores[i], 'image-set');
+                graphic = skin.assetManager.get(ruleSet.getHitMarkerScoreImageName(hitScores[i]), 'image-set');
                 textures.hitMarkers[hitScores[i]] = makeTexture(graphic[0]);
             }
 
@@ -673,7 +673,7 @@ define('WebGLRenderer', [ 'HitCircle', 'Slider', 'SliderTick', 'HitMarker', 'Map
             },
 
             renderMap: function (state, time) {
-                initSkin(state.skin);
+                initSkin(state.skin, state.mapState.ruleSet);
 
                 renderMap({
                     mapState: state.mapState,

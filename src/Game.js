@@ -109,7 +109,8 @@ define('Game', [ 'q', 'MapState', 'Util/PubSub', 'Soundboard', 'Util/Timeline', 
                         gPubSub.subscribe(function () {
                             var time = timeline.getCurrentTime();
 
-                            mapState.processMisses(time, mouseHistory);
+                            mapState.processSlides(time, mouseHistory);
+                            mapState.processMisses(time);
 
                             timeline.update(time);
                         });
