@@ -25,14 +25,6 @@ define('CanvasRenderer', [ 'HitCircle', 'Slider', 'HitMarker', 'Util/Cache', 'ca
             });
         };
 
-        var drawImageCentred = function (image) {
-            c.drawImage(
-                image,
-                -image.width / 2,
-                -image.height / 2
-            );
-        };
-
         var getCoord = function (x) {
             return Math.floor(x);
         };
