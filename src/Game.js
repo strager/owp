@@ -78,6 +78,7 @@ define('Game', [ 'q', 'MapState', 'Util/PubSub', 'Soundboard', 'Util/Timeline', 
                     },
                     enter: function () {
                         audio.play();
+audio.volume = 0;
 
                         boundEvents.push(mousePubSub.subscribe(function (e) {
                             var time = timeline.getCurrentTime();
@@ -112,6 +113,11 @@ define('Game', [ 'q', 'MapState', 'Util/PubSub', 'Soundboard', 'Util/Timeline', 
                             mapState.processMisses(time, mouseHistory);
 
                             timeline.update(time);
+if (time > 10000) {
+    audio.pause();
+    audio.currentTime = 0;
+    audio.play();
+}
                         });
                     },
                     leave: function () {
