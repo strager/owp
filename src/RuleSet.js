@@ -1,4 +1,4 @@
-define('RuleSet', [ 'Util/util', 'HitMarker', 'Slider', 'SliderTick' ], function (util, HitMarker, Slider, SliderTick) {
+define('RuleSet', [ 'Util/util', 'HitCircle', 'HitMarker', 'Slider', 'SliderTick' ], function (util, HitCircle, HitMarker, Slider, SliderTick) {
     var RuleSet = function () {
         this.approachRate = 5;
         this.overallDifficulty = 5;
@@ -43,14 +43,7 @@ define('RuleSet', [ 'Util/util', 'HitMarker', 'Slider', 'SliderTick' ], function
         },
 
         getObjectDisappearTime: function (object) {
-            var offset = 0;
-
-            if (!(object instanceof SliderTick)) {
-                // Allow players to hit a late 50
-                //offset = this.getHitWindow(50);
-            }
-
-            return this.getObjectEndTime(object) + offset;
+            return this.getObjectLatestHitTime(object);
         },
 
         getObjectStartTime: function (object) {
@@ -150,7 +143,13 @@ define('RuleSet', [ 'Util/util', 'HitMarker', 'Slider', 'SliderTick' ], function
         },
 
         getObjectLatestHitTime: function (object) {
-            return object.time + this.getHitWindow(50);
+            var offset = 0;
+
+            if (object instanceof HitCircle) {
+                offset = this.getHitWindow(50);
+            }
+
+            return this.getObjectEndTime(object) + offset;
         },
 
         canHitObject: function (object, x, y, time) {
@@ -283,17 +282,6 @@ define('RuleSet', [ 'Util/util', 'HitMarker', 'Slider', 'SliderTick' ], function
                 return a.time > b.time ? -1 : 1;
             });
 
-            // Put hit markers before their hit objects
-            hitMarkers.forEach(function (hitMarker) {
-                var index = sorted.indexOf(hitMarker.hitObject);
-
-                if (index < 0) {
-                    index = 0;
-                }
-
-                sorted.splice(index, 0, hitMarker);
-            });
-
             // Put slider ticks after their sliders
             sliderTicks.forEach(function (tick) {
                 var index = sorted.indexOf(tick.slider);
@@ -303,6 +291,17 @@ define('RuleSet', [ 'Util/util', 'HitMarker', 'Slider', 'SliderTick' ], function
                 }
 
                 sorted.splice(index + 1, 0, tick);
+            });
+
+            // Put hit markers before their hit objects
+            hitMarkers.forEach(function (hitMarker) {
+                var index = sorted.indexOf(hitMarker.hitObject);
+
+                if (index < 0) {
+                    sorted.push(hitMarker);
+                } else {
+                    sorted.splice(index, 0, hitMarker);
+                }
             });
 
             return sorted;

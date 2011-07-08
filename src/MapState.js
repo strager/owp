@@ -1,9 +1,11 @@
-define('MapState', [ 'Util/Timeline', 'Util/Map', 'HitMarker', 'Slider', 'Util/PubSub' ], function (Timeline, Map, HitMarker, Slider, PubSub) {
+define('MapState', [ 'Util/Timeline', 'Util/Map', 'HitMarker', 'HitCircle', 'Slider', 'Util/PubSub' ], function (Timeline, Map, HitMarker, HitCircle, Slider, PubSub) {
     var MapState = function (ruleSet, objects, timeline) {
         this.ruleSet = ruleSet;
         this.timeline = timeline;
 
         this.events = new PubSub();
+
+        var hittableObjects = [ ];
 
         objects.forEach(function (hitObject) {
             var appearTime = ruleSet.getObjectAppearTime(hitObject);
@@ -24,11 +26,15 @@ define('MapState', [ 'Util/Timeline', 'Util/Map', 'HitMarker', 'Slider', 'Util/P
                     var disappearTime = ruleSet.getObjectDisappearTime(tick);
 
                     timeline.add(MapState.HIT_OBJECT_VISIBILITY, tick, appearTime, disappearTime);
+
+                    hittableObjects.push(tick);
                 });
+            } else if (hitObject instanceof HitCircle) {
+                hittableObjects.push(hitObject);
             }
         });
 
-        this.unhitObjects = objects.map(function (hitObject) {
+        this.unhitObjects = hittableObjects.map(function (hitObject) {
             return [ hitObject, ruleSet.getObjectLatestHitTime(hitObject) ];
         }).sort(function (a, b) {
             return a[1] < b[1] ? -1 : 1;
