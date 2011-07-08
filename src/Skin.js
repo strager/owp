@@ -33,6 +33,7 @@ define('Skin', [ 'Util/util' ], function (util) {
                     'hit100k',
                     'hit300k',
                     'hit300',
+                    'sliderscorepoint',
                     'sliderb0'
                 ],
                 'sound': [

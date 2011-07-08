@@ -1,4 +1,4 @@
-define('RuleSet', [ 'Util/util', 'Slider' ], function (util, Slider) {
+define('RuleSet', [ 'Util/util', 'HitMarker', 'Slider', 'SliderTick' ], function (util, HitMarker, Slider, SliderTick) {
     var RuleSet = function () {
         this.approachRate = 5;
         this.overallDifficulty = 5;
@@ -10,7 +10,7 @@ define('RuleSet', [ 'Util/util', 'Slider' ], function (util, Slider) {
         var ruleSet = new RuleSet();
 
         var fields = (
-            'approachRate,overallDifficulty,hpDrain,circleSize,sliderMultiplier'
+            'approachRate,overallDifficulty,hpDrain,circleSize,sliderMultiplier,sliderTickRate'
         ).split(',');
 
         util.extendObjectWithFields(ruleSet, fields, settings);
@@ -249,6 +249,51 @@ define('RuleSet', [ 'Util/util', 'Slider' ], function (util, Slider) {
             return currentScore;
         },
 
+        getObjectsByZ: function (objects) {
+            var hitMarkers = [ ];
+            var hitObjects = [ ];
+            var sliderTicks = [ ];
+
+            objects.forEach(function (object) {
+                if (object instanceof HitMarker) {
+                    hitMarkers.push(object);
+                } else if (object instanceof SliderTick) {
+                    sliderTicks.push(object);
+                } else {
+                    hitObjects.push(object);
+                }
+            });
+
+            var sorted = hitObjects.sort(function (a, b) {
+                // Sort by time descending
+                return a.time > b.time ? -1 : 1;
+            });
+
+            // Put hit markers before their hit objects
+            hitMarkers.forEach(function (hitMarker) {
+                var index = sorted.indexOf(hitMarker.hitObject);
+
+                if (index < 0) {
+                    index = 0;
+                }
+
+                sorted.splice(index, 0, hitMarker);
+            });
+
+            // Put slider ticks after their sliders
+            sliderTicks.forEach(function (tick) {
+                var index = sorted.indexOf(tick.slider);
+
+                if (index < 0) {
+                    throw new Error('Inconsistent map state');
+                }
+
+                sorted.splice(index + 1, 0, tick);
+            });
+
+            return sorted;
+        },
+
         getEffectiveSliderSpeed: function (time) {
             // Gives osu!pixels per second
 
@@ -262,6 +307,51 @@ define('RuleSet', [ 'Util/util', 'Slider' ], function (util, Slider) {
             var pixelsPerMinute = bpm * velocity * 100;
 
             return pixelsPerMinute / 60; // Pixels per second
+        },
+
+        getSliderTicks: function (slider) {
+            var startTime = this.getObjectStartTime(slider);
+
+            var tickLength = this.getTickLength(startTime);
+            var tickDuration = this.getTickDuration(startTime);
+
+            var tickPositions = slider.curve.getTickPositions(tickLength);
+
+            // TODO Take repeats into account
+            return tickPositions.map(function (tickPosition, i) {
+                return new SliderTick(
+                    startTime + i * tickDuration,
+                    tickPosition[0],
+                    tickPosition[1],
+                    slider
+                );
+            });
+        },
+
+        getTickLength: function (time) {
+            // 100ths of osu!pixels per beat
+            var velocity = this.sliderMultiplier;
+
+            // Beats per tick
+            var beatsPerTick = 1 / this.sliderTickRate;
+
+            // ((1/100) pixels/beat) * (beats/tick) = (1/100) pixels/tick
+            var pixelsPerTick = velocity * beatsPerTick * 100;
+
+            return pixelsPerTick;
+        },
+
+        getTickDuration: function (time) {
+            // Beats per minute
+            var bpm = this.getEffectiveBPM(time);
+
+            // Beats per tick
+            var beatsPerTick = 1 / this.sliderTickRate;
+
+            // (beats/minute) / (beats/tick) = (minutes/tick)
+            var minutesPerTick = bpm / beatsPerTick;
+
+            return minutesPerTick / 60 * 1000; // Milliseconds per tick
         },
 
         getEffectiveBPM: function (time) {

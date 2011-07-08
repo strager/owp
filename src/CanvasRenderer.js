@@ -1,4 +1,4 @@
-define('CanvasRenderer', [ 'HitCircle', 'Slider', 'HitMarker', 'Util/Cache', 'canvasShaders', 'MapState', 'Util/gPubSub' ], function (HitCircle, Slider, HitMarker, Cache, shaders, MapState, gPubSub) {
+define('CanvasRenderer', [ 'HitCircle', 'Slider', 'SliderTick', 'HitMarker', 'Util/Cache', 'canvasShaders', 'MapState', 'Util/gPubSub' ], function (HitCircle, Slider, SliderTick, HitMarker, Cache, shaders, MapState, gPubSub) {
     var renderMap = function (vars) {
         var mapState = vars.mapState;
         var ruleSet = mapState.ruleSet;
@@ -307,11 +307,27 @@ define('CanvasRenderer', [ 'HitCircle', 'Slider', 'HitMarker', 'Util/Cache', 'ca
             c.restore();
         };
 
+        var renderSliderTickObject = function (object) {
+            var sliderTickGraphic = skin.assetManager.get('sliderscorepoint', 'image-set');
+            var sliderTickGraphicFrame = 0;
+
+            var scale = ruleSet.getCircleSize() / 128;
+
+            drawImage(
+                sliderTickGraphic[sliderTickGraphicFrame],
+                scale,
+                object.x,
+                object.y,
+                true
+            );
+        };
+
         var getObjectRenderer = function (object) {
             var renderers = [
-                [ HitCircle, renderHitCircleObject ],
-                [ HitMarker, renderHitMarkerObject ],
-                [ Slider,    renderSliderObject ]
+                [ HitCircle,  renderHitCircleObject ],
+                [ HitMarker,  renderHitMarkerObject ],
+                [ Slider,     renderSliderObject ],
+                [ SliderTick, renderSliderTickObject ]
             ];
 
             var objectRenderers = renderers.filter(function (r) {
@@ -363,35 +379,7 @@ define('CanvasRenderer', [ 'HitCircle', 'Slider', 'HitMarker', 'Util/Cache', 'ca
                 mapState.timeline.getAllInTimeRange(time - 2000, time, MapState.HIT_MARKER_CREATION)
             );
 
-            var sortObjectsByZ = function (a, b) {
-                var newA = a;
-                var newB = b;
-
-                // Keep hit marker above object
-                if (a instanceof HitMarker) {
-                    if (b === a.hitObject) {
-                        return 1;
-                    }
-
-                    newA = a.hitObject;
-                }
-
-                if (b instanceof HitMarker) {
-                    if (a === b.hitObject) {
-                        return -1;
-                    }
-
-                    newB = b.hitObject;
-                }
-
-                // Sort by time descending
-                return newA.time > newB.time ? -1 : 1;
-            };
-
-            // Get objects in Z order
-            objects = objects.sort(sortObjectsByZ);
-
-            return objects;
+            return ruleSet.getObjectsByZ(objects);
         };
 
         getObjectsToRender().forEach(function (object) {

@@ -1,4 +1,4 @@
-define('WebGLRenderer', [ 'HitCircle', 'Slider', 'HitMarker', 'MapState', 'Util/gPubSub', 'Util/Cache' ], function (HitCircle, Slider, HitMarker, MapState, gPubSub, Cache) {
+define('WebGLRenderer', [ 'HitCircle', 'Slider', 'SliderTick', 'HitMarker', 'MapState', 'Util/gPubSub', 'Util/Cache' ], function (HitCircle, Slider, SliderTick, HitMarker, MapState, gPubSub, Cache) {
     var drawers = function (gl, buffers, programs) {
         var inProgram = false;
 
@@ -340,11 +340,25 @@ define('WebGLRenderer', [ 'HitCircle', 'Slider', 'HitMarker', 'MapState', 'Util/
             });
         };
 
+        var renderSliderTickObject = function (object) {
+            var scale = ruleSet.getCircleSize() / 128;
+
+            draw.sprite(function (draw) {
+                gl.uniform2f(programs.sprite.uni.position, object.x, object.y);
+                gl.uniform4f(programs.sprite.uni.color, 255, 255, 255, 255);
+                gl.uniform2f(programs.sprite.uni.offset, 0, 0);
+                gl.uniform1f(programs.sprite.uni.scale, scale);
+
+                draw(textures.sliderTick);
+            });
+        };
+
         var getObjectRenderer = function (object) {
             var renderers = [
-                [ HitCircle, renderHitCircleObject ],
-                [ HitMarker, renderHitMarkerObject ],
-                [ Slider,    renderSliderObject ]
+                [ HitCircle,  renderHitCircleObject ],
+                [ HitMarker,  renderHitMarkerObject ],
+                [ Slider,     renderSliderObject ],
+                [ SliderTick, renderSliderTickObject ]
             ];
 
             var objectRenderers = renderers.filter(function (r) {
@@ -402,35 +416,7 @@ define('WebGLRenderer', [ 'HitCircle', 'Slider', 'HitMarker', 'MapState', 'Util/
                 mapState.timeline.getAllInTimeRange(time - 2000, time, MapState.HIT_MARKER_CREATION)
             );
 
-            var sortObjectsByZ = function (a, b) {
-                var newA = a;
-                var newB = b;
-
-                // Keep hit marker above object
-                if (a instanceof HitMarker) {
-                    if (b === a.hitObject) {
-                        return 1;
-                    }
-
-                    newA = a.hitObject;
-                }
-
-                if (b instanceof HitMarker) {
-                    if (a === b.hitObject) {
-                        return -1;
-                    }
-
-                    newB = b.hitObject;
-                }
-
-                // Sort by time descending
-                return newA.time > newB.time ? -1 : 1;
-            };
-
-            // Get objects in Z order
-            objects = objects.sort(sortObjectsByZ);
-
-            return objects;
+            return ruleSet.getObjectsByZ(objects);
         };
 
         getObjectsToRender().forEach(function (object) {
@@ -624,6 +610,7 @@ define('WebGLRenderer', [ 'HitCircle', 'Slider', 'HitMarker', 'MapState', 'Util/
             var sliderBallGraphic = skin.assetManager.get('sliderb0', 'image-set');Graphic = skin.assetManager.get('sliderb0', 'image-set');
             var cursorGraphic = skin.assetManager.get('cursor', 'image-set');Graphic = skin.assetManager.get('sliderb0', 'image-set');
             var cursorTrailGraphic = skin.assetManager.get('cursortrail', 'image-set');
+            var sliderTickGraphic = skin.assetManager.get('sliderscorepoint', 'image-set');
 
             textures.hitCircle = makeTexture(hitCircleGraphic[0]);
             textures.hitCircleOverlay = makeTexture(hitCircleOverlayGraphic[0]);
@@ -631,6 +618,7 @@ define('WebGLRenderer', [ 'HitCircle', 'Slider', 'HitMarker', 'MapState', 'Util/
             textures.sliderBall = makeTexture(sliderBallGraphic[0]);
             textures.cursor = makeTexture(cursorGraphic[0]);
             textures.cursorTrail = makeTexture(cursorTrailGraphic[0]);
+            textures.sliderTick = makeTexture(sliderTickGraphic[0]);
 
             var i;
             var graphic;
