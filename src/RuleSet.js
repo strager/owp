@@ -329,7 +329,7 @@ define('RuleSet', [ 'Util/util', 'HitCircle', 'HitMarker', 'Slider', 'SliderTick
             var tickDuration = this.getTickDuration(startTime);
 
             var tickPositions = slider.curve.getTickPositions(tickLength);
-console.log(tickDuration);
+
             // TODO Take repeats into account
             return tickPositions.map(function (tickPosition, i) {
                 return new SliderTick(
