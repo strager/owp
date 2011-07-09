@@ -1,5 +1,5 @@
 define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache' ], function (MapState, mapObject, gPubSub, Cache) {
-    var drawers = function (gl, buffers, programs) {
+    function drawers(gl, buffers, programs) {
         var inProgram = false;
 
         function program(prog, init, uninit, callback) {
@@ -86,9 +86,9 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache' 
             sprite: sprite,
             curve: curve
         };
-    };
+    }
 
-    var renderMap = function (vars) {
+    function renderMap(vars) {
         var mapState = vars.mapState;
         var ruleSet = mapState.ruleSet;
         var skin = vars.skin;
@@ -104,17 +104,17 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache' 
 
         // TODO Real work
 
-        var getDigits = function (number) {
+        function getDigits(number) {
             return ('' + number).split('');
-        };
+        }
 
-        var getNumberTextures = function (number) {
+        function getNumberTextures(number) {
             return getDigits(number).map(function (digit) {
                 return textures.digits[digit];
             });
-        };
+        }
 
-        var createSliderTrack = function (points, radius) {
+        function createSliderTrack(points, radius) {
             var data = [ ];
 
             function extrude(point) {
@@ -156,9 +156,9 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache' 
                 vertexCount: data.length / 4,
                 buffer: buffer
             };
-        };
+        }
 
-        var renderApproachCircle = function (progress, x, y, color, alpha) {
+        function renderApproachCircle(progress, x, y, color, alpha) {
             var radius = 1;
 
             if (progress > 0) {
@@ -177,9 +177,9 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache' 
 
                 draw(textures.approachCircle);
             });
-        };
+        }
 
-        var renderComboNumber = function (number, x, y, alpha) {
+        function renderComboNumber(number, x, y, alpha) {
             var textures = getNumberTextures(number);
             var spacing = skin.hitCircleFontSpacing;
 
@@ -215,9 +215,9 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache' 
                     offset += width + spacing;
                 });
             });
-        };
+        }
 
-        var renderSliderBall = function (object) {
+        function renderSliderBall(object) {
             var sliderBallPosition = object.curve.getSliderBallPosition(object, time, ruleSet);
 
             if (!sliderBallPosition) {
@@ -234,9 +234,9 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache' 
 
                 draw(textures.sliderBall);
             });
-        };
+        }
 
-        var renderSliderTick = function (tick) {
+        function renderSliderTick(tick) {
             if (tick.hitMarker) {
                 return;
             }
@@ -251,9 +251,9 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache' 
 
                 draw(textures.sliderTick);
             });
-        };
+        }
 
-        var renderSliderObject = function (object) {
+        function renderSliderObject(object) {
             var key = [ object, mapState ];
 
             var c = caches.sliderTrack.get(key, function () {
@@ -329,9 +329,9 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache' 
             if (visibility === 'during') {
                 renderSliderBall(object);
             }
-        };
+        }
 
-        var renderHitCircleObject = function (object) {
+        function renderHitCircleObject(object) {
             var alpha = ruleSet.getObjectOpacity(object, time);
             var color = object.combo.color.concat([ alpha * 255 ]);
 
@@ -362,9 +362,9 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache' 
 
             var approachProgress = ruleSet.getObjectApproachProgress(object, time);
             renderApproachCircle(approachProgress, object.x, object.y, color);
-        };
+        }
 
-        var renderHitMarkerObject = function (object) {
+        function renderHitMarkerObject(object) {
             var image = ruleSet.getHitMarkerImageName(object);
             if (!image) {
                 return;
@@ -380,9 +380,9 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache' 
 
                 draw(textures.hitMarkers[image]);
             });
-        };
+        }
 
-        var renderObject = function (object) {
+        function renderObject(object) {
             mapObject.match(object, {
                 HitCircle:  renderHitCircleObject,
                 HitMarker:  renderHitMarkerObject,
@@ -391,9 +391,9 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache' 
                     throw new TypeError('Unknown object type');
                 }
             });
-        };
+        }
 
-        var renderCursor = function (state) {
+        function renderCursor(state) {
             if (!state) {
                 return;
             }
@@ -406,9 +406,9 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache' 
 
                 draw(textures.cursor);
             });
-        };
+        }
 
-        var renderCursorTrail = function (state, alpha) {
+        function renderCursorTrail(state, alpha) {
             if (!state) {
                 return;
             }
@@ -421,9 +421,9 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache' 
 
                 draw(textures.cursorTrail);
             });
-        };
+        }
 
-        var getObjectsToRender = function () {
+        function getObjectsToRender() {
             // Visible objects
             var objects = mapState.getVisibleObjects(time);
 
@@ -433,7 +433,7 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache' 
             );
 
             return ruleSet.getObjectsByZ(objects);
-        };
+        }
 
         getObjectsToRender().forEach(function (object) {
             renderObject(object);
@@ -536,7 +536,7 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache' 
         ].join('\n');
     }());
 
-    var WebGLRenderer = function (context) {
+    function WebGLRenderer(context) {
         var gl = context;
 
         var buffers = { };

@@ -1,7 +1,7 @@
 define('Skin', [ 'Util/util' ], function (util) {
-    var Skin = function (assetManager) {
+    function Skin(assetManager) {
         this.assetManager = assetManager;
-    };
+    }
 
     Skin.fromSettings = function (assetManager, settings) {
         var skin = new Skin(assetManager);

@@ -1,6 +1,6 @@
 /*jshint bitwise: false */
 define('mapFile', [ 'RuleSet', 'Map', 'Combo', 'MapInfo', 'mapObject', 'Storyboard', 'Skin', 'BezierSliderCurve' ], function (RuleSet, Map, Combo, MapInfo, mapObject, Storyboard, Skin, BezierSliderCurve) {
-    var readSkin = function (assetConfig, assetManager) {
+    function readSkin(assetConfig, assetManager) {
         return Skin.fromSettings(assetManager, {
             name:   assetConfig.General.values.Name,
             author: assetConfig.General.values.Author,
@@ -16,9 +16,9 @@ define('mapFile', [ 'RuleSet', 'Map', 'Combo', 'MapInfo', 'mapObject', 'Storyboa
             sliderBallFrames: assetConfig.General.values.SliderBallFrames,
             cursorExpands:    assetConfig.General.values.CursorExpand
         });
-    };
+    }
 
-    var readRuleSet = function (assetConfig) {
+    function readRuleSet(assetConfig) {
         return RuleSet.fromSettings({
             hpDrainRate:        assetConfig.Difficulty.values.HPDrainRate,
             circleSize:         assetConfig.Difficulty.values.CircleSize,
@@ -28,9 +28,9 @@ define('mapFile', [ 'RuleSet', 'Map', 'Combo', 'MapInfo', 'mapObject', 'Storyboa
             sliderTickRate:     assetConfig.Difficulty.values.SliderTickRate,
             stackLeniency:      assetConfig.General.values.StackLeniency
         });
-    };
+    }
 
-    var readCombos = function (assetConfig) {
+    function readCombos(assetConfig) {
         var combos = [ ];
 
         var i;
@@ -42,9 +42,9 @@ define('mapFile', [ 'RuleSet', 'Map', 'Combo', 'MapInfo', 'mapObject', 'Storyboa
         }
 
         return combos;
-    };
+    }
 
-    var readHitSounds = function (hitSoundNumber) {
+    function readHitSounds(hitSoundNumber) {
         var hitSounds = [ ];
 
         // FIXME No clue if these are correct
@@ -72,9 +72,9 @@ define('mapFile', [ 'RuleSet', 'Map', 'Combo', 'MapInfo', 'mapObject', 'Storyboa
         }
 
         return hitSounds;
-    };
+    }
 
-    var readCurve = function (curveString, x, y, maxLength) {
+    function readCurve(curveString, x, y, maxLength) {
         var parts = curveString.split('|');
         var curveType = parts.shift();
         var curvePoints = parts.map(function (pointString) {
@@ -93,9 +93,9 @@ define('mapFile', [ 'RuleSet', 'Map', 'Combo', 'MapInfo', 'mapObject', 'Storyboa
         default:
             throw new Error('Unknown slider type: ' + curveType);
         }
-    };
+    }
 
-    var readHitObject = function (list) {
+    function readHitObject(list) {
         var flags1 = parseInt(list[3], 10);
 
         var x = parseInt(list[0], 10);
@@ -135,9 +135,9 @@ define('mapFile', [ 'RuleSet', 'Map', 'Combo', 'MapInfo', 'mapObject', 'Storyboa
         object.hitSounds = readHitSounds(parseInt(list[4], 10));
 
         return object;
-    };
+    }
 
-    var readHitObjects = function (assetConfig, combos) {
+    function readHitObjects(assetConfig, combos) {
         var objects = [ ];
 
         var curComboIndex = 0;
@@ -166,9 +166,9 @@ define('mapFile', [ 'RuleSet', 'Map', 'Combo', 'MapInfo', 'mapObject', 'Storyboa
         }
 
         return objects;
-    };
+    }
 
-    var readMapInfo = function (assetConfig, ruleSet, map, storyboard) {
+    function readMapInfo(assetConfig, ruleSet, map, storyboard) {
         return MapInfo.fromSettings(ruleSet, map, storyboard, {
             audioFile:      assetConfig.General.values.AudioFilename,
             audioLeadIn:    assetConfig.General.values.AudioLeadIn,
@@ -185,9 +185,9 @@ define('mapFile', [ 'RuleSet', 'Map', 'Combo', 'MapInfo', 'mapObject', 'Storyboa
             source:     assetConfig.Metadata.values.Source,
             tags:       assetConfig.Metadata.values.Tags
         });
-    };
+    }
 
-    var readStoryboard = function (assetConfig) {
+    function readStoryboard(assetConfig) {
         var storyboard = new Storyboard();
 
         var data = assetConfig.Events.lists;
@@ -218,9 +218,9 @@ define('mapFile', [ 'RuleSet', 'Map', 'Combo', 'MapInfo', 'mapObject', 'Storyboa
         }
 
         return storyboard;
-    };
+    }
 
-    var readMap = function (assetConfig) {
+    function readMap(assetConfig) {
         var ruleSet = readRuleSet(assetConfig);
 
         var combos = readCombos(assetConfig);
@@ -233,7 +233,7 @@ define('mapFile', [ 'RuleSet', 'Map', 'Combo', 'MapInfo', 'mapObject', 'Storyboa
         var info = readMapInfo(assetConfig, ruleSet, map, storyboard);
 
         return info;
-    };
+    }
 
     return {
         readSkin: readSkin,

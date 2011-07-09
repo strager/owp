@@ -16,26 +16,26 @@ define('BezierSliderCurve', [ ], function () {
         return ret;
     }());
 
-    var factorial = function (n) {
+    function factorial(n) {
         if (n < 0 || n >= factorialTable.length) {
             throw new Error('n out of range');
         }
 
         return factorialTable[n];
-    };
+    }
 
-    var choose = function (n, r) {
+    function choose(n, r) {
         // Standard nCr math function
         return factorial(n) / (factorial(r) * factorial(n - r));
-    };
+    }
 
-    var bernstein = function (n, v, x) {
+    function bernstein(n, v, x) {
         // Formula is: nCv * x^v * (1-x)^(n-v)
         // See: http://en.wikipedia.org/wiki/Bernstein_polynomial
         return choose(n, v) * Math.pow(x, v) * Math.pow((1 - x), (n - v));
-    };
+    }
 
-    var render = function (rawPoints, stepCount, maxLength) {
+    function render(rawPoints, stepCount, maxLength) {
         // Estimates a bezier curve
         // TODO Linear control points (osu!-specific)
         // TODO Adaptive rendering (http://antigrain.com/research/adaptive_bezier/)
@@ -47,14 +47,14 @@ define('BezierSliderCurve', [ ], function () {
 
         var pointCountMinusOne = rawPoints.length - 1;
 
-        var processPoint = function (acc, point, pointIndex) {
+        function processPoint(acc, point, pointIndex) {
             var basis = bernstein(pointCountMinusOne, pointIndex, t);
 
             return [
                 basis * point[0] + acc[0],
                 basis * point[1] + acc[1]
             ];
-        };
+        }
 
         var lastPoint = null;
 
@@ -90,14 +90,14 @@ define('BezierSliderCurve', [ ], function () {
         }
 
         return out;
-    };
+    }
 
-    var BezierSliderCurve = function (rawPoints, sliderLength) {
+    function BezierSliderCurve(rawPoints, sliderLength) {
         this.length = sliderLength;
         this.points = render(rawPoints, (rawPoints.length - 1) * 50, this.length);
-    };
+    }
 
-    var getSliderBallPercentage = function (repeatLength, timeOffset) {
+    function getSliderBallPercentage(repeatLength, timeOffset) {
         var rawTarget = timeOffset / repeatLength;
 
         // Perform repeat:
@@ -114,9 +114,9 @@ define('BezierSliderCurve', [ ], function () {
         }
 
         return target;
-    };
+    }
 
-    var getLengthIndex = function (points, length) {
+    function getLengthIndex(points, length) {
         // TODO Reverse cache map by length?
 
         var i;
@@ -128,7 +128,7 @@ define('BezierSliderCurve', [ ], function () {
         }
 
         return -1;
-    };
+    }
 
     BezierSliderCurve.prototype.getTickPositions = function (tickLength) {
         var ticks = [ ];

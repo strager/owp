@@ -1,9 +1,9 @@
 define('MapInfo', [ 'Util/util' ], function (util) {
-    var MapInfo = function (ruleSet, map, storyboard) {
+    function MapInfo(ruleSet, map, storyboard) {
         this.ruleSet = ruleSet;
         this.map = map;
         this.storyboard = storyboard;
-    };
+    }
 
     MapInfo.fromSettings = function (ruleSet, map, storyboard, settings) {
         var mapInfo = new MapInfo(ruleSet, map, storyboard);

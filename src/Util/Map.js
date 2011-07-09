@@ -1,9 +1,9 @@
 define('Util/Map', [ ], function () {
-    var Map = function () {
+    function Map() {
         this.keys = [ ];
         this.arrayKeyStrings = { };
         this.values = [ ];
-    };
+    }
 
     function isArray(value) {
         return value instanceof Array;

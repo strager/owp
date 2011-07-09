@@ -1,5 +1,5 @@
 define('MapState', [ 'mapObject', 'Util/Timeline', 'Util/Map', 'Util/PubSub' ], function (mapObject, Timeline, Map, PubSub) {
-    var MapState = function (ruleSet, objects, timeline) {
+    function MapState(ruleSet, objects, timeline) {
         this.ruleSet = ruleSet;
         this.timeline = timeline;
 
@@ -41,7 +41,7 @@ define('MapState', [ 'mapObject', 'Util/Timeline', 'Util/Map', 'Util/PubSub' ], 
         }).sort(function (a, b) {
             return a[1] < b[1] ? -1 : 1;
         });
-    };
+    }
 
     MapState.HIT_OBJECT_VISIBILITY = 'hit object visibility';
     MapState.HIT_OBJECT_HITABLE = 'hit object hitable';

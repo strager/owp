@@ -1,11 +1,11 @@
 define('Game', [ 'q', 'MapState', 'Util/PubSub', 'Soundboard', 'Util/Timeline', 'Util/gPubSub', 'Util/History' ], function (Q, MapState, PubSub, Soundboard, Timeline, gPubSub, History) {
-    var Game = function () {
+    function Game() {
         var currentState = null;
         var skin = null;
 
         var mousePubSub = new PubSub();
 
-        var render = function (renderer) {
+        function render(renderer) {
             renderer.beginRender();
 
             try {
@@ -15,9 +15,9 @@ define('Game', [ 'q', 'MapState', 'Util/PubSub', 'Soundboard', 'Util/Timeline', 
             } finally {
                 renderer.endRender();
             }
-        };
+        }
 
-        var setSkin = function (skinAssetManager) {
+        function setSkin(skinAssetManager) {
             skin = Q.when(skinAssetManager.load('skin', 'skin'))
                 .then(function (skin_) {
                     return Q.when(skin_.preload())
@@ -31,9 +31,9 @@ define('Game', [ 'q', 'MapState', 'Util/PubSub', 'Soundboard', 'Util/Timeline', 
             // Let callers know when the skin is loaded,
             // but don't let them know about the skin
             return Q.when(skin, function () { });
-        };
+        }
 
-        var setState = function (state) {
+        function setState(state) {
             if (currentState && currentState.leave) {
                 currentState.leave();
             }
@@ -43,14 +43,14 @@ define('Game', [ 'q', 'MapState', 'Util/PubSub', 'Soundboard', 'Util/Timeline', 
             if (currentState && currentState.enter) {
                 currentState.enter();
             }
-        };
+        }
 
-        var startMap = function (mapAssetManager, mapName) {
+        function startMap(mapAssetManager, mapName) {
             var mapInfo, mapState, audio;
             var timeline = null;
             var boundEvents = [ ];
 
-            var play = function () {
+            function play() {
                 var soundboard = new Soundboard(skin.valueOf().assetManager);
 
                 var score = 0;
@@ -128,7 +128,7 @@ define('Game', [ 'q', 'MapState', 'Util/PubSub', 'Soundboard', 'Util/Timeline', 
                         };
                     }
                 });
-            };
+            }
 
             if (!skin) {
                 throw new Error('Must set a skin before starting a map');
@@ -159,13 +159,13 @@ define('Game', [ 'q', 'MapState', 'Util/PubSub', 'Soundboard', 'Util/Timeline', 
             ]);
 
             return Q.when(load).then(play);
-        };
+        }
 
-        var debugInfo = function () {
+        function debugInfo() {
             if (currentState && currentState.debugInfo) {
                 return currentState.debugInfo();
             }
-        };
+        }
 
         return {
             startMap: startMap,
@@ -176,7 +176,7 @@ define('Game', [ 'q', 'MapState', 'Util/PubSub', 'Soundboard', 'Util/Timeline', 
             },
             debugInfo: debugInfo
         };
-    };
+    }
 
     return Game;
 });

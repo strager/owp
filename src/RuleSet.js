@@ -1,10 +1,10 @@
 define('RuleSet', [ 'Util/util', 'mapObject' ], function (util, mapObject) {
-    var RuleSet = function () {
+    function RuleSet() {
         this.approachRate = 5;
         this.overallDifficulty = 5;
         this.hpDrain = 5;
         this.circleSize = 5;
-    };
+    }
 
     RuleSet.fromSettings = function (settings) {
         var ruleSet = new RuleSet();
