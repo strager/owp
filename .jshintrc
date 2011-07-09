@@ -1,20 +1,22 @@
 {
-    "predef": [ 
-        "define",
-        "require",
-        "require"
-    ],
+    "predef": [ "define", "require" ],
     "browser": true,
     "devel": false,
     "rhino": false,
-    "es5": false, 
+    "es5": true,
+    "widget": false,
+    "windows": false,
+
+    "forin": false,
+    "noarg": true,
+    "nonew": true,
+    "debugger": false,
     "nomen": false,
     "bitwise": true,
     "newcap": true,
     "immed": true,
     "white": true,
     "undef": true,
-    "widget": false,
-    "windows": false,
+    "eqeq": true,
     "eqeqeq": true
 }

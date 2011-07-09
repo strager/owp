@@ -1,9 +1,9 @@
 define('SoundPool', [ 'jQuery' ], function ($) {
-    var SoundPool = function (sound) {
+    function SoundPool(sound) {
         this.sourceSound = sound;
         this.freeSounds = [ ];
         this.takenSounds = [ ];
-    };
+    }
 
     SoundPool.prototype = {
         alloc: function () {

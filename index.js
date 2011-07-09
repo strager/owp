@@ -2,7 +2,7 @@ require([ 'jQuery', 'WebGLRenderer', 'CanvasRenderer', 'AssetManager', 'q', 'Gam
     var mapAssetManager = new AssetManager('assets');
     var skinAssetManager = new AssetManager('.');
 
-    var init = function () {
+    function init() {
         var renderers = [ ];
         var playAreas = [ ];
 
@@ -45,34 +45,34 @@ require([ 'jQuery', 'WebGLRenderer', 'CanvasRenderer', 'AssetManager', 'q', 'Gam
             renderers: renderers,
             playAreas: playAreas
         };
-    };
+    }
 
-    var loop = function (callback, interval) {
-        var innerLoop = function () {
+    function loop(callback, interval) {
+        function innerLoop() {
             Q.when(callback(), function () {
                 setTimeout(innerLoop, interval);
             });
-        };
+        }
 
         innerLoop();
-    };
+    }
 
-    var hardLoop = function (callback, interval) {
+    function hardLoop(callback, interval) {
         var timer = setInterval(function () {
             if (callback() === false) {
                 clearInterval(timer);
             }
         }, interval);
-    };
+    }
 
-    var renderLoop = function (callback) {
+    function renderLoop(callback) {
         window.requestAnimFrame(function () {
             callback();
             renderLoop(callback);
         }, document.body); // should prolly use the canvas here...
-    };
+    }
 
-    var infLoop = function (callback) {
+    function infLoop(callback) {
         hardLoop(function () {
             var i;
 
@@ -80,14 +80,14 @@ require([ 'jQuery', 'WebGLRenderer', 'CanvasRenderer', 'AssetManager', 'q', 'Gam
                 callback();
             }
         }, 0);
-    };
+    }
 
     var renderFps = new FramerateCounter();
     var gameUpdateFps = new FramerateCounter();
 
     var game;
 
-    var go = function (io) {
+    function go(io) {
         game = new Game();
         game.setSkin(skinAssetManager);
         game.startMap(mapAssetManager, 'map');
@@ -148,16 +148,16 @@ require([ 'jQuery', 'WebGLRenderer', 'CanvasRenderer', 'AssetManager', 'q', 'Gam
             isLeftDown = false;
             mouseStateChanged();
         });
-    };
+    }
 
-    var getPaintCount = function () {
+    function getPaintCount() {
         return window.mozPaintCount || 0;
-    };
+    }
 
     var lastPaintCount = 0;
     var paintFps = new FramerateCounter();
 
-    var debugInfo = function () {
+    function debugInfo() {
         var currentPaintCount = getPaintCount();
         paintFps.addTicks(currentPaintCount - lastPaintCount);
         lastPaintCount = currentPaintCount;
@@ -169,9 +169,9 @@ require([ 'jQuery', 'WebGLRenderer', 'CanvasRenderer', 'AssetManager', 'q', 'Gam
         };
 
         return $.extend({ }, debug, game.debugInfo());
-    };
+    }
 
-    var updateDebugInfo = function () {
+    function updateDebugInfo() {
         if (!game) {
             return;
         }
@@ -195,9 +195,9 @@ require([ 'jQuery', 'WebGLRenderer', 'CanvasRenderer', 'AssetManager', 'q', 'Gam
         }).join('\n');
 
         $debug.text(text);
-    };
+    }
 
-    var getMissingFeatures = function () {
+    function getMissingFeatures() {
         var features = [ ];
 
         if (!window.Audio) {
@@ -205,7 +205,7 @@ require([ 'jQuery', 'WebGLRenderer', 'CanvasRenderer', 'AssetManager', 'q', 'Gam
         }
 
         return features;
-    };
+    }
 
     var missingFeatures = getMissingFeatures();
 

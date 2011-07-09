@@ -1,5 +1,5 @@
-define('CanvasRenderer', [ 'HitCircle', 'Slider', 'SliderTick', 'HitMarker', 'Util/Cache', 'canvasShaders', 'MapState', 'Util/gPubSub' ], function (HitCircle, Slider, SliderTick, HitMarker, Cache, shaders, MapState, gPubSub) {
-    var renderMap = function (vars) {
+define('CanvasRenderer', [ 'mapObject', 'Util/Cache', 'canvasShaders', 'MapState', 'Util/gPubSub' ], function (mapObject, Cache, shaders, MapState, gPubSub) {
+    function renderMap(vars) {
         var mapState = vars.mapState;
         var ruleSet = mapState.ruleSet;
         var skin = vars.skin;
@@ -8,7 +8,7 @@ define('CanvasRenderer', [ 'HitCircle', 'Slider', 'SliderTick', 'HitMarker', 'Ut
         var caches = vars.caches;
         var mouseHistory = vars.mouseHistory;
 
-        var getShadedGraphic = function (skin, graphicName, shader, shaderData) {
+        function getShadedGraphic(skin, graphicName, shader, shaderData) {
             var key = [ graphicName, skin, shader, shaderData ];
 
             return caches.graphics.get(key, function () {
@@ -23,13 +23,13 @@ define('CanvasRenderer', [ 'HitCircle', 'Slider', 'SliderTick', 'HitMarker', 'Ut
 
                 return shadedImages;
             });
-        };
+        }
 
-        var getCoord = function (x) {
+        function getCoord(x) {
             return Math.floor(x);
-        };
+        }
 
-        var drawImage = function (image, scale, x, y, cache) {
+        function drawImage(image, scale, x, y, cache) {
             var key = [ image, scale ];
 
             var scaledWidth = Math.ceil(image.width * scale);
@@ -54,7 +54,7 @@ define('CanvasRenderer', [ 'HitCircle', 'Slider', 'SliderTick', 'HitMarker', 'Ut
                 newCanvas.height = scaledHeight;
 
                 var newContext = newCanvas.getContext('2d');
-                newContext.globalCompositeOperation = 'copy',
+                newContext.globalCompositeOperation = 'copy';
                 newContext.drawImage(image, 0, 0, scaledWidth, scaledHeight);
 
                 return newCanvas;
@@ -65,9 +65,9 @@ define('CanvasRenderer', [ 'HitCircle', 'Slider', 'SliderTick', 'HitMarker', 'Ut
                 getCoord(x - scaledImage.width / 2),
                 getCoord(y - scaledImage.height / 2)
             );
-        };
+        }
 
-        var getNumberImages = function (number) {
+        function getNumberImages(number) {
             var digits = '' + number;
 
             var images = [ ];
@@ -82,9 +82,9 @@ define('CanvasRenderer', [ 'HitCircle', 'Slider', 'SliderTick', 'HitMarker', 'Ut
             });
 
             return images;
-        };
+        }
 
-        var renderComboNumber = function (number, x, y) {
+        function renderComboNumber(number, x, y) {
             var images = getNumberImages(number);
             var spacing = skin.hitCircleFontSpacing;
 
@@ -114,9 +114,9 @@ define('CanvasRenderer', [ 'HitCircle', 'Slider', 'SliderTick', 'HitMarker', 'Ut
 
                 offset += image.width + spacing;
             });
-        };
+        }
 
-        var renderHitCircle = function (hitCircle, progress) {
+        function renderHitCircle(hitCircle, progress) {
             var scale = ruleSet.getCircleSize() / 128;
 
             // Hit circle base
@@ -149,9 +149,9 @@ define('CanvasRenderer', [ 'HitCircle', 'Slider', 'SliderTick', 'HitMarker', 'Ut
                 hitCircle.y,
                 true
             );
-        };
+        }
 
-        var renderApproachCircle = function (hitObject, progress) {
+        function renderApproachCircle(hitObject, progress) {
             var radius = 1;
 
             if (progress > 0) {
@@ -175,9 +175,9 @@ define('CanvasRenderer', [ 'HitCircle', 'Slider', 'SliderTick', 'HitMarker', 'Ut
                 hitObject.x, hitObject.y,
                 false
             );
-        };
+        }
 
-        var renderHitMarker = function (hitMarker) {
+        function renderHitMarker(hitMarker) {
             var graphicName = ruleSet.getHitMarkerImageName(hitMarker);
             if (!graphicName) {
                 return;
@@ -195,22 +195,22 @@ define('CanvasRenderer', [ 'HitCircle', 'Slider', 'SliderTick', 'HitMarker', 'Ut
                 hitMarker.hitObject.y,
                 true
             );
-        };
+        }
 
-        var renderHitCircleObject = function (object) {
+        function renderHitCircleObject(object) {
             var approachProgress = ruleSet.getObjectApproachProgress(object, time);
 
             c.globalAlpha = ruleSet.getObjectOpacity(object, time);
 
             renderHitCircle(object);
             renderApproachCircle(object, approachProgress);
-        };
+        }
 
-        var renderHitMarkerObject = function (object) {
+        function renderHitMarkerObject(object) {
             renderHitMarker(object);
-        };
+        }
 
-        var renderSliderTrack = function (points, object) {
+        function renderSliderTrack(points, object) {
             var key = [ object, mapState, skin ];
 
             var cachedTrack = caches.sliderTrack.get(key, function () {
@@ -260,9 +260,9 @@ define('CanvasRenderer', [ 'HitCircle', 'Slider', 'SliderTick', 'HitMarker', 'Ut
             // which contains slider data; currently it's the same size as the
             // playfield (ew! but easy!), which is (probably) inefficient
             c.drawImage(cachedTrack.image, 0, 0);
-        };
+        }
 
-        var renderSliderBall = function (object) {
+        function renderSliderBall(object) {
             var sliderBallPosition = object.curve.getSliderBallPosition(object, time, ruleSet);
 
             if (sliderBallPosition) {
@@ -279,9 +279,9 @@ define('CanvasRenderer', [ 'HitCircle', 'Slider', 'SliderTick', 'HitMarker', 'Ut
                     true
                 );
             }
-        };
+        }
 
-        var renderSliderObject = function (object) {
+        function renderSliderObject(object) {
             var growPercentage = ruleSet.getSliderGrowPercentage(object, time);
             var points = object.curve.render(growPercentage);
 
@@ -309,9 +309,9 @@ define('CanvasRenderer', [ 'HitCircle', 'Slider', 'SliderTick', 'HitMarker', 'Ut
             renderApproachCircle(object, approachProgress);
 
             c.restore();
-        };
+        }
 
-        var renderSliderTickObject = function (object) {
+        function renderSliderTickObject(object) {
             var sliderTickGraphic = skin.assetManager.get('sliderscorepoint', 'image-set');
             var sliderTickGraphicFrame = 0;
 
@@ -324,33 +324,21 @@ define('CanvasRenderer', [ 'HitCircle', 'Slider', 'SliderTick', 'HitMarker', 'Ut
                 object.y,
                 true
             );
-        };
+        }
 
-        var getObjectRenderer = function (object) {
-            var renderers = [
-                [ HitCircle,  renderHitCircleObject ],
-                [ HitMarker,  renderHitMarkerObject ],
-                [ Slider,     renderSliderObject ],
-                [ SliderTick, renderSliderTickObject ]
-            ];
-
-            var objectRenderers = renderers.filter(function (r) {
-                return object instanceof r[0];
+        function renderObject(object) {
+            mapObject.match(object, {
+                HitCircle:  renderHitCircleObject,
+                HitMarker:  renderHitMarkerObject,
+                Slider:     renderSliderObject,
+                SliderTick: renderSliderTickObject,
+                _: function () {
+                    throw new TypeError('Unknown object type');
+                }
             });
+        }
 
-            if (objectRenderers.length !== 1) {
-                throw new TypeError('Unknown object type');
-            }
-
-            return objectRenderers[0][1];
-        };
-
-        var renderObject = function (object) {
-            var renderer = getObjectRenderer(object);
-            renderer(object);
-        };
-
-        var renderCursor = function (state) {
+        function renderCursor(state) {
             if (!state) {
                 return;
             }
@@ -359,9 +347,9 @@ define('CanvasRenderer', [ 'HitCircle', 'Slider', 'SliderTick', 'HitMarker', 'Ut
             var cursorFrame = 0;
 
             drawImage(cursorGraphic[cursorFrame], 1, state.x, state.y, false);
-        };
+        }
 
-        var renderCursorTrail = function (state, alpha) {
+        function renderCursorTrail(state, alpha) {
             if (!state) {
                 return;
             }
@@ -372,9 +360,9 @@ define('CanvasRenderer', [ 'HitCircle', 'Slider', 'SliderTick', 'HitMarker', 'Ut
             c.globalAlpha = alpha;
 
             drawImage(cursorTrailGraphic[cursorTrailFrame], 1, state.x, state.y, false);
-        };
+        }
 
-        var getObjectsToRender = function () {
+        function getObjectsToRender() {
             // Visible objects
             var objects = mapState.getVisibleObjects(time);
 
@@ -384,7 +372,7 @@ define('CanvasRenderer', [ 'HitCircle', 'Slider', 'SliderTick', 'HitMarker', 'Ut
             );
 
             return ruleSet.getObjectsByZ(objects);
-        };
+        }
 
         getObjectsToRender().forEach(function (object) {
             renderObject(object);
@@ -399,9 +387,9 @@ define('CanvasRenderer', [ 'HitCircle', 'Slider', 'SliderTick', 'HitMarker', 'Ut
         }
 
         renderCursor(mouseHistory.getDataAtTime(time));
-    };
+    }
 
-    var CanvasRenderer = function (context) {
+    function CanvasRenderer(context) {
         var c = context;
 
         var caches = {
@@ -418,7 +406,7 @@ define('CanvasRenderer', [ 'HitCircle', 'Slider', 'SliderTick', 'HitMarker', 'Ut
             scaledImages: new Cache()
         };
 
-        var renderBackground = function (graphic) {
+        function renderBackground(graphic) {
             var key = [ graphic, c.canvas.width, c.canvas.height ];
 
             var backgroundGraphic = caches.background.get(key, function () {
@@ -454,7 +442,7 @@ define('CanvasRenderer', [ 'HitCircle', 'Slider', 'SliderTick', 'HitMarker', 'Ut
             });
 
             c.drawImage(backgroundGraphic, 0, 0);
-        };
+        }
 
         return {
             beginRender: function () {
@@ -492,7 +480,7 @@ define('CanvasRenderer', [ 'HitCircle', 'Slider', 'SliderTick', 'HitMarker', 'Ut
                 // TODO Real storyboard stuff
             }
         };
-    };
+    }
 
     return CanvasRenderer;
 });

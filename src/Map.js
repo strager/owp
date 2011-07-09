@@ -1,7 +1,7 @@
 define('Map', [ ], function () {
-    var Map = function () {
+    function Map() {
         this.objects = [ ];
-    };
+    }
 
     return Map;
 });

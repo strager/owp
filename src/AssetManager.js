@@ -14,10 +14,10 @@ define('AssetManager', [ 'jQuery', 'MapInfo', 'mapFile', 'assetConfig', 'Util/Ma
         });
     }
 
-    var AssetManager = function (root) {
+    function AssetManager(root) {
         this.root = root;
         this.cache = new Cache();
-    };
+    }
 
     AssetManager.typeHandlers = {
         'image-set': function (assetManager, name) {
@@ -55,11 +55,11 @@ define('AssetManager', [ 'jQuery', 'MapInfo', 'mapFile', 'assetConfig', 'Util/Ma
             audio.autobuffer = true;
             audio.preload = 'auto';
 
-            var fail = function (event) {
+            function fail(event) {
                 if (audio.networkState === audio.NETWORK_NO_SOURCE) {
                     ret.reject(new Error('NETWORK_NO_SOURCE'));
                 }
-            };
+            }
 
             $(audio)
                 .append(originalTrack)

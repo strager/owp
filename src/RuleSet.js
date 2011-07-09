@@ -1,10 +1,10 @@
-define('RuleSet', [ 'Util/util', 'HitCircle', 'HitMarker', 'Slider', 'SliderTick', 'SliderEnd' ], function (util, HitCircle, HitMarker, Slider, SliderTick, SliderEnd) {
-    var RuleSet = function () {
+define('RuleSet', [ 'Util/util', 'mapObject' ], function (util, mapObject) {
+    function RuleSet() {
         this.approachRate = 5;
         this.overallDifficulty = 5;
         this.hpDrain = 5;
         this.circleSize = 5;
-    };
+    }
 
     RuleSet.fromSettings = function (settings) {
         var ruleSet = new RuleSet();
@@ -46,27 +46,27 @@ define('RuleSet', [ 'Util/util', 'HitCircle', 'HitMarker', 'Slider', 'SliderTick
             return this.getObjectLatestHitTime(object);
         },
 
-        getObjectStartTime: function (object) {
-            if (object instanceof SliderTick) {
+        getObjectStartTime: mapObject.matcher({
+            SliderTick: function (object) {
                 return this.getObjectStartTime(object.slider);
-            }
-
-            return object.time;
-        },
-
-        getObjectEndTime: function (object) {
-            if (object instanceof SliderTick) {
+            },
+            _: function (object) {
                 return object.time;
             }
+        }),
 
-            var duration = 0;
-
-            if (object instanceof Slider) {
-                duration = object.repeats * this.getSliderRepeatLength(object.time, object.length);
+        getObjectEndTime: mapObject.matcher({
+            SliderTick: function (object) {
+                return object.time;
+            },
+            Slider: function (object) {
+                var duration = object.repeats * this.getSliderRepeatLength(object.time, object.length);
+                return this.getObjectStartTime(object) + duration;
+            },
+            HitCircle: function (object) {
+                return this.getObjectStartTime(object);
             }
-
-            return this.getObjectStartTime(object) + duration;
-        },
+        }),
 
         getSliderRepeatLength: function (time, sliderLength) {
             return 1000 * sliderLength / this.getEffectiveSliderSpeed(time);
@@ -142,15 +142,14 @@ define('RuleSet', [ 'Util/util', 'HitCircle', 'HitMarker', 'Slider', 'SliderTick
             return object.time - this.getHitWindow(0);
         },
 
-        getObjectLatestHitTime: function (object) {
-            var offset = 0;
-
-            if (object instanceof HitCircle) {
-                offset = this.getHitWindow(50);
+        getObjectLatestHitTime: mapObject.matcher({
+            HitCircle: function (object) {
+                return this.getObjectEndTime(object) + this.getHitWindow(50);
+            },
+            _: function (object) {
+                return this.getObjectEndTime(object);
             }
-
-            return this.getObjectEndTime(object) + offset;
-        },
+        }),
 
         canHitObject: function (object, x, y, time) {
             var distance = Math.sqrt(Math.pow(object.x - x, 2) + Math.pow(object.y - y, 2));
@@ -177,7 +176,7 @@ define('RuleSet', [ 'Util/util', 'HitCircle', 'HitMarker', 'Slider', 'SliderTick
                 0: 'hit0'
             };
 
-            if (hitMarker.hitObject instanceof SliderTick && hitMarker.score === 0) {
+            if (hitMarker.hitObject instanceof mapObject.SliderTick && hitMarker.score === 0) {
                 return null;
             }
 
@@ -205,8 +204,8 @@ define('RuleSet', [ 'Util/util', 'HitCircle', 'HitMarker', 'Slider', 'SliderTick
             return this.threePartLerp(window[0], window[1], window[2], this.overallDifficulty);
         },
 
-        getHitScore: function (hitMarker) {
-            var delta = Math.abs(this.getObjectEndTime(hitMarker.hitObject) - hitMarker.time);
+        getHitScore: function (object, time) {
+            var delta = Math.abs(this.getObjectEndTime(object) - time);
 
             var scores = [ 300, 100, 50, 0 ];
             var i;
@@ -294,13 +293,14 @@ define('RuleSet', [ 'Util/util', 'HitCircle', 'HitMarker', 'Slider', 'SliderTick
             var hitMarkers = [ ];
             var hitObjects = [ ];
 
-            objects.forEach(function (object) {
-                if (object instanceof HitMarker) {
+            objects.forEach(mapObject.matcher({
+                HitMarker: function (object) {
                     hitMarkers.push(object);
-                } else {
+                },
+                _: function (object) {
                     hitObjects.push(object);
                 }
-            });
+            }));
 
             function sort(a, b) {
                 // Sort by time descending
@@ -330,27 +330,31 @@ define('RuleSet', [ 'Util/util', 'HitCircle', 'HitMarker', 'Slider', 'SliderTick
 
         getSliderTicks: function (slider) {
             var startTime = this.getObjectStartTime(slider);
+            var repeatDuration = this.getSliderRepeatLength(slider.time, slider.length);
 
             var tickLength = this.getTickLength(startTime);
             var tickDuration = this.getTickDuration(startTime);
 
-            var tickPositions = slider.curve.getTickPositions(tickLength);
+            var rawTickPositions = slider.curve.getTickPositions(tickLength);
 
             var ticks = [ ];
-            var repeatDuration = this.getSliderRepeatLength(slider.time, slider.length);
 
-            for (var repeatIndex = 0; repeatIndex < slider.repeats; ++repeatIndex) {
-                ticks = ticks.concat(tickPositions.map(function (tickPosition, tickIndex) {
-                    return new SliderTick(
-                        startTime + (tickIndex + 1) * tickDuration + repeatIndex * repeatDuration,
-                        tickPosition[0],
-                        tickPosition[1],
-                        slider,
-                        repeatIndex
-                    );
-                }));
+            var repeatIndex;
 
-                tickPositions = tickPositions.reverse();
+            function makeTick(tickPosition, tickIndex) {
+                return new mapObject.SliderTick(
+                    startTime + (tickIndex + 1) * tickDuration + repeatIndex * repeatDuration,
+                    tickPosition[0],
+                    tickPosition[1],
+                    slider,
+                    repeatIndex
+                );
+            }
+
+            for (repeatIndex = 0; repeatIndex < slider.repeats; ++repeatIndex) {
+                ticks = ticks.concat(rawTickPositions.map(makeTick));
+
+                rawTickPositions = rawTickPositions.reverse();
             }
 
             return ticks;
@@ -365,8 +369,10 @@ define('RuleSet', [ 'Util/util', 'HitCircle', 'HitMarker', 'Slider', 'SliderTick
 
             var ends = [ ];
 
+            var i;
+
             for (i = 1; i <= slider.repeats; ++i) {
-                ends.push(new SliderEnd(
+                ends.push(new mapObject.SliderEnd(
                     startTime + i * repeatDuration,
                     slider,
                     i,
