@@ -54,7 +54,7 @@ define('CanvasRenderer', [ 'mapObject', 'Util/Cache', 'canvasShaders', 'MapState
                 newCanvas.height = scaledHeight;
 
                 var newContext = newCanvas.getContext('2d');
-                newContext.globalCompositeOperation = 'copy',
+                newContext.globalCompositeOperation = 'copy';
                 newContext.drawImage(image, 0, 0, scaledWidth, scaledHeight);
 
                 return newCanvas;

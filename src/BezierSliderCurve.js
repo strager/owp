@@ -136,7 +136,7 @@ define('BezierSliderCurve', [ ], function () {
 
         for (i = 1; i < Math.floor(this.length / tickLength); ++i) {
             // TODO smarter calculation
-            var pointIndex = getLengthIndex(this.points, tickLength * i);
+            pointIndex = getLengthIndex(this.points, tickLength * i);
             ticks.push(this.points[pointIndex]);
         }
 
