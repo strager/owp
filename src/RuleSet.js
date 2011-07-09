@@ -293,46 +293,24 @@ define('RuleSet', [ 'Util/util', 'HitCircle', 'HitMarker', 'Slider', 'SliderTick
         getObjectsByZ: function (objects) {
             var hitMarkers = [ ];
             var hitObjects = [ ];
-            var sliderTicks = [ ];
 
             objects.forEach(function (object) {
                 if (object instanceof HitMarker) {
                     hitMarkers.push(object);
-                } else if (object instanceof SliderTick) {
-                    sliderTicks.push(object);
                 } else {
                     hitObjects.push(object);
                 }
             });
 
-            var sorted = hitObjects.sort(function (a, b) {
+            function sort(a, b) {
                 // Sort by time descending
                 return a.time > b.time ? -1 : 1;
-            });
+            }
 
-            // Put slider ticks after their sliders
-            sliderTicks.forEach(function (tick) {
-                var index = sorted.indexOf(tick.slider);
+            hitObjects = hitObjects.sort(sort);
+            hitMarkers = hitMarkers.sort(sort);
 
-                if (index < 0) {
-                    throw new Error('Inconsistent map state');
-                }
-
-                sorted.splice(index + 1, 0, tick);
-            });
-
-            // Put hit markers before their hit objects
-            hitMarkers.forEach(function (hitMarker) {
-                var index = sorted.indexOf(hitMarker.hitObject);
-
-                if (index < 0) {
-                    sorted.push(hitMarker);
-                } else {
-                    sorted.splice(index, 0, hitMarker);
-                }
-            });
-
-            return sorted;
+            return hitObjects.concat(hitMarkers);
         },
 
         getEffectiveSliderSpeed: function (time) {

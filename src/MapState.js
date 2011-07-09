@@ -21,14 +21,8 @@ define('MapState', [ 'Util/Timeline', 'Util/Map', 'HitMarker', 'HitCircle', 'Sli
             timeline.add(MapState.HIT_OBJECT_HITABLE, hitObject, earliestHitTime, latestHitTime);
 
             if (hitObject instanceof Slider) {
-                ruleSet.getSliderTicks(hitObject).forEach(function (tick) {
-                    var appearTime = ruleSet.getObjectAppearTime(tick);
-                    var disappearTime = ruleSet.getObjectDisappearTime(tick);
-
-                    timeline.add(MapState.HIT_OBJECT_VISIBILITY, tick, appearTime, disappearTime);
-
-                    hittableObjects.push(tick);
-                });
+                hitObject.ticks = ruleSet.getSliderTicks(hitObject); // Temporary (I hope)
+                hittableObjects = hittableObjects.concat(hitObject.ticks);
             } else if (hitObject instanceof HitCircle) {
                 hittableObjects.push(hitObject);
             }
@@ -177,6 +171,8 @@ define('MapState', [ 'Util/Timeline', 'Util/Map', 'HitMarker', 'HitCircle', 'Sli
                     unhitObject[0].time,
                     score
                 );
+
+                unhitObject[0].hitMarker = hitMarker; // Temporary (I hope)
 
                 this.applyHitMarkerNoRemove(hitMarker);
 

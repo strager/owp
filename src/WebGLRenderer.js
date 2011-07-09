@@ -234,6 +234,23 @@ define('WebGLRenderer', [ 'HitCircle', 'Slider', 'SliderTick', 'HitMarker', 'Map
             });
         };
 
+        var renderSliderTick = function (tick) {
+            if (tick.hitMarker) {
+                return;
+            }
+
+            var scale = ruleSet.getCircleSize() / 128;
+
+            draw.sprite(function (draw) {
+                gl.uniform2f(programs.sprite.uni.position, tick.x, tick.y);
+                gl.uniform4f(programs.sprite.uni.color, 255, 255, 255, 255);
+                gl.uniform2f(programs.sprite.uni.offset, 0, 0);
+                gl.uniform1f(programs.sprite.uni.scale, scale);
+
+                draw(textures.sliderTick);
+            });
+        };
+
         var renderSliderObject = function (object) {
             var key = [ object, mapState ];
 
@@ -263,6 +280,8 @@ define('WebGLRenderer', [ 'HitCircle', 'Slider', 'SliderTick', 'HitMarker', 'Map
 
                 draw(Math.round(c.vertexCount * growPercentage));
             });
+
+            object.ticks.forEach(renderSliderTick);
 
             var visibility = ruleSet.getObjectVisibilityAtTime(object, time);
 
@@ -345,25 +364,11 @@ define('WebGLRenderer', [ 'HitCircle', 'Slider', 'SliderTick', 'HitMarker', 'Map
             });
         };
 
-        var renderSliderTickObject = function (object) {
-            var scale = ruleSet.getCircleSize() / 128;
-
-            draw.sprite(function (draw) {
-                gl.uniform2f(programs.sprite.uni.position, object.x, object.y);
-                gl.uniform4f(programs.sprite.uni.color, 255, 255, 255, 255);
-                gl.uniform2f(programs.sprite.uni.offset, 0, 0);
-                gl.uniform1f(programs.sprite.uni.scale, scale);
-
-                draw(textures.sliderTick);
-            });
-        };
-
         var getObjectRenderer = function (object) {
             var renderers = [
                 [ HitCircle,  renderHitCircleObject ],
                 [ HitMarker,  renderHitMarkerObject ],
-                [ Slider,     renderSliderObject ],
-                [ SliderTick, renderSliderTickObject ]
+                [ Slider,     renderSliderObject ]
             ];
 
             var objectRenderers = renderers.filter(function (r) {
