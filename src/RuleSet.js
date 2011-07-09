@@ -46,31 +46,27 @@ define('RuleSet', [ 'Util/util', 'mapObject' ], function (util, mapObject) {
             return this.getObjectLatestHitTime(object);
         },
 
-        getObjectStartTime: function (object) {
-            return mapObject.match(object, {
-                SliderTick: function () {
-                    return this.getObjectStartTime(object.slider);
-                },
-                _: function () {
-                    return object.time;
-                }
-            }, this);
-        },
+        getObjectStartTime: mapObject.matcher({
+            SliderTick: function (object) {
+                return this.getObjectStartTime(object.slider);
+            },
+            _: function (object) {
+                return object.time;
+            }
+        }),
 
-        getObjectEndTime: function (object) {
-            return mapObject.match(object, {
-                SliderTick: function () {
-                    return object.time;
-                },
-                Slider: function () {
-                    var duration = object.repeats * this.getSliderRepeatLength(object.time, object.length);
-                    return this.getObjectStartTime(object) + duration;
-                },
-                HitCircle: function () {
-                    return this.getObjectStartTime(object);
-                }
-            }, this);
-        },
+        getObjectEndTime: mapObject.matcher({
+            SliderTick: function (object) {
+                return object.time;
+            },
+            Slider: function (object) {
+                var duration = object.repeats * this.getSliderRepeatLength(object.time, object.length);
+                return this.getObjectStartTime(object) + duration;
+            },
+            HitCircle: function (object) {
+                return this.getObjectStartTime(object);
+            }
+        }),
 
         getSliderRepeatLength: function (time, sliderLength) {
             return 1000 * sliderLength / this.getEffectiveSliderSpeed(time);
@@ -146,16 +142,14 @@ define('RuleSet', [ 'Util/util', 'mapObject' ], function (util, mapObject) {
             return object.time - this.getHitWindow(0);
         },
 
-        getObjectLatestHitTime: function (object) {
-            return mapObject.match(object, {
-                HitCircle: function () {
-                    return this.getObjectEndTime(object) + this.getHitWindow(50);
-                },
-                _: function () {
-                    return this.getObjectEndTime(object);
-                }
-            }, this);
-        },
+        getObjectLatestHitTime: mapObject.matcher({
+            HitCircle: function (object) {
+                return this.getObjectEndTime(object) + this.getHitWindow(50);
+            },
+            _: function (object) {
+                return this.getObjectEndTime(object);
+            }
+        }),
 
         canHitObject: function (object, x, y, time) {
             var distance = Math.sqrt(Math.pow(object.x - x, 2) + Math.pow(object.y - y, 2));
@@ -299,16 +293,14 @@ define('RuleSet', [ 'Util/util', 'mapObject' ], function (util, mapObject) {
             var hitMarkers = [ ];
             var hitObjects = [ ];
 
-            objects.forEach(function (object) {
-                mapObject.match(object, {
-                    HitMarker: function () {
-                        hitMarkers.push(object);
-                    },
-                    _: function () {
-                        hitObjects.push(object);
-                    }
-                });
-            });
+            objects.forEach(mapObject.matcher({
+                HitMarker: function (object) {
+                    hitMarkers.push(object);
+                },
+                _: function (object) {
+                    hitObjects.push(object);
+                }
+            }));
 
             function sort(a, b) {
                 // Sort by time descending
