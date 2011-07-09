@@ -21,6 +21,8 @@ define('Util/Timeline', [ 'Util/PubSub' ], function (PubSub) {
 
     CueList.prototype = {
         add: function (value, startTime, endTime) {
+            /*jshint white: false */
+
             if (typeof endTime === 'undefined') {
                 endTime = startTime;
             }
@@ -32,6 +34,8 @@ define('Util/Timeline', [ 'Util/PubSub' ], function (PubSub) {
         },
 
         remove: function (value) {
+            /*jshint white: false */
+
             var index = this.cueValues.indexOf(value);
             this.cueValues.splice(index, 1);
             this.cueStarts.splice(index, 1);

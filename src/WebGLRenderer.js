@@ -760,12 +760,12 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache' 
                 // TODO Real storyboard stuff
             }
         };
-    };
+    }
 
     var createProgram;
 
     (function () {
-        /*jshint white: false, eqeqeq: false */
+        /*jshint white: false, eqeqeq: false, eqnull: true */
 
         // Support methods
         // Taken from webgl-boilerplate, modified for owp
@@ -794,7 +794,7 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache' 
             var vs = createShader( gl, vertex, gl.VERTEX_SHADER );
             var fs = createShader( gl, '#ifdef GL_ES\nprecision highp float;\n#endif\n\n' + fragment, gl.FRAGMENT_SHADER );
 
-            if ( !vs || !fs ) return null;
+            if ( vs == null || fs == null ) return null;
 
             gl.attachShader( program, vs );
             gl.attachShader( program, fs );
