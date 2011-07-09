@@ -60,7 +60,7 @@ define('BezierSliderCurve', [ ], function () {
 
         var currentLength = 0;
 
-        for (step = 0; step <= stepCount; ++step) { 
+        for (step = 0; step <= stepCount; ++step) {
             t = step / stepCount; // Affects processPoint
 
             curPoint = rawPoints.reduce(processPoint, [ 0, 0 ]);
@@ -92,7 +92,7 @@ define('BezierSliderCurve', [ ], function () {
         return out;
     };
 
-    var BezierSliderCurve = function (rawPoints, sliderLength, repeatCount) {
+    var BezierSliderCurve = function (rawPoints, sliderLength) {
         this.length = sliderLength;
         this.points = render(rawPoints, (rawPoints.length - 1) * 50, this.length);
     };

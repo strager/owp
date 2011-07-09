@@ -74,7 +74,7 @@ define('mapFile', [ 'RuleSet', 'Map', 'Combo', 'MapInfo', 'mapObject', 'Storyboa
         return hitSounds;
     };
 
-    var readCurve = function (curveString, x, y, maxLength, repeats) {
+    var readCurve = function (curveString, x, y, maxLength) {
         var parts = curveString.split('|');
         var curveType = parts.shift();
         var curvePoints = parts.map(function (pointString) {
@@ -88,7 +88,7 @@ define('mapFile', [ 'RuleSet', 'Map', 'Combo', 'MapInfo', 'mapObject', 'Storyboa
         switch (curveType) {
         case 'B':
             // Bezier
-            return new BezierSliderCurve(curvePoints, maxLength, repeats);
+            return new BezierSliderCurve(curvePoints, maxLength);
 
         default:
             throw new Error('Unknown slider type: ' + curveType);
@@ -116,7 +116,7 @@ define('mapFile', [ 'RuleSet', 'Map', 'Combo', 'MapInfo', 'mapObject', 'Storyboa
 
             object.length = parseInt(list[7], 10);
             object.repeats = parseInt(list[6], 10);
-            object.curve = readCurve(list[5], x, y, object.length, object.repeats);
+            object.curve = readCurve(list[5], x, y, object.length);
 
             break;
 
