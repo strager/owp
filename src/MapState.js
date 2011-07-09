@@ -104,8 +104,11 @@ define('MapState', [ 'mapObject', 'Util/Timeline', 'Util/Map', 'Util/PubSub' ], 
                 object = hittableObjects[i];
 
                 if (this.ruleSet.canHitObject(object, x, y, time)) {
-                    hitMarker = new mapObject.HitMarker(object, time, 0);
-                    hitMarker.score = this.ruleSet.getHitScore(hitMarker);
+                    hitMarker = new mapObject.HitMarker(
+                        object,
+                        time,
+                        this.ruleSet.getHitScore(object, time)
+                    );
 
                     this.applyHitMarker(hitMarker);
 

@@ -204,8 +204,8 @@ define('RuleSet', [ 'Util/util', 'mapObject' ], function (util, mapObject) {
             return this.threePartLerp(window[0], window[1], window[2], this.overallDifficulty);
         },
 
-        getHitScore: function (hitMarker) {
-            var delta = Math.abs(this.getObjectEndTime(hitMarker.hitObject) - hitMarker.time);
+        getHitScore: function (object, time) {
+            var delta = Math.abs(this.getObjectEndTime(object) - time);
 
             var scores = [ 300, 100, 50, 0 ];
             var i;
