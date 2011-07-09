@@ -356,16 +356,24 @@ define('RuleSet', [ 'Util/util', 'HitCircle', 'HitMarker', 'Slider', 'SliderTick
 
             var tickPositions = slider.curve.getTickPositions(tickLength);
 
-            // TODO Take repeats into account
-            return tickPositions.map(function (tickPosition, i) {
-                return new SliderTick(
-                    startTime + (i + 1) * tickDuration,
-                    tickPosition[0],
-                    tickPosition[1],
-                    slider,
-                    0
-                );
-            });
+            var ticks = [ ];
+            var repeatDuration = this.getSliderRepeatLength(slider.time, slider.length);
+
+            for (var repeatIndex = 0; repeatIndex < slider.repeats; ++repeatIndex) {
+                ticks = ticks.concat(tickPositions.map(function (tickPosition, tickIndex) {
+                    return new SliderTick(
+                        startTime + (tickIndex + 1) * tickDuration + repeatIndex * repeatDuration,
+                        tickPosition[0],
+                        tickPosition[1],
+                        slider,
+                        0
+                    );
+                }));
+
+                tickPositions = tickPositions.reverse();
+            }
+
+            return ticks;
         },
 
         getTickLength: function (time) {
