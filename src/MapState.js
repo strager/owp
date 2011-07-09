@@ -20,15 +20,20 @@ define('MapState', [ 'mapObject', 'Util/Timeline', 'Util/Map', 'Util/PubSub' ], 
 
             timeline.add(MapState.HIT_OBJECT_HITABLE, hitObject, earliestHitTime, latestHitTime);
 
-            if (hitObject instanceof mapObject.Slider) {
-                hitObject.ticks = ruleSet.getSliderTicks(hitObject); // Temporary (I hope)
-                hittableObjects = hittableObjects.concat(hitObject.ticks);
+            mapObject.match(hitObject, {
+                Slider: function (slider) {
+                    var ticks = ruleSet.getSliderTicks(hitObject);
+                    hittableObjects = hittableObjects.concat(ticks);
+                    slider.ticks = ticks; // Temporary (I hope)
 
-                hitObject.ends = ruleSet.getSliderEnds(hitObject); // Temporary (I hope)
-                hittableObjects = hittableObjects.concat(hitObject.ends);
-            } else if (hitObject instanceof mapObject.HitCircle) {
-                hittableObjects.push(hitObject);
-            }
+                    var ends = ruleSet.getSliderEnds(hitObject);
+                    hittableObjects = hittableObjects.concat(ends);
+                    slider.ends = ends; // Temporary (I hope)
+                },
+                HitCircle: function (hitCircle) {
+                    hittableObjects.push(hitCircle);
+                }
+            });
         });
 
         this.unhitObjects = hittableObjects.map(function (hitObject) {
@@ -145,7 +150,7 @@ define('MapState', [ 'mapObject', 'Util/Timeline', 'Util/Map', 'Util/PubSub' ], 
                     break;
                 }
 
-                if (!(unhitObject[0] instanceof mapObject.SliderTick || unhitObject[0] instanceof mapObject.SliderEnd)) {
+                if (!mapObject.match(unhitObject[0], { SliderTick: true, SliderEnd: true, _: false })) {
                     continue;
                 }
 
@@ -158,12 +163,10 @@ define('MapState', [ 'mapObject', 'Util/Timeline', 'Util/Map', 'Util/PubSub' ], 
                         mouseState.y,
                         unhitObject[0].time
                     )) {
-                        if (unhitObject[0] instanceof mapObject.SliderTick) {
-                            score = 10;
-                        } else if (unhitObject[0] instanceof mapObject.SliderEnd) {
-                            score = 30;
-                        }
+                        // Hit
+                        score = mapObject.match(unhitObject[0], { SliderTick: 10, SliderEnd: 30 });
                     } else {
+                        // Miss
                         score = 0;
                     }
                 } else {

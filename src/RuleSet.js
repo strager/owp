@@ -47,25 +47,29 @@ define('RuleSet', [ 'Util/util', 'mapObject' ], function (util, mapObject) {
         },
 
         getObjectStartTime: function (object) {
-            if (object instanceof mapObject.SliderTick) {
-                return this.getObjectStartTime(object.slider);
-            }
-
-            return object.time;
+            return mapObject.match(object, {
+                SliderTick: function () {
+                    return this.getObjectStartTime(object.slider);
+                },
+                _: function () {
+                    return object.time;
+                }
+            }, this);
         },
 
         getObjectEndTime: function (object) {
-            if (object instanceof mapObject.SliderTick) {
-                return object.time;
-            }
-
-            var duration = 0;
-
-            if (object instanceof mapObject.Slider) {
-                duration = object.repeats * this.getSliderRepeatLength(object.time, object.length);
-            }
-
-            return this.getObjectStartTime(object) + duration;
+            return mapObject.match(object, {
+                SliderTick: function () {
+                    return object.time;
+                },
+                Slider: function () {
+                    var duration = object.repeats * this.getSliderRepeatLength(object.time, object.length);
+                    return this.getObjectStartTime(object) + duration;
+                },
+                HitCircle: function () {
+                    return this.getObjectStartTime(object);
+                }
+            }, this);
         },
 
         getSliderRepeatLength: function (time, sliderLength) {
@@ -143,13 +147,14 @@ define('RuleSet', [ 'Util/util', 'mapObject' ], function (util, mapObject) {
         },
 
         getObjectLatestHitTime: function (object) {
-            var offset = 0;
-
-            if (object instanceof mapObject.HitCircle) {
-                offset = this.getHitWindow(50);
-            }
-
-            return this.getObjectEndTime(object) + offset;
+            return mapObject.match(object, {
+                HitCircle: function () {
+                    return this.getObjectEndTime(object) + this.getHitWindow(50);
+                },
+                _: function () {
+                    return this.getObjectEndTime(object);
+                }
+            }, this);
         },
 
         canHitObject: function (object, x, y, time) {
@@ -295,11 +300,14 @@ define('RuleSet', [ 'Util/util', 'mapObject' ], function (util, mapObject) {
             var hitObjects = [ ];
 
             objects.forEach(function (object) {
-                if (object instanceof mapObject.HitMarker) {
-                    hitMarkers.push(object);
-                } else {
-                    hitObjects.push(object);
-                }
+                mapObject.match(object, {
+                    HitMarker: function () {
+                        hitMarkers.push(object);
+                    },
+                    _: function () {
+                        hitObjects.push(object);
+                    }
+                });
             });
 
             function sort(a, b) {

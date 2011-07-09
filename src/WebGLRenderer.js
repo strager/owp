@@ -380,27 +380,15 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache' 
             });
         };
 
-        var getObjectRenderer = function (object) {
-            var renderers = [
-                [ mapObject.HitCircle,  renderHitCircleObject ],
-                [ mapObject.HitMarker,  renderHitMarkerObject ],
-                [ mapObject.Slider,     renderSliderObject ]
-            ];
-
-            var objectRenderers = renderers.filter(function (r) {
-                return object instanceof r[0];
-            });
-
-            if (objectRenderers.length !== 1) {
-                throw new TypeError('Unknown object type');
-            }
-
-            return objectRenderers[0][1];
-        };
-
         var renderObject = function (object) {
-            var renderer = getObjectRenderer(object);
-            renderer(object);
+            mapObject.match(object, {
+                HitCircle:  renderHitCircleObject,
+                HitMarker:  renderHitMarkerObject,
+                Slider:     renderSliderObject,
+                _: function () {
+                    throw new TypeError('Unknown object type');
+                }
+            });
         };
 
         var renderCursor = function (state) {
