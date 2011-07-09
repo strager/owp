@@ -308,6 +308,22 @@ define('WebGLRenderer', [ 'HitCircle', 'Slider', 'SliderTick', 'HitMarker', 'Map
 
             renderHitCircleObject(object);
 
+            // Next end (repeat arrow)
+            var repeatArrow = object.ends.filter(function (end) {
+                return !end.hitMarker && !end.isFinal;
+            })[0];
+
+            if (repeatArrow) {
+                draw.sprite(function (draw) {
+                    gl.uniform2f(programs.sprite.uni.position, repeatArrow.x, repeatArrow.y);
+                    gl.uniform4f(programs.sprite.uni.color, 255, 255, 255, alpha * 255);
+                    gl.uniform2f(programs.sprite.uni.offset, 0, 0);
+                    gl.uniform1f(programs.sprite.uni.scale, scale);
+
+                    draw(textures.repeatArrow);
+                });
+            }
+
             if (visibility === 'during') {
                 renderSliderBall(object);
             }
@@ -621,6 +637,7 @@ define('WebGLRenderer', [ 'HitCircle', 'Slider', 'SliderTick', 'HitMarker', 'Map
             var cursorGraphic = skin.assetManager.get('cursor', 'image-set');Graphic = skin.assetManager.get('sliderb0', 'image-set');
             var cursorTrailGraphic = skin.assetManager.get('cursortrail', 'image-set');
             var sliderTickGraphic = skin.assetManager.get('sliderscorepoint', 'image-set');
+            var repeatArrowGraphic = skin.assetManager.get('reversearrow', 'image-set');
 
             textures.hitCircle = makeTexture(hitCircleGraphic[0]);
             textures.hitCircleOverlay = makeTexture(hitCircleOverlayGraphic[0]);
@@ -629,6 +646,7 @@ define('WebGLRenderer', [ 'HitCircle', 'Slider', 'SliderTick', 'HitMarker', 'Map
             textures.cursor = makeTexture(cursorGraphic[0]);
             textures.cursorTrail = makeTexture(cursorTrailGraphic[0]);
             textures.sliderTick = makeTexture(sliderTickGraphic[0]);
+            textures.repeatArrow = makeTexture(repeatArrowGraphic[0]);
 
             var i;
             var graphic;

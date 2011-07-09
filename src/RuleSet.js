@@ -1,4 +1,4 @@
-define('RuleSet', [ 'Util/util', 'HitCircle', 'HitMarker', 'Slider', 'SliderTick' ], function (util, HitCircle, HitMarker, Slider, SliderTick) {
+define('RuleSet', [ 'Util/util', 'HitCircle', 'HitMarker', 'Slider', 'SliderTick', 'SliderEnd' ], function (util, HitCircle, HitMarker, Slider, SliderTick, SliderEnd) {
     var RuleSet = function () {
         this.approachRate = 5;
         this.overallDifficulty = 5;
@@ -354,6 +354,27 @@ define('RuleSet', [ 'Util/util', 'HitCircle', 'HitMarker', 'Slider', 'SliderTick
             }
 
             return ticks;
+        },
+
+        getSliderEnds: function (slider) {
+            var startTime = this.getObjectStartTime(slider);
+            var repeatDuration = this.getSliderRepeatLength(slider.time, slider.length);
+
+            var startPosition = slider.curve.points[0];
+            var endPosition = slider.curve.points.slice(-1)[0];
+
+            var ends = [ ];
+
+            for (i = 1; i <= slider.repeats; ++i) {
+                ends.push(new SliderEnd(
+                    startTime + i * repeatDuration,
+                    slider,
+                    i,
+                    i === slider.repeats
+                ));
+            }
+
+            return ends;
         },
 
         getTickLength: function (time) {

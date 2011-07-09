@@ -36,6 +36,7 @@ define('Skin', [ 'Util/util' ], function (util) {
                     'sliderscorepoint',
                     'sliderpoint30',
                     'sliderpoint10',
+                    'reversearrow',
                     'sliderb0'
                 ],
                 'sound': [

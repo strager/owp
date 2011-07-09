@@ -1,4 +1,4 @@
-define('MapState', [ 'Util/Timeline', 'Util/Map', 'HitMarker', 'HitCircle', 'Slider', 'SliderTick', 'Util/PubSub' ], function (Timeline, Map, HitMarker, HitCircle, Slider, SliderTick, PubSub) {
+define('MapState', [ 'Util/Timeline', 'Util/Map', 'HitMarker', 'HitCircle', 'Slider', 'SliderTick', 'SliderEnd', 'Util/PubSub' ], function (Timeline, Map, HitMarker, HitCircle, Slider, SliderTick, SliderEnd, PubSub) {
     var MapState = function (ruleSet, objects, timeline) {
         this.ruleSet = ruleSet;
         this.timeline = timeline;
@@ -23,6 +23,9 @@ define('MapState', [ 'Util/Timeline', 'Util/Map', 'HitMarker', 'HitCircle', 'Sli
             if (hitObject instanceof Slider) {
                 hitObject.ticks = ruleSet.getSliderTicks(hitObject); // Temporary (I hope)
                 hittableObjects = hittableObjects.concat(hitObject.ticks);
+
+                hitObject.ends = ruleSet.getSliderEnds(hitObject); // Temporary (I hope)
+                hittableObjects = hittableObjects.concat(hitObject.ends);
             } else if (hitObject instanceof HitCircle) {
                 hittableObjects.push(hitObject);
             }
@@ -145,7 +148,7 @@ define('MapState', [ 'Util/Timeline', 'Util/Map', 'HitMarker', 'HitCircle', 'Sli
                     break;
                 }
 
-                if (!(unhitObject[0] instanceof SliderTick)) {
+                if (!(unhitObject[0] instanceof SliderTick || unhitObject[0] instanceof SliderEnd)) {
                     continue;
                 }
 
@@ -158,7 +161,11 @@ define('MapState', [ 'Util/Timeline', 'Util/Map', 'HitMarker', 'HitCircle', 'Sli
                         mouseState.y,
                         unhitObject[0].time
                     )) {
-                        score = 10;
+                        if (unhitObject[0] instanceof SliderTick) {
+                            score = 10;
+                        } else if (unhitObject[0] instanceof SliderEnd) {
+                            score = 30;
+                        }
                     } else {
                         score = 0;
                     }
