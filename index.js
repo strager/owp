@@ -122,14 +122,34 @@ require([ 'jQuery', 'WebGLRenderer', 'CanvasRenderer', 'AssetManager', 'q', 'Gam
         $(io.playAreas).mousedown(function (e) {
             mouseX = e.pageX - this.offsetLeft;
             mouseY = e.pageY - this.offsetTop;
-            isLeftDown = true;
+
+            switch (e.which) {
+            case 1: // LMB
+                isLeftDown = true;
+                break;
+
+            case 3: // RMB
+                isRightDown = true;
+                break;
+            }
+
             mouseStateChanged();
         });
 
         $(io.playAreas).mouseup(function (e) {
             mouseX = e.pageX - this.offsetLeft;
             mouseY = e.pageY - this.offsetTop;
-            isLeftDown = false;
+
+            switch (e.which) {
+            case 1: // LMB
+                isLeftDown = false;
+                break;
+
+            case 3: // RMB
+                isRightDown = false;
+                break;
+            }
+
             mouseStateChanged();
         });
 
@@ -140,12 +160,30 @@ require([ 'jQuery', 'WebGLRenderer', 'CanvasRenderer', 'AssetManager', 'q', 'Gam
         });
 
         $('body').keydown(function (e) {
-            isLeftDown = true;
+            switch (e.which) {
+            case 90: // LMB
+                isLeftDown = true;
+                break;
+
+            case 88: // RMB
+                isRightDown = true;
+                break;
+            }
+
             mouseStateChanged();
         });
 
         $('body').keyup(function (e) {
-            isLeftDown = false;
+            switch (e.which) {
+            case 90: // LMB
+                isLeftDown = false;
+                break;
+
+            case 88: // RMB
+                isRightDown = false;
+                break;
+            }
+
             mouseStateChanged();
         });
     }
