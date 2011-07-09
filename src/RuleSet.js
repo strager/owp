@@ -368,7 +368,7 @@ define('RuleSet', [ 'Util/util', 'HitCircle', 'HitMarker', 'Slider', 'SliderTick
                         tickPosition[0],
                         tickPosition[1],
                         slider,
-                        0
+                        repeatIndex
                     );
                 }));
 
