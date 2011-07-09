@@ -330,27 +330,31 @@ define('RuleSet', [ 'Util/util', 'mapObject' ], function (util, mapObject) {
 
         getSliderTicks: function (slider) {
             var startTime = this.getObjectStartTime(slider);
+            var repeatDuration = this.getSliderRepeatLength(slider.time, slider.length);
 
             var tickLength = this.getTickLength(startTime);
             var tickDuration = this.getTickDuration(startTime);
 
-            var tickPositions = slider.curve.getTickPositions(tickLength);
+            var rawTickPositions = slider.curve.getTickPositions(tickLength);
 
             var ticks = [ ];
-            var repeatDuration = this.getSliderRepeatLength(slider.time, slider.length);
 
-            for (var repeatIndex = 0; repeatIndex < slider.repeats; ++repeatIndex) {
-                ticks = ticks.concat(tickPositions.map(function (tickPosition, tickIndex) {
-                    return new mapObject.SliderTick(
-                        startTime + (tickIndex + 1) * tickDuration + repeatIndex * repeatDuration,
-                        tickPosition[0],
-                        tickPosition[1],
-                        slider,
-                        repeatIndex
-                    );
-                }));
+            var repeatIndex;
 
-                tickPositions = tickPositions.reverse();
+            function makeTick(tickPosition, tickIndex) {
+                return new mapObject.SliderTick(
+                    startTime + (tickIndex + 1) * tickDuration + repeatIndex * repeatDuration,
+                    tickPosition[0],
+                    tickPosition[1],
+                    slider,
+                    repeatIndex
+                );
+            }
+
+            for (repeatIndex = 0; repeatIndex < slider.repeats; ++repeatIndex) {
+                ticks = ticks.concat(rawTickPositions.map(makeTick));
+
+                rawTickPositions = rawTickPositions.reverse();
             }
 
             return ticks;
@@ -364,6 +368,8 @@ define('RuleSet', [ 'Util/util', 'mapObject' ], function (util, mapObject) {
             var endPosition = slider.curve.points.slice(-1)[0];
 
             var ends = [ ];
+
+            var i;
 
             for (i = 1; i <= slider.repeats; ++i) {
                 ends.push(new mapObject.SliderEnd(

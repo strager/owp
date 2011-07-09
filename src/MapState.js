@@ -186,14 +186,15 @@ define('MapState', [ 'mapObject', 'Util/Timeline', 'Util/Map', 'Util/PubSub' ], 
 
                 this.applyHitMarkerNoRemove(hitMarker);
 
+                // We unshift because we need to remove objects in reverse
+                // order.  Else we need to keep track of index changes while
+                // removing items, which is ugly and slow.
                 removedUnhitObjects.push(i);
             }
 
-            // We iterate backwards because otherwise we have to
-            // keep track of index changes while removing items.
-            for (i = removedUnhitObjects.length; i --> 0; ) {
-                this.unhitObjects.splice(removedUnhitObjects[i], 1);
-            }
+            removedUnhitObjects.forEach(function (index) {
+                this.unhitObjects.splice(index, 1);
+            }, this);
         },
 
         processMisses: function (time) {
