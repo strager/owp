@@ -1,5 +1,5 @@
 /*jshint bitwise: false */
-define('mapFile', [ 'RuleSet', 'HitCircle', 'Slider', 'Map', 'Combo', 'MapInfo', 'Storyboard', 'Skin', 'BezierSliderCurve' ], function (RuleSet, HitCircle, Slider, Map, Combo, MapInfo, Storyboard, Skin, BezierSliderCurve) {
+define('mapFile', [ 'RuleSet', 'Map', 'Combo', 'MapInfo', 'mapObject', 'Storyboard', 'Skin', 'BezierSliderCurve' ], function (RuleSet, Map, Combo, MapInfo, mapObject, Storyboard, Skin, BezierSliderCurve) {
     var readSkin = function (assetConfig, assetManager) {
         return Skin.fromSettings(assetManager, {
             name:   assetConfig.General.values.Name,
@@ -106,13 +106,13 @@ define('mapFile', [ 'RuleSet', 'HitCircle', 'Slider', 'Map', 'Combo', 'MapInfo',
         switch (flags1 & 0x03) {
         case 1:
             // Hit circle
-            object = new HitCircle();
+            object = new mapObject.HitCircle();
 
             break;
 
         case 2:
             // Slider
-            object = new Slider();
+            object = new mapObject.Slider();
 
             object.length = parseInt(list[7], 10);
             object.repeats = parseInt(list[6], 10);

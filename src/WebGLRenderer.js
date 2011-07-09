@@ -1,4 +1,4 @@
-define('WebGLRenderer', [ 'HitCircle', 'Slider', 'SliderTick', 'HitMarker', 'MapState', 'Util/gPubSub', 'Util/Cache' ], function (HitCircle, Slider, SliderTick, HitMarker, MapState, gPubSub, Cache) {
+define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache' ], function (MapState, mapObject, gPubSub, Cache) {
     var drawers = function (gl, buffers, programs) {
         var inProgram = false;
 
@@ -382,9 +382,9 @@ define('WebGLRenderer', [ 'HitCircle', 'Slider', 'SliderTick', 'HitMarker', 'Map
 
         var getObjectRenderer = function (object) {
             var renderers = [
-                [ HitCircle,  renderHitCircleObject ],
-                [ HitMarker,  renderHitMarkerObject ],
-                [ Slider,     renderSliderObject ]
+                [ mapObject.HitCircle,  renderHitCircleObject ],
+                [ mapObject.HitMarker,  renderHitMarkerObject ],
+                [ mapObject.Slider,     renderSliderObject ]
             ];
 
             var objectRenderers = renderers.filter(function (r) {

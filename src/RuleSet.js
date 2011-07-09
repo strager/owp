@@ -1,4 +1,4 @@
-define('RuleSet', [ 'Util/util', 'HitCircle', 'HitMarker', 'Slider', 'SliderTick', 'SliderEnd' ], function (util, HitCircle, HitMarker, Slider, SliderTick, SliderEnd) {
+define('RuleSet', [ 'Util/util', 'mapObject' ], function (util, mapObject) {
     var RuleSet = function () {
         this.approachRate = 5;
         this.overallDifficulty = 5;
@@ -47,7 +47,7 @@ define('RuleSet', [ 'Util/util', 'HitCircle', 'HitMarker', 'Slider', 'SliderTick
         },
 
         getObjectStartTime: function (object) {
-            if (object instanceof SliderTick) {
+            if (object instanceof mapObject.SliderTick) {
                 return this.getObjectStartTime(object.slider);
             }
 
@@ -55,13 +55,13 @@ define('RuleSet', [ 'Util/util', 'HitCircle', 'HitMarker', 'Slider', 'SliderTick
         },
 
         getObjectEndTime: function (object) {
-            if (object instanceof SliderTick) {
+            if (object instanceof mapObject.SliderTick) {
                 return object.time;
             }
 
             var duration = 0;
 
-            if (object instanceof Slider) {
+            if (object instanceof mapObject.Slider) {
                 duration = object.repeats * this.getSliderRepeatLength(object.time, object.length);
             }
 
@@ -145,7 +145,7 @@ define('RuleSet', [ 'Util/util', 'HitCircle', 'HitMarker', 'Slider', 'SliderTick
         getObjectLatestHitTime: function (object) {
             var offset = 0;
 
-            if (object instanceof HitCircle) {
+            if (object instanceof mapObject.HitCircle) {
                 offset = this.getHitWindow(50);
             }
 
@@ -177,7 +177,7 @@ define('RuleSet', [ 'Util/util', 'HitCircle', 'HitMarker', 'Slider', 'SliderTick
                 0: 'hit0'
             };
 
-            if (hitMarker.hitObject instanceof SliderTick && hitMarker.score === 0) {
+            if (hitMarker.hitObject instanceof mapObject.SliderTick && hitMarker.score === 0) {
                 return null;
             }
 
@@ -295,7 +295,7 @@ define('RuleSet', [ 'Util/util', 'HitCircle', 'HitMarker', 'Slider', 'SliderTick
             var hitObjects = [ ];
 
             objects.forEach(function (object) {
-                if (object instanceof HitMarker) {
+                if (object instanceof mapObject.HitMarker) {
                     hitMarkers.push(object);
                 } else {
                     hitObjects.push(object);
@@ -341,7 +341,7 @@ define('RuleSet', [ 'Util/util', 'HitCircle', 'HitMarker', 'Slider', 'SliderTick
 
             for (var repeatIndex = 0; repeatIndex < slider.repeats; ++repeatIndex) {
                 ticks = ticks.concat(tickPositions.map(function (tickPosition, tickIndex) {
-                    return new SliderTick(
+                    return new mapObject.SliderTick(
                         startTime + (tickIndex + 1) * tickDuration + repeatIndex * repeatDuration,
                         tickPosition[0],
                         tickPosition[1],
@@ -366,7 +366,7 @@ define('RuleSet', [ 'Util/util', 'HitCircle', 'HitMarker', 'Slider', 'SliderTick
             var ends = [ ];
 
             for (i = 1; i <= slider.repeats; ++i) {
-                ends.push(new SliderEnd(
+                ends.push(new mapObject.SliderEnd(
                     startTime + i * repeatDuration,
                     slider,
                     i,

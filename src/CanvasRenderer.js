@@ -1,4 +1,4 @@
-define('CanvasRenderer', [ 'HitCircle', 'Slider', 'SliderTick', 'HitMarker', 'Util/Cache', 'canvasShaders', 'MapState', 'Util/gPubSub' ], function (HitCircle, Slider, SliderTick, HitMarker, Cache, shaders, MapState, gPubSub) {
+define('CanvasRenderer', [ 'mapObject', 'Util/Cache', 'canvasShaders', 'MapState', 'Util/gPubSub' ], function (mapObject, Cache, shaders, MapState, gPubSub) {
     var renderMap = function (vars) {
         var mapState = vars.mapState;
         var ruleSet = mapState.ruleSet;
@@ -328,10 +328,10 @@ define('CanvasRenderer', [ 'HitCircle', 'Slider', 'SliderTick', 'HitMarker', 'Ut
 
         var getObjectRenderer = function (object) {
             var renderers = [
-                [ HitCircle,  renderHitCircleObject ],
-                [ HitMarker,  renderHitMarkerObject ],
-                [ Slider,     renderSliderObject ],
-                [ SliderTick, renderSliderTickObject ]
+                [ mapObject.HitCircle,  renderHitCircleObject ],
+                [ mapObject.HitMarker,  renderHitMarkerObject ],
+                [ mapObject.Slider,     renderSliderObject ],
+                [ mapObject.SliderTick, renderSliderTickObject ]
             ];
 
             var objectRenderers = renderers.filter(function (r) {

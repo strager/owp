@@ -1,4 +1,4 @@
-define('MapState', [ 'Util/Timeline', 'Util/Map', 'HitMarker', 'HitCircle', 'Slider', 'SliderTick', 'SliderEnd', 'Util/PubSub' ], function (Timeline, Map, HitMarker, HitCircle, Slider, SliderTick, SliderEnd, PubSub) {
+define('MapState', [ 'mapObject', 'Util/Timeline', 'Util/Map', 'Util/PubSub' ], function (mapObject, Timeline, Map, PubSub) {
     var MapState = function (ruleSet, objects, timeline) {
         this.ruleSet = ruleSet;
         this.timeline = timeline;
@@ -20,13 +20,13 @@ define('MapState', [ 'Util/Timeline', 'Util/Map', 'HitMarker', 'HitCircle', 'Sli
 
             timeline.add(MapState.HIT_OBJECT_HITABLE, hitObject, earliestHitTime, latestHitTime);
 
-            if (hitObject instanceof Slider) {
+            if (hitObject instanceof mapObject.Slider) {
                 hitObject.ticks = ruleSet.getSliderTicks(hitObject); // Temporary (I hope)
                 hittableObjects = hittableObjects.concat(hitObject.ticks);
 
                 hitObject.ends = ruleSet.getSliderEnds(hitObject); // Temporary (I hope)
                 hittableObjects = hittableObjects.concat(hitObject.ends);
-            } else if (hitObject instanceof HitCircle) {
+            } else if (hitObject instanceof mapObject.HitCircle) {
                 hittableObjects.push(hitObject);
             }
         });
@@ -99,11 +99,8 @@ define('MapState', [ 'Util/Timeline', 'Util/Map', 'HitMarker', 'HitCircle', 'Sli
                 object = hittableObjects[i];
 
                 if (this.ruleSet.canHitObject(object, x, y, time)) {
-                    hitMarker = HitMarker.create(
-                        object,
-                        time,
-                        this.ruleSet
-                    );
+                    hitMarker = new mapObject.HitMarker(object, time, 0);
+                    hitMarker.score = this.ruleSet.getHitScore(hitMarker);
 
                     this.applyHitMarker(hitMarker);
 
@@ -148,7 +145,7 @@ define('MapState', [ 'Util/Timeline', 'Util/Map', 'HitMarker', 'HitCircle', 'Sli
                     break;
                 }
 
-                if (!(unhitObject[0] instanceof SliderTick || unhitObject[0] instanceof SliderEnd)) {
+                if (!(unhitObject[0] instanceof mapObject.SliderTick || unhitObject[0] instanceof mapObject.SliderEnd)) {
                     continue;
                 }
 
@@ -161,9 +158,9 @@ define('MapState', [ 'Util/Timeline', 'Util/Map', 'HitMarker', 'HitCircle', 'Sli
                         mouseState.y,
                         unhitObject[0].time
                     )) {
-                        if (unhitObject[0] instanceof SliderTick) {
+                        if (unhitObject[0] instanceof mapObject.SliderTick) {
                             score = 10;
-                        } else if (unhitObject[0] instanceof SliderEnd) {
+                        } else if (unhitObject[0] instanceof mapObject.SliderEnd) {
                             score = 30;
                         }
                     } else {
@@ -173,7 +170,7 @@ define('MapState', [ 'Util/Timeline', 'Util/Map', 'HitMarker', 'HitCircle', 'Sli
                     score = 0;
                 }
 
-                hitMarker = new HitMarker(
+                hitMarker = new mapObject.HitMarker(
                     unhitObject[0],
                     unhitObject[0].time,
                     score
@@ -205,7 +202,7 @@ define('MapState', [ 'Util/Timeline', 'Util/Map', 'HitMarker', 'HitCircle', 'Sli
                     break;
                 }
 
-                hitMarker = new HitMarker(
+                hitMarker = new mapObject.HitMarker(
                     unhitObject[0],
                     unhitObject[1] + 1,
                     0
