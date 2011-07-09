@@ -166,10 +166,8 @@ define('RuleSet', [ 'Util/util', 'HitCircle', 'HitMarker', 'Slider', 'SliderTick
         },
 
         getHitMarkerImageName: function (hitMarker) {
-            return this.getHitMarkerScoreImageName(hitMarker.score);
-        },
+            // Should this be here?
 
-        getHitMarkerScoreImageName: function (score) {
             var imageNames = {
                 300: 'hit300',
                 100: 'hit100',
@@ -179,11 +177,15 @@ define('RuleSet', [ 'Util/util', 'HitCircle', 'HitMarker', 'Slider', 'SliderTick
                 0: 'hit0'
             };
 
-            if (!imageNames.hasOwnProperty(score)) {
-                throw new Error('Invalid hit score ' + score);
+            if (hitMarker.hitObject instanceof SliderTick && hitMarker.score === 0) {
+                return null;
             }
 
-            return imageNames[score];
+            if (!imageNames.hasOwnProperty(hitMarker.score)) {
+                throw new Error('Invalid hit marker with score ' + hitMarker.score);
+            }
+
+            return imageNames[hitMarker.score];
         },
 
         getHitWindow: function (score) {

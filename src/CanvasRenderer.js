@@ -178,10 +178,14 @@ define('CanvasRenderer', [ 'HitCircle', 'Slider', 'SliderTick', 'HitMarker', 'Ut
         };
 
         var renderHitMarker = function (hitMarker) {
+            var graphicName = ruleSet.getHitMarkerImageName(hitMarker);
+            if (!graphicName) {
+                return;
+            }
+
             var scale = ruleSet.getHitMarkerScale(hitMarker, time);
 
-            // Hit marker
-            var hitMarkerGraphic = skin.assetManager.get(ruleSet.getHitMarkerImageName(hitMarker), 'image-set');
+            var hitMarkerGraphic = skin.assetManager.get(graphicName, 'image-set');
             var hitMarkerFrame = 0;
 
             drawImage(

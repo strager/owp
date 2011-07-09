@@ -328,6 +328,11 @@ define('WebGLRenderer', [ 'HitCircle', 'Slider', 'SliderTick', 'HitMarker', 'Map
         };
 
         var renderHitMarkerObject = function (object) {
+            var image = ruleSet.getHitMarkerImageName(object)
+            if (!image) {
+                return;
+            }
+
             var scale = ruleSet.getHitMarkerScale(object, time);
 
             draw.sprite(function (draw) {
@@ -336,7 +341,7 @@ define('WebGLRenderer', [ 'HitCircle', 'Slider', 'SliderTick', 'HitMarker', 'Map
                 gl.uniform2f(programs.sprite.uni.offset, 0, 0);
                 gl.uniform1f(programs.sprite.uni.scale, scale);
 
-                draw(textures.hitMarkers[object.score]);
+                draw(textures.hitMarkers[image]);
             });
         };
 
@@ -630,14 +635,21 @@ define('WebGLRenderer', [ 'HitCircle', 'Slider', 'SliderTick', 'HitMarker', 'Map
                 textures.digits[i] = makeTexture(graphic[0]);
             }
 
-            var hitScores = [ 0, 10, 30, 50, 100, 300 ];
+            var hitMarkerImageNames = [
+                'hit300',
+                'hit100',
+                'hit50',
+                'sliderpoint30',
+                'sliderpoint10',
+                'hit0'
+            ];
 
             textures.hitMarkers = [ ];
 
-            for (i = 0; i < hitScores.length; ++i) {
-                graphic = skin.assetManager.get(ruleSet.getHitMarkerScoreImageName(hitScores[i]), 'image-set');
-                textures.hitMarkers[hitScores[i]] = makeTexture(graphic[0]);
-            }
+            hitMarkerImageNames.forEach(function (imageName) {
+                var graphic = skin.assetManager.get(imageName, 'image-set');
+                textures.hitMarkers[imageName] = makeTexture(graphic[0]);
+            });
 
             gl.bindTexture(gl.TEXTURE_2D, null);
 
