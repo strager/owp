@@ -1,4 +1,4 @@
-define('WebGLRenderer', [ 'HitCircle', 'Slider', 'HitMarker', 'MapState', 'Util/gPubSub', 'Util/Cache' ], function (HitCircle, Slider, HitMarker, MapState, gPubSub, Cache) {
+define('WebGLRenderer', [ 'HitCircle', 'Slider', 'SliderTick', 'HitMarker', 'MapState', 'Util/gPubSub', 'Util/Cache' ], function (HitCircle, Slider, SliderTick, HitMarker, MapState, gPubSub, Cache) {
     var drawers = function (gl, buffers, programs) {
         var inProgram = false;
 
@@ -98,6 +98,7 @@ define('WebGLRenderer', [ 'HitCircle', 'Slider', 'HitMarker', 'MapState', 'Util/
         var programs = vars.programs;
         var textures = vars.textures;
         var caches = vars.caches;
+        var mouseHistory = vars.mouseHistory;
 
         var draw = drawers(gl, buffers, programs);
 
@@ -233,6 +234,23 @@ define('WebGLRenderer', [ 'HitCircle', 'Slider', 'HitMarker', 'MapState', 'Util/
             });
         };
 
+        var renderSliderTick = function (tick) {
+            if (tick.hitMarker) {
+                return;
+            }
+
+            var scale = ruleSet.getCircleSize() / 128;
+
+            draw.sprite(function (draw) {
+                gl.uniform2f(programs.sprite.uni.position, tick.x, tick.y);
+                gl.uniform4f(programs.sprite.uni.color, 255, 255, 255, 255);
+                gl.uniform2f(programs.sprite.uni.offset, 0, 0);
+                gl.uniform1f(programs.sprite.uni.scale, scale);
+
+                draw(textures.sliderTick);
+            });
+        };
+
         var renderSliderObject = function (object) {
             var key = [ object, mapState ];
 
@@ -263,6 +281,8 @@ define('WebGLRenderer', [ 'HitCircle', 'Slider', 'HitMarker', 'MapState', 'Util/
                 draw(Math.round(c.vertexCount * growPercentage));
             });
 
+            object.ticks.forEach(renderSliderTick);
+
             var visibility = ruleSet.getObjectVisibilityAtTime(object, time);
 
             var lastPoint = object.curve.render(growPercentage).slice(-1)[0];
@@ -287,6 +307,22 @@ define('WebGLRenderer', [ 'HitCircle', 'Slider', 'HitMarker', 'MapState', 'Util/
             }
 
             renderHitCircleObject(object);
+
+            // Next end (repeat arrow)
+            var repeatArrow = object.ends.filter(function (end) {
+                return !end.hitMarker && !end.isFinal;
+            })[0];
+
+            if (repeatArrow) {
+                draw.sprite(function (draw) {
+                    gl.uniform2f(programs.sprite.uni.position, repeatArrow.x, repeatArrow.y);
+                    gl.uniform4f(programs.sprite.uni.color, 255, 255, 255, alpha * 255);
+                    gl.uniform2f(programs.sprite.uni.offset, 0, 0);
+                    gl.uniform1f(programs.sprite.uni.scale, scale);
+
+                    draw(textures.repeatArrow);
+                });
+            }
 
             if (visibility === 'during') {
                 renderSliderBall(object);
@@ -327,6 +363,11 @@ define('WebGLRenderer', [ 'HitCircle', 'Slider', 'HitMarker', 'MapState', 'Util/
         };
 
         var renderHitMarkerObject = function (object) {
+            var image = ruleSet.getHitMarkerImageName(object)
+            if (!image) {
+                return;
+            }
+
             var scale = ruleSet.getHitMarkerScale(object, time);
 
             draw.sprite(function (draw) {
@@ -335,15 +376,15 @@ define('WebGLRenderer', [ 'HitCircle', 'Slider', 'HitMarker', 'MapState', 'Util/
                 gl.uniform2f(programs.sprite.uni.offset, 0, 0);
                 gl.uniform1f(programs.sprite.uni.scale, scale);
 
-                draw(textures.hitMarkers[object.score]);
+                draw(textures.hitMarkers[image]);
             });
         };
 
         var getObjectRenderer = function (object) {
             var renderers = [
-                [ HitCircle, renderHitCircleObject ],
-                [ HitMarker, renderHitMarkerObject ],
-                [ Slider,    renderSliderObject ]
+                [ HitCircle,  renderHitCircleObject ],
+                [ HitMarker,  renderHitMarkerObject ],
+                [ Slider,     renderSliderObject ]
             ];
 
             var objectRenderers = renderers.filter(function (r) {
@@ -362,6 +403,36 @@ define('WebGLRenderer', [ 'HitCircle', 'Slider', 'HitMarker', 'MapState', 'Util/
             renderer(object);
         };
 
+        var renderCursor = function (state) {
+            if (!state) {
+                return;
+            }
+
+            draw.sprite(function (draw) {
+                gl.uniform2f(programs.sprite.uni.position, state.x, state.y);
+                gl.uniform4f(programs.sprite.uni.color, 255, 255, 255, 255);
+                gl.uniform2f(programs.sprite.uni.offset, 0, 0);
+                gl.uniform1f(programs.sprite.uni.scale, 1);
+
+                draw(textures.cursor);
+            });
+        };
+
+        var renderCursorTrail = function (state, alpha) {
+            if (!state) {
+                return;
+            }
+
+            draw.sprite(function (draw) {
+                gl.uniform2f(programs.sprite.uni.position, state.x, state.y);
+                gl.uniform4f(programs.sprite.uni.color, 255, 255, 255, alpha * 255);
+                gl.uniform2f(programs.sprite.uni.offset, 0, 0);
+                gl.uniform1f(programs.sprite.uni.scale, 1);
+
+                draw(textures.cursorTrail);
+            });
+        };
+
         var getObjectsToRender = function () {
             // Visible objects
             var objects = mapState.getVisibleObjects(time);
@@ -371,35 +442,7 @@ define('WebGLRenderer', [ 'HitCircle', 'Slider', 'HitMarker', 'MapState', 'Util/
                 mapState.timeline.getAllInTimeRange(time - 2000, time, MapState.HIT_MARKER_CREATION)
             );
 
-            var sortObjectsByZ = function (a, b) {
-                var newA = a;
-                var newB = b;
-
-                // Keep hit marker above object
-                if (a instanceof HitMarker) {
-                    if (b === a.hitObject) {
-                        return 1;
-                    }
-
-                    newA = a.hitObject;
-                }
-
-                if (b instanceof HitMarker) {
-                    if (a === b.hitObject) {
-                        return -1;
-                    }
-
-                    newB = b.hitObject;
-                }
-
-                // Sort by time descending
-                return newA.time > newB.time ? -1 : 1;
-            };
-
-            // Get objects in Z order
-            objects = objects.sort(sortObjectsByZ);
-
-            return objects;
+            return ruleSet.getObjectsByZ(objects);
         };
 
         getObjectsToRender().forEach(function (object) {
@@ -407,6 +450,14 @@ define('WebGLRenderer', [ 'HitCircle', 'Slider', 'HitMarker', 'MapState', 'Util/
 
             gPubSub.publish('tick');
         });
+
+        var i;
+
+        for (i = 0; i < 5; ++i) {
+            renderCursorTrail(mouseHistory.getDataAtTime(time - (6 - i) * 30), i / 5);
+        }
+
+        renderCursor(mouseHistory.getDataAtTime(time));
     };
 
     var spriteVertexShader = [
@@ -574,7 +625,7 @@ define('WebGLRenderer', [ 'HitCircle', 'Slider', 'HitMarker', 'MapState', 'Util/
 
         var skinInitd = false;
 
-        function initSkin(skin) {
+        function initSkin(skin, ruleSet) {
             if (skinInitd) {
                 return;
             }
@@ -582,12 +633,20 @@ define('WebGLRenderer', [ 'HitCircle', 'Slider', 'HitMarker', 'MapState', 'Util/
             var hitCircleGraphic = skin.assetManager.get('hitcircle', 'image-set');
             var hitCircleOverlayGraphic = skin.assetManager.get('hitcircleoverlay', 'image-set');
             var approachCircleGraphic = skin.assetManager.get('approachcircle', 'image-set');
-            var sliderBallGraphic = skin.assetManager.get('sliderb0', 'image-set');
+            var sliderBallGraphic = skin.assetManager.get('sliderb0', 'image-set');Graphic = skin.assetManager.get('sliderb0', 'image-set');
+            var cursorGraphic = skin.assetManager.get('cursor', 'image-set');Graphic = skin.assetManager.get('sliderb0', 'image-set');
+            var cursorTrailGraphic = skin.assetManager.get('cursortrail', 'image-set');
+            var sliderTickGraphic = skin.assetManager.get('sliderscorepoint', 'image-set');
+            var repeatArrowGraphic = skin.assetManager.get('reversearrow', 'image-set');
 
             textures.hitCircle = makeTexture(hitCircleGraphic[0]);
             textures.hitCircleOverlay = makeTexture(hitCircleOverlayGraphic[0]);
             textures.approachCircle = makeTexture(approachCircleGraphic[0]);
             textures.sliderBall = makeTexture(sliderBallGraphic[0]);
+            textures.cursor = makeTexture(cursorGraphic[0]);
+            textures.cursorTrail = makeTexture(cursorTrailGraphic[0]);
+            textures.sliderTick = makeTexture(sliderTickGraphic[0]);
+            textures.repeatArrow = makeTexture(repeatArrowGraphic[0]);
 
             var i;
             var graphic;
@@ -599,14 +658,21 @@ define('WebGLRenderer', [ 'HitCircle', 'Slider', 'HitMarker', 'MapState', 'Util/
                 textures.digits[i] = makeTexture(graphic[0]);
             }
 
-            var hitScores = [ 0, 50, 100, 300 ];
+            var hitMarkerImageNames = [
+                'hit300',
+                'hit100',
+                'hit50',
+                'sliderpoint30',
+                'sliderpoint10',
+                'hit0'
+            ];
 
             textures.hitMarkers = [ ];
 
-            for (i = 0; i < hitScores.length; ++i) {
-                graphic = skin.assetManager.get('hit' + hitScores[i], 'image-set');
-                textures.hitMarkers[hitScores[i]] = makeTexture(graphic[0]);
-            }
+            hitMarkerImageNames.forEach(function (imageName) {
+                var graphic = skin.assetManager.get(imageName, 'image-set');
+                textures.hitMarkers[imageName] = makeTexture(graphic[0]);
+            });
 
             gl.bindTexture(gl.TEXTURE_2D, null);
 
@@ -641,12 +707,13 @@ define('WebGLRenderer', [ 'HitCircle', 'Slider', 'HitMarker', 'MapState', 'Util/
             endRender: function () {
             },
 
-            renderMap: function (mapState, skin, time) {
-                initSkin(skin);
+            renderMap: function (state, time) {
+                initSkin(state.skin, state.mapState.ruleSet);
 
                 renderMap({
-                    mapState: mapState,
-                    skin: skin,
+                    mapState: state.mapState,
+                    skin: state.skin,
+                    mouseHistory: state.mouseHistory,
                     time: time,
                     context: context,
                     buffers: buffers,

@@ -130,6 +130,19 @@ define('BezierSliderCurve', [ ], function () {
         return -1;
     };
 
+    BezierSliderCurve.prototype.getTickPositions = function (tickLength) {
+        var ticks = [ ];
+        var i, pointIndex;
+
+        for (i = 1; i < Math.floor(this.length / tickLength); ++i) {
+            // TODO smarter calculation
+            var pointIndex = getLengthIndex(this.points, tickLength * i);
+            ticks.push(this.points[pointIndex]);
+        }
+
+        return ticks;
+    };
+
     BezierSliderCurve.prototype.getSliderBallPosition = function (object, time, ruleSet) {
         var repeatLength = ruleSet.getSliderRepeatLength(time, object.length);
 

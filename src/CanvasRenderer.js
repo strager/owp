@@ -1,4 +1,4 @@
-define('CanvasRenderer', [ 'HitCircle', 'Slider', 'HitMarker', 'Util/Cache', 'canvasShaders', 'MapState', 'Util/gPubSub' ], function (HitCircle, Slider, HitMarker, Cache, shaders, MapState, gPubSub) {
+define('CanvasRenderer', [ 'HitCircle', 'Slider', 'SliderTick', 'HitMarker', 'Util/Cache', 'canvasShaders', 'MapState', 'Util/gPubSub' ], function (HitCircle, Slider, SliderTick, HitMarker, Cache, shaders, MapState, gPubSub) {
     var renderMap = function (vars) {
         var mapState = vars.mapState;
         var ruleSet = mapState.ruleSet;
@@ -6,6 +6,7 @@ define('CanvasRenderer', [ 'HitCircle', 'Slider', 'HitMarker', 'Util/Cache', 'ca
         var time = vars.time;
         var c = vars.context;
         var caches = vars.caches;
+        var mouseHistory = vars.mouseHistory;
 
         var getShadedGraphic = function (skin, graphicName, shader, shaderData) {
             var key = [ graphicName, skin, shader, shaderData ];
@@ -22,14 +23,6 @@ define('CanvasRenderer', [ 'HitCircle', 'Slider', 'HitMarker', 'Util/Cache', 'ca
 
                 return shadedImages;
             });
-        };
-
-        var drawImageCentred = function (image) {
-            c.drawImage(
-                image,
-                -image.width / 2,
-                -image.height / 2
-            );
         };
 
         var getCoord = function (x) {
@@ -185,10 +178,14 @@ define('CanvasRenderer', [ 'HitCircle', 'Slider', 'HitMarker', 'Util/Cache', 'ca
         };
 
         var renderHitMarker = function (hitMarker) {
+            var graphicName = ruleSet.getHitMarkerImageName(hitMarker);
+            if (!graphicName) {
+                return;
+            }
+
             var scale = ruleSet.getHitMarkerScale(hitMarker, time);
 
-            // Hit marker
-            var hitMarkerGraphic = skin.assetManager.get('hit' + hitMarker.score, 'image-set');
+            var hitMarkerGraphic = skin.assetManager.get(graphicName, 'image-set');
             var hitMarkerFrame = 0;
 
             drawImage(
@@ -314,11 +311,27 @@ define('CanvasRenderer', [ 'HitCircle', 'Slider', 'HitMarker', 'Util/Cache', 'ca
             c.restore();
         };
 
+        var renderSliderTickObject = function (object) {
+            var sliderTickGraphic = skin.assetManager.get('sliderscorepoint', 'image-set');
+            var sliderTickGraphicFrame = 0;
+
+            var scale = ruleSet.getCircleSize() / 128;
+
+            drawImage(
+                sliderTickGraphic[sliderTickGraphicFrame],
+                scale,
+                object.x,
+                object.y,
+                true
+            );
+        };
+
         var getObjectRenderer = function (object) {
             var renderers = [
-                [ HitCircle, renderHitCircleObject ],
-                [ HitMarker, renderHitMarkerObject ],
-                [ Slider,    renderSliderObject ]
+                [ HitCircle,  renderHitCircleObject ],
+                [ HitMarker,  renderHitMarkerObject ],
+                [ Slider,     renderSliderObject ],
+                [ SliderTick, renderSliderTickObject ]
             ];
 
             var objectRenderers = renderers.filter(function (r) {
@@ -337,6 +350,30 @@ define('CanvasRenderer', [ 'HitCircle', 'Slider', 'HitMarker', 'Util/Cache', 'ca
             renderer(object);
         };
 
+        var renderCursor = function (state) {
+            if (!state) {
+                return;
+            }
+
+            var cursorGraphic = skin.assetManager.get('cursor', 'image-set');
+            var cursorFrame = 0;
+
+            drawImage(cursorGraphic[cursorFrame], 1, state.x, state.y, false);
+        };
+
+        var renderCursorTrail = function (state, alpha) {
+            if (!state) {
+                return;
+            }
+
+            var cursorTrailGraphic = skin.assetManager.get('cursortrail', 'image-set');
+            var cursorTrailFrame = 0;
+
+            c.globalAlpha = alpha;
+
+            drawImage(cursorTrailGraphic[cursorTrailFrame], 1, state.x, state.y, false);
+        };
+
         var getObjectsToRender = function () {
             // Visible objects
             var objects = mapState.getVisibleObjects(time);
@@ -346,35 +383,7 @@ define('CanvasRenderer', [ 'HitCircle', 'Slider', 'HitMarker', 'Util/Cache', 'ca
                 mapState.timeline.getAllInTimeRange(time - 2000, time, MapState.HIT_MARKER_CREATION)
             );
 
-            var sortObjectsByZ = function (a, b) {
-                var newA = a;
-                var newB = b;
-
-                // Keep hit marker above object
-                if (a instanceof HitMarker) {
-                    if (b === a.hitObject) {
-                        return 1;
-                    }
-
-                    newA = a.hitObject;
-                }
-
-                if (b instanceof HitMarker) {
-                    if (a === b.hitObject) {
-                        return -1;
-                    }
-
-                    newB = b.hitObject;
-                }
-
-                // Sort by time descending
-                return newA.time > newB.time ? -1 : 1;
-            };
-
-            // Get objects in Z order
-            objects = objects.sort(sortObjectsByZ);
-
-            return objects;
+            return ruleSet.getObjectsByZ(objects);
         };
 
         getObjectsToRender().forEach(function (object) {
@@ -382,6 +391,14 @@ define('CanvasRenderer', [ 'HitCircle', 'Slider', 'HitMarker', 'Util/Cache', 'ca
 
             gPubSub.publish('tick');
         });
+
+        var i;
+
+        for (i = 0; i < 5; ++i) {
+            renderCursorTrail(mouseHistory.getDataAtTime(time - (6 - i) * 30), i / 5);
+        }
+
+        renderCursor(mouseHistory.getDataAtTime(time));
     };
 
     var CanvasRenderer = function (context) {
@@ -450,10 +467,11 @@ define('CanvasRenderer', [ 'HitCircle', 'Slider', 'HitMarker', 'Util/Cache', 'ca
                 c.restore();
             },
 
-            renderMap: function (mapState, skin, time) {
+            renderMap: function (state, time) {
                 renderMap({
-                    mapState: mapState,
-                    skin: skin,
+                    mapState: state.mapState,
+                    skin: state.skin,
+                    mouseHistory: state.mouseHistory,
                     time: time,
                     context: c,
                     caches: caches

@@ -25,12 +25,18 @@ define('Skin', [ 'Util/util' ], function (util) {
                     'hitcircle',
                     'approachcircle',
                     'hitcircleoverlay',
+                    'cursor',
+                    'cursortrail',
                     'hit0',
                     'hit50',
                     'hit100',
                     'hit100k',
                     'hit300k',
                     'hit300',
+                    'sliderscorepoint',
+                    'sliderpoint30',
+                    'sliderpoint10',
+                    'reversearrow',
                     'sliderb0'
                 ],
                 'sound': [

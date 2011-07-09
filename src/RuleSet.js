@@ -1,4 +1,4 @@
-define('RuleSet', [ 'Util/util', 'Slider' ], function (util, Slider) {
+define('RuleSet', [ 'Util/util', 'HitCircle', 'HitMarker', 'Slider', 'SliderTick', 'SliderEnd' ], function (util, HitCircle, HitMarker, Slider, SliderTick, SliderEnd) {
     var RuleSet = function () {
         this.approachRate = 5;
         this.overallDifficulty = 5;
@@ -10,7 +10,7 @@ define('RuleSet', [ 'Util/util', 'Slider' ], function (util, Slider) {
         var ruleSet = new RuleSet();
 
         var fields = (
-            'approachRate,overallDifficulty,hpDrain,circleSize,sliderMultiplier'
+            'approachRate,overallDifficulty,hpDrain,circleSize,sliderMultiplier,sliderTickRate'
         ).split(',');
 
         util.extendObjectWithFields(ruleSet, fields, settings);
@@ -43,15 +43,22 @@ define('RuleSet', [ 'Util/util', 'Slider' ], function (util, Slider) {
         },
 
         getObjectDisappearTime: function (object) {
-            // Allow players to hit a late 50
-            return this.getObjectEndTime(object) + this.getHitWindow(50);
+            return this.getObjectLatestHitTime(object);
         },
 
         getObjectStartTime: function (object) {
+            if (object instanceof SliderTick) {
+                return this.getObjectStartTime(object.slider);
+            }
+
             return object.time;
         },
 
         getObjectEndTime: function (object) {
+            if (object instanceof SliderTick) {
+                return object.time;
+            }
+
             var duration = 0;
 
             if (object instanceof Slider) {
@@ -136,7 +143,13 @@ define('RuleSet', [ 'Util/util', 'Slider' ], function (util, Slider) {
         },
 
         getObjectLatestHitTime: function (object) {
-            return object.time + this.getHitWindow(50);
+            var offset = 0;
+
+            if (object instanceof HitCircle) {
+                offset = this.getHitWindow(50);
+            }
+
+            return this.getObjectEndTime(object) + offset;
         },
 
         canHitObject: function (object, x, y, time) {
@@ -150,6 +163,29 @@ define('RuleSet', [ 'Util/util', 'Slider' ], function (util, Slider) {
         // Gives diameter
         getCircleSize: function () {
             return -(this.circleSize - 5) * 16 + 64;
+        },
+
+        getHitMarkerImageName: function (hitMarker) {
+            // Should this be here?
+
+            var imageNames = {
+                300: 'hit300',
+                100: 'hit100',
+                50: 'hit50',
+                30: 'sliderpoint30',
+                10: 'sliderpoint10',
+                0: 'hit0'
+            };
+
+            if (hitMarker.hitObject instanceof SliderTick && hitMarker.score === 0) {
+                return null;
+            }
+
+            if (!imageNames.hasOwnProperty(hitMarker.score)) {
+                throw new Error('Invalid hit marker with score ' + hitMarker.score);
+            }
+
+            return imageNames[hitMarker.score];
         },
 
         getHitWindow: function (score) {
@@ -201,6 +237,11 @@ define('RuleSet', [ 'Util/util', 'Slider' ], function (util, Slider) {
 
             // TODO Slider and spinner sounds
 
+            if (!hitMarker.hitObject.hitSounds) {
+                // TODO This should never happen (I think)
+                return [ ];
+            }
+
             return hitMarker.hitObject.hitSounds.map(function (hitSound) {
                 return prefix + hitSound + suffix;
             });
@@ -249,6 +290,29 @@ define('RuleSet', [ 'Util/util', 'Slider' ], function (util, Slider) {
             return currentScore;
         },
 
+        getObjectsByZ: function (objects) {
+            var hitMarkers = [ ];
+            var hitObjects = [ ];
+
+            objects.forEach(function (object) {
+                if (object instanceof HitMarker) {
+                    hitMarkers.push(object);
+                } else {
+                    hitObjects.push(object);
+                }
+            });
+
+            function sort(a, b) {
+                // Sort by time descending
+                return a.time > b.time ? -1 : 1;
+            }
+
+            hitObjects = hitObjects.sort(sort);
+            hitMarkers = hitMarkers.sort(sort);
+
+            return hitObjects.concat(hitMarkers);
+        },
+
         getEffectiveSliderSpeed: function (time) {
             // Gives osu!pixels per second
 
@@ -262,6 +326,81 @@ define('RuleSet', [ 'Util/util', 'Slider' ], function (util, Slider) {
             var pixelsPerMinute = bpm * velocity * 100;
 
             return pixelsPerMinute / 60; // Pixels per second
+        },
+
+        getSliderTicks: function (slider) {
+            var startTime = this.getObjectStartTime(slider);
+
+            var tickLength = this.getTickLength(startTime);
+            var tickDuration = this.getTickDuration(startTime);
+
+            var tickPositions = slider.curve.getTickPositions(tickLength);
+
+            var ticks = [ ];
+            var repeatDuration = this.getSliderRepeatLength(slider.time, slider.length);
+
+            for (var repeatIndex = 0; repeatIndex < slider.repeats; ++repeatIndex) {
+                ticks = ticks.concat(tickPositions.map(function (tickPosition, tickIndex) {
+                    return new SliderTick(
+                        startTime + (tickIndex + 1) * tickDuration + repeatIndex * repeatDuration,
+                        tickPosition[0],
+                        tickPosition[1],
+                        slider,
+                        repeatIndex
+                    );
+                }));
+
+                tickPositions = tickPositions.reverse();
+            }
+
+            return ticks;
+        },
+
+        getSliderEnds: function (slider) {
+            var startTime = this.getObjectStartTime(slider);
+            var repeatDuration = this.getSliderRepeatLength(slider.time, slider.length);
+
+            var startPosition = slider.curve.points[0];
+            var endPosition = slider.curve.points.slice(-1)[0];
+
+            var ends = [ ];
+
+            for (i = 1; i <= slider.repeats; ++i) {
+                ends.push(new SliderEnd(
+                    startTime + i * repeatDuration,
+                    slider,
+                    i,
+                    i === slider.repeats
+                ));
+            }
+
+            return ends;
+        },
+
+        getTickLength: function (time) {
+            // 100ths of osu!pixels per beat
+            var velocity = this.sliderMultiplier;
+
+            // Beats per tick
+            var beatsPerTick = 1 / this.sliderTickRate;
+
+            // ((1/100) pixels/beat) * (beats/tick) = (1/100) pixels/tick
+            var pixelsPerTick = velocity * beatsPerTick * 100;
+
+            return pixelsPerTick;
+        },
+
+        getTickDuration: function (time) {
+            // Beats per minute
+            var bpm = this.getEffectiveBPM(time);
+
+            // Beats per tick
+            var beatsPerTick = 1 / this.sliderTickRate;
+
+            // (beats/tick) / (beats/minute) = (minutes/tick)
+            var minutesPerTick = beatsPerTick / bpm;
+
+            return minutesPerTick * 60 * 1000; // Milliseconds per tick
         },
 
         getEffectiveBPM: function (time) {

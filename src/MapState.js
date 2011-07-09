@@ -1,9 +1,11 @@
-define('MapState', [ 'Util/Timeline', 'Util/Map', 'HitMarker', 'Util/PubSub' ], function (Timeline, Map, HitMarker, PubSub) {
+define('MapState', [ 'Util/Timeline', 'Util/Map', 'HitMarker', 'HitCircle', 'Slider', 'SliderTick', 'SliderEnd', 'Util/PubSub' ], function (Timeline, Map, HitMarker, HitCircle, Slider, SliderTick, SliderEnd, PubSub) {
     var MapState = function (ruleSet, objects, timeline) {
         this.ruleSet = ruleSet;
         this.timeline = timeline;
 
         this.events = new PubSub();
+
+        var hittableObjects = [ ];
 
         objects.forEach(function (hitObject) {
             var appearTime = ruleSet.getObjectAppearTime(hitObject);
@@ -17,9 +19,19 @@ define('MapState', [ 'Util/Timeline', 'Util/Map', 'HitMarker', 'Util/PubSub' ], 
             var latestHitTime = ruleSet.getObjectLatestHitTime(hitObject);
 
             timeline.add(MapState.HIT_OBJECT_HITABLE, hitObject, earliestHitTime, latestHitTime);
+
+            if (hitObject instanceof Slider) {
+                hitObject.ticks = ruleSet.getSliderTicks(hitObject); // Temporary (I hope)
+                hittableObjects = hittableObjects.concat(hitObject.ticks);
+
+                hitObject.ends = ruleSet.getSliderEnds(hitObject); // Temporary (I hope)
+                hittableObjects = hittableObjects.concat(hitObject.ends);
+            } else if (hitObject instanceof HitCircle) {
+                hittableObjects.push(hitObject);
+            }
         });
 
-        this.unhitObjects = objects.map(function (hitObject) {
+        this.unhitObjects = hittableObjects.map(function (hitObject) {
             return [ hitObject, ruleSet.getObjectLatestHitTime(hitObject) ];
         }).sort(function (a, b) {
             return a[1] < b[1] ? -1 : 1;
@@ -118,6 +130,67 @@ define('MapState', [ 'Util/Timeline', 'Util/Map', 'HitMarker', 'Util/PubSub' ], 
             this.unhitObjects.splice(index, 1);
 
             this.applyHitMarkerNoRemove(hitMarker);
+        },
+
+        processSlides: function (time, mouseHistory) {
+            var removedUnhitObjects = [ ];
+
+            var i;
+            var unhitObject;
+            var hitMarker;
+            var mouseState = null;
+            var score;
+
+            for (i = 0; i < this.unhitObjects.length; ++i) {
+                unhitObject = this.unhitObjects[i];
+
+                if (unhitObject[1] >= time) {
+                    break;
+                }
+
+                if (!(unhitObject[0] instanceof SliderTick || unhitObject[0] instanceof SliderEnd)) {
+                    continue;
+                }
+
+                mouseState = mouseHistory.getDataAtTime(unhitObject[0].time);
+
+                if (mouseState && (mouseState.left || mouseState.right)) {
+                    if (this.ruleSet.canHitObject(
+                        unhitObject[0],
+                        mouseState.x,
+                        mouseState.y,
+                        unhitObject[0].time
+                    )) {
+                        if (unhitObject[0] instanceof SliderTick) {
+                            score = 10;
+                        } else if (unhitObject[0] instanceof SliderEnd) {
+                            score = 30;
+                        }
+                    } else {
+                        score = 0;
+                    }
+                } else {
+                    score = 0;
+                }
+
+                hitMarker = new HitMarker(
+                    unhitObject[0],
+                    unhitObject[0].time,
+                    score
+                );
+
+                unhitObject[0].hitMarker = hitMarker; // Temporary (I hope)
+
+                this.applyHitMarkerNoRemove(hitMarker);
+
+                removedUnhitObjects.push(i);
+            }
+
+            // We iterate backwards because otherwise we have to
+            // keep track of index changes while removing items.
+            for (i = removedUnhitObjects.length; i --> 0; ) {
+                this.unhitObjects.splice(removedUnhitObjects[i], 1);
+            }
         },
 
         processMisses: function (time) {
