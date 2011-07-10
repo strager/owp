@@ -6,40 +6,17 @@ require([ 'jQuery', 'WebGLRenderer', 'CanvasRenderer', 'AssetManager', 'q', 'Gam
         var renderers = [ ];
         var playAreas = [ ];
 
-        function makeCanvas(contextName, RendererClass, attributes) {
-            var canvas = document.createElement('canvas');
-            canvas.width = 640;
-            canvas.height = 480;
-            canvas.style.cursor = 'none';
-
-            var context;
-
-            try {
-                context = canvas.getContext(contextName, attributes);
-            } catch (e) {
-                // Could not get context; ignore
-                return true;
-            }
-
-            if (!context) {
-                return false;
-            }
-
-            var renderer = new RendererClass(context);
-
+        function addRenderer(renderer, name) {
             renderers.push(renderer);
-            playAreas.push(canvas);
+            playAreas.push(renderer.element);
 
             $(document.body)
-                .append('<h3>' + contextName + '</h3>')
-                .append(canvas);
+                .append('<h3>' + name + '</h3>')
+                .append(renderer.element);
         }
 
-        makeCanvas('2d', CanvasRenderer);
-
-        if (!makeCanvas('webgl', WebGLRenderer, { antialias: true })) {
-            makeCanvas('experimental-webgl', WebGLRenderer, { antialias: true });
-        }
+        addRenderer(new CanvasRenderer(), '2D Canvas');
+        addRenderer(new WebGLRenderer(), 'WebGL');
 
         return {
             renderers: renderers,
@@ -124,6 +101,7 @@ require([ 'jQuery', 'WebGLRenderer', 'CanvasRenderer', 'AssetManager', 'q', 'Gam
             mouseY = e.pageY - this.offsetTop;
             isLeftDown = true;
             mouseStateChanged();
+            return false;
         });
 
         $(io.playAreas).mouseup(function (e) {
@@ -131,6 +109,7 @@ require([ 'jQuery', 'WebGLRenderer', 'CanvasRenderer', 'AssetManager', 'q', 'Gam
             mouseY = e.pageY - this.offsetTop;
             isLeftDown = false;
             mouseStateChanged();
+            return false;
         });
 
         $(io.playAreas).mousemove(function (e) {

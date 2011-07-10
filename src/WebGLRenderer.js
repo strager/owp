@@ -1,4 +1,4 @@
-define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache' ], function (MapState, mapObject, gPubSub, Cache) {
+define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache', 'jQuery' ], function (MapState, mapObject, gPubSub, Cache, $) {
     function drawers(gl, buffers, programs) {
         var inProgram = false;
 
@@ -441,13 +441,8 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache' 
             gPubSub.publish('tick');
         });
 
-        var i;
-
-        for (i = 0; i < 5; ++i) {
-            renderCursorTrail(mouseHistory.getDataAtTime(time - (6 - i) * 30), i / 5);
-        }
-
-        renderCursor(mouseHistory.getDataAtTime(time));
+        // TODO Render cursor in another render step
+        // (See cursor + trail rendering code in file history)
     }
 
     var spriteVertexShader, spriteFragmentShader, curveVertexShader, curveFragmentShader;
@@ -536,7 +531,31 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache' 
         ].join('\n');
     }());
 
-    function WebGLRenderer(context) {
+    function WebGLRenderer() {
+        var canvas = document.createElement('canvas');
+        canvas.width = 640;
+        canvas.height = 480;
+
+        var context;
+
+        try {
+            context = canvas.getContext('webgl');
+
+            if (!context) {
+                throw new Error();
+            }
+        } catch (e) {
+            try {
+                context = canvas.getContext('experimental-webgl');
+
+                if (!context) {
+                    throw new Error();
+                }
+            } catch (e) {
+                throw new Error('WebGL not supported');
+            }
+        }
+
         var gl = context;
 
         var buffers = { };
@@ -646,6 +665,9 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache' 
             textures.sliderTick = makeTexture(sliderTickGraphic[0]);
             textures.repeatArrow = makeTexture(repeatArrowGraphic[0]);
 
+            // FIXME Possible XSS?
+            canvas.style.cursor = 'url("' + cursorGraphic[0].src + '") ' + Math.floor(cursorGraphic[0].width / 2) + ' ' + Math.floor(cursorGraphic[0].height / 2) + ', none';
+
             var i;
             var graphic;
 
@@ -694,10 +716,12 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache' 
         init();
 
         function resize() {
-            gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
+            gl.viewport(0, 0, canvas.width, canvas.height);
         }
 
         return {
+            element: canvas,
+
             beginRender: function () {
                 gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
             },
@@ -734,8 +758,8 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache' 
 
                     var backgroundWidth = backgroundImage.width;
                     var backgroundHeight = backgroundImage.height;
-                    var canvasWidth = 640;
-                    var canvasHeight = 480;
+                    var canvasWidth = canvas.width;
+                    var canvasHeight = canvas.height;
 
                     var canvasAR = canvasWidth / canvasHeight;
                     var imageAR = backgroundWidth / backgroundHeight;

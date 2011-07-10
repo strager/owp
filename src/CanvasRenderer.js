@@ -390,6 +390,22 @@ define('CanvasRenderer', [ 'mapObject', 'Util/Cache', 'canvasShaders', 'MapState
     }
 
     function CanvasRenderer(context) {
+        var canvas = document.createElement('canvas');
+        canvas.width = 640;
+        canvas.height = 480;
+
+        var context;
+
+        try {
+            context = canvas.getContext('2d');
+
+            if (!context) {
+                throw new Error();
+            }
+        } catch (e) {
+            throw new Error('2D canvas not supported');
+        }
+
         var c = context;
 
         var caches = {
@@ -407,12 +423,12 @@ define('CanvasRenderer', [ 'mapObject', 'Util/Cache', 'canvasShaders', 'MapState
         };
 
         function renderBackground(graphic) {
-            var key = [ graphic, c.canvas.width, c.canvas.height ];
+            var key = [ graphic, canvas.width, canvas.height ];
 
             var backgroundGraphic = caches.background.get(key, function () {
                 // TODO Split?
 
-                var canvasAR = c.canvas.width / c.canvas.height;
+                var canvasAR = canvas.width / canvas.height;
                 var imageAR = graphic.width / graphic.height;
                 var scale;
 
@@ -425,8 +441,8 @@ define('CanvasRenderer', [ 'mapObject', 'Util/Cache', 'canvasShaders', 'MapState
                 }
 
                 var backgroundCanvas = document.createElement('canvas');
-                backgroundCanvas.width = c.canvas.width;
-                backgroundCanvas.height = c.canvas.height;
+                backgroundCanvas.width = canvas.width;
+                backgroundCanvas.height = canvas.height;
 
                 var bc = backgroundCanvas.getContext('2d');
 
@@ -445,6 +461,8 @@ define('CanvasRenderer', [ 'mapObject', 'Util/Cache', 'canvasShaders', 'MapState
         }
 
         return {
+            element: canvas,
+
             beginRender: function () {
                 c.save();
 
