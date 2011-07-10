@@ -67,6 +67,16 @@ define([ 'assert', 'Util/Timeline' ], function (assert, Timeline) {
             );
         },
 
+        'get all in time range after': function () {
+            var t = new Timeline();
+            t.add('key1', 'value1', 0, 999);
+
+            assert.deepEqual(
+                t.getAllInTimeRange(1000, 1010, 'key1').sort(),
+                [ ]
+            );
+        },
+
         'key cannot be null': function () {
             assertThrows(function () {
                 var t = new Timeline();

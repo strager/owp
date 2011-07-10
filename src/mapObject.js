@@ -18,6 +18,8 @@ define('mapObject', [ ], function () {
         this.y = y;
         this.slider = slider;
         this.repeat = repeatNumber;
+
+        this.hitSounds = [ 'slidertick' ];
     }
 
     function SliderEnd(time, slider, repeatIndex, isFinal) {
@@ -32,6 +34,9 @@ define('mapObject', [ ], function () {
 
         this.x = position[0];
         this.y = position[1];
+
+        // TODO Newer .osu versions can customize slider end hitsounds
+        this.hitSounds = [ 'hitnormal' ];
     }
 
     function HitMarker(object, time, score) {
