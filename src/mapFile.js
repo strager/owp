@@ -1,5 +1,5 @@
 /*jshint bitwise: false */
-define('mapFile', [ 'RuleSet', 'Map', 'Combo', 'MapInfo', 'mapObject', 'Storyboard', 'Skin', 'BezierSliderCurve', 'CatmullSliderCurve' ], function (RuleSet, Map, Combo, MapInfo, mapObject, Storyboard, Skin, BezierSliderCurve, CatmullSliderCurve) {
+define('mapFile', [ 'RuleSet', 'Map', 'Combo', 'MapInfo', 'mapObject', 'Storyboard', 'Skin', 'BezierSliderCurve', 'CatmullSliderCurve', 'TimingPoint' ], function (RuleSet, Map, Combo, MapInfo, mapObject, Storyboard, Skin, BezierSliderCurve, CatmullSliderCurve, TimingPoint) {
     function readSkin(assetConfig, assetManager) {
         return Skin.fromSettings(assetManager, {
             name:   assetConfig.General.values.Name,
@@ -18,6 +18,18 @@ define('mapFile', [ 'RuleSet', 'Map', 'Combo', 'MapInfo', 'mapObject', 'Storyboa
         });
     }
 
+    function readTimingPoints(assetConfig) {
+        return assetConfig.TimingPoints.lists.map(function (data) {
+            var isInherited = data[1] < 0;
+
+            if (isInherited) {
+                return new TimingPoint(parseInt(data[0], 10), parseFloat(data[1], 10) / -100, true);
+            } else {
+                return new TimingPoint(parseInt(data[0], 10), 60 / parseFloat(data[1], 10) * 1000, false);
+            }
+        });
+    }
+
     function readRuleSet(assetConfig) {
         return RuleSet.fromSettings({
             hpDrainRate:        assetConfig.Difficulty.values.HPDrainRate,
@@ -26,7 +38,8 @@ define('mapFile', [ 'RuleSet', 'Map', 'Combo', 'MapInfo', 'mapObject', 'Storyboa
             approachRate:       assetConfig.Difficulty.values.ApproachRate,
             sliderMultiplier:   assetConfig.Difficulty.values.SliderMultiplier,
             sliderTickRate:     assetConfig.Difficulty.values.SliderTickRate,
-            stackLeniency:      assetConfig.General.values.StackLeniency
+            stackLeniency:      assetConfig.General.values.StackLeniency,
+            timingPoints:       readTimingPoints(assetConfig)
         });
     }
 

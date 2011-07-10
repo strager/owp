@@ -1,9 +1,11 @@
-define('RuleSet', [ 'Util/util', 'mapObject' ], function (util, mapObject) {
+define('RuleSet', [ 'Util/util', 'mapObject', 'Util/History' ], function (util, mapObject, History) {
     function RuleSet() {
         this.approachRate = 5;
         this.overallDifficulty = 5;
         this.hpDrain = 5;
         this.circleSize = 5;
+        this.uninheritedTimingPointHistory = new History();
+        this.inheritedTimingPointHistory = new History();
     }
 
     RuleSet.fromSettings = function (settings) {
@@ -19,6 +21,14 @@ define('RuleSet', [ 'Util/util', 'mapObject' ], function (util, mapObject) {
         if (typeof settings.approachRate === 'undefined') {
             ruleSet.approachRate = ruleSet.overallDifficulty;
         }
+
+        settings.timingPoints.forEach(function (timingPoint) {
+            if (timingPoint.isInherited) {
+                ruleSet.inheritedTimingPointHistory.add(timingPoint.time, timingPoint);
+            } else {
+                ruleSet.uninheritedTimingPointHistory.add(timingPoint.time, timingPoint);
+            }
+        });
 
         return ruleSet;
     };
@@ -410,8 +420,18 @@ define('RuleSet', [ 'Util/util', 'mapObject' ], function (util, mapObject) {
         },
 
         getEffectiveBPM: function (time) {
-            // TODO
-            return 140;
+            var inherited = this.inheritedTimingPointHistory.getDataAtTime(time);
+            var uninherited = this.uninheritedTimingPointHistory.getDataAtTime(time);
+
+            if (!inherited && !uninherited) {
+                return NaN;
+            }
+
+            if (!inherited) {
+                return uninherited.getEffectiveBPM(null);
+            } else {
+                return inherited.getEffectiveBPM(uninherited);
+            }
         }
     };
 
