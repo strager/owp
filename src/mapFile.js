@@ -31,6 +31,15 @@ define('mapFile', [ 'RuleSet', 'Map', 'Combo', 'MapInfo', 'mapObject', 'Storyboa
     }
 
     function readCombos(assetConfig) {
+        if (!assetConfig.Colours) {
+            return [
+                new Combo([ 255,128,255 ]),
+                new Combo([ 255,128,0   ]),
+                new Combo([ 0,128,255   ]),
+                new Combo([ 255,255,0   ])
+            ];
+        }
+
         var combos = [ ];
 
         var i;
