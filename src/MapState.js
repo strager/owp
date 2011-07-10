@@ -137,14 +137,47 @@ define('MapState', [ 'mapObject', 'Util/Timeline', 'Util/Map', 'Util/PubSub' ], 
             this.applyHitMarkerNoRemove(hitMarker);
         },
 
+        hitSlide: function (object, mouseState) {
+            if (!mapObject.match(object, { SliderTick: true, SliderEnd: true, _: false })) {
+                return null;
+            }
+
+            var score;
+
+            if (mouseState && (mouseState.left || mouseState.right)) {
+                if (this.ruleSet.canHitObject(
+                    object,
+                    mouseState.x,
+                    mouseState.y,
+                    object.time
+                )) {
+                    // Hit
+                    score = mapObject.match(object, { SliderTick: 10, SliderEnd: 30 });
+                } else {
+                    // Miss
+                    score = 0;
+                }
+            } else {
+                score = 0;
+            }
+
+            var hitMarker = new mapObject.HitMarker(
+                object,
+                object.time,
+                score
+            );
+
+            object.hitMarker = hitMarker; // Temporary (I hope)
+
+            return hitMarker;
+        },
+
         processSlides: function (time, mouseHistory) {
             var removedUnhitObjects = [ ];
 
             var i;
             var unhitObject;
             var hitMarker;
-            var mouseState = null;
-            var score;
 
             for (i = 0; i < this.unhitObjects.length; ++i) {
                 unhitObject = this.unhitObjects[i];
@@ -153,43 +186,19 @@ define('MapState', [ 'mapObject', 'Util/Timeline', 'Util/Map', 'Util/PubSub' ], 
                     break;
                 }
 
-                if (!mapObject.match(unhitObject[0], { SliderTick: true, SliderEnd: true, _: false })) {
-                    continue;
-                }
-
-                mouseState = mouseHistory.getDataAtTime(unhitObject[0].time);
-
-                if (mouseState && (mouseState.left || mouseState.right)) {
-                    if (this.ruleSet.canHitObject(
-                        unhitObject[0],
-                        mouseState.x,
-                        mouseState.y,
-                        unhitObject[0].time
-                    )) {
-                        // Hit
-                        score = mapObject.match(unhitObject[0], { SliderTick: 10, SliderEnd: 30 });
-                    } else {
-                        // Miss
-                        score = 0;
-                    }
-                } else {
-                    score = 0;
-                }
-
-                hitMarker = new mapObject.HitMarker(
+                hitMarker = this.hitSlide(
                     unhitObject[0],
-                    unhitObject[0].time,
-                    score
+                    mouseHistory.getDataAtTime(unhitObject[0].time)
                 );
 
-                unhitObject[0].hitMarker = hitMarker; // Temporary (I hope)
+                if (hitMarker) {
+                    this.applyHitMarkerNoRemove(hitMarker);
 
-                this.applyHitMarkerNoRemove(hitMarker);
-
-                // We unshift because we need to remove objects in reverse
-                // order.  Else we need to keep track of index changes while
-                // removing items, which is ugly and slow.
-                removedUnhitObjects.push(i);
+                    // We unshift because we need to remove objects in reverse
+                    // order.  Else we need to keep track of index changes while
+                    // removing items, which is ugly and slow.
+                    removedUnhitObjects.push(i);
+                }
             }
 
             removedUnhitObjects.forEach(function (index) {
