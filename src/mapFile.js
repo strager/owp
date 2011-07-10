@@ -1,5 +1,5 @@
 /*jshint bitwise: false */
-define('mapFile', [ 'RuleSet', 'Map', 'Combo', 'MapInfo', 'mapObject', 'Storyboard', 'Skin', 'BezierSliderCurve' ], function (RuleSet, Map, Combo, MapInfo, mapObject, Storyboard, Skin, BezierSliderCurve) {
+define('mapFile', [ 'RuleSet', 'Map', 'Combo', 'MapInfo', 'mapObject', 'Storyboard', 'Skin', 'BezierSliderCurve', 'CatmullSliderCurve' ], function (RuleSet, Map, Combo, MapInfo, mapObject, Storyboard, Skin, BezierSliderCurve, CatmullSliderCurve) {
     function readSkin(assetConfig, assetManager) {
         return Skin.fromSettings(assetManager, {
             name:   assetConfig.General.values.Name,
@@ -31,6 +31,15 @@ define('mapFile', [ 'RuleSet', 'Map', 'Combo', 'MapInfo', 'mapObject', 'Storyboa
     }
 
     function readCombos(assetConfig) {
+        if (!assetConfig.Colours) {
+            return [
+                new Combo([ 255,128,255 ]),
+                new Combo([ 255,128,0   ]),
+                new Combo([ 0,128,255   ]),
+                new Combo([ 255,255,0   ])
+            ];
+        }
+
         var combos = [ ];
 
         var i;
@@ -89,6 +98,10 @@ define('mapFile', [ 'RuleSet', 'Map', 'Combo', 'MapInfo', 'mapObject', 'Storyboa
         case 'B':
             // Bezier
             return new BezierSliderCurve(curvePoints, maxLength);
+
+        case 'C':
+            // Catmull
+            return new CatmullSliderCurve(curvePoints, maxLength);
 
         default:
             throw new Error('Unknown slider type: ' + curveType);
