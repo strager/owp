@@ -1,9 +1,9 @@
 define('Storyboard', [ ], function () {
-    var Storyboard = function () {
+    function Storyboard() {
         this.sounds = [ ];
         this.backgrounds = [ ];
         this.images = [ ];
-    };
+    }
 
     Storyboard.prototype = {
         getBackground: function (time) {

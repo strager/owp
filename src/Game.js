@@ -1,11 +1,11 @@
-define('Game', [ 'q', 'MapState', 'Util/PubSub', 'Soundboard', 'Util/Timeline', 'Util/gPubSub' ], function (Q, MapState, PubSub, Soundboard, Timeline, gPubSub) {
-    var Game = function () {
+define('Game', [ 'q', 'MapState', 'Util/PubSub', 'Soundboard', 'Util/Timeline', 'Util/gPubSub', 'Util/History' ], function (Q, MapState, PubSub, Soundboard, Timeline, gPubSub, History) {
+    function Game() {
         var currentState = null;
         var skin = null;
 
-        var clickPubSub = new PubSub();
+        var mousePubSub = new PubSub();
 
-        var render = function (renderer) {
+        function render(renderer) {
             renderer.beginRender();
 
             try {
@@ -15,9 +15,9 @@ define('Game', [ 'q', 'MapState', 'Util/PubSub', 'Soundboard', 'Util/Timeline', 
             } finally {
                 renderer.endRender();
             }
-        };
+        }
 
-        var setSkin = function (skinAssetManager) {
+        function setSkin(skinAssetManager) {
             skin = Q.when(skinAssetManager.load('skin', 'skin'))
                 .then(function (skin_) {
                     return Q.when(skin_.preload())
@@ -31,9 +31,9 @@ define('Game', [ 'q', 'MapState', 'Util/PubSub', 'Soundboard', 'Util/Timeline', 
             // Let callers know when the skin is loaded,
             // but don't let them know about the skin
             return Q.when(skin, function () { });
-        };
+        }
 
-        var setState = function (state) {
+        function setState(state) {
             if (currentState && currentState.leave) {
                 currentState.leave();
             }
@@ -43,18 +43,23 @@ define('Game', [ 'q', 'MapState', 'Util/PubSub', 'Soundboard', 'Util/Timeline', 
             if (currentState && currentState.enter) {
                 currentState.enter();
             }
-        };
+        }
 
-        var startMap = function (mapAssetManager, mapName) {
+        function startMap(mapAssetManager, mapName) {
             var mapInfo, mapState, audio;
             var timeline = null;
             var boundEvents = [ ];
 
-            var play = function () {
+            function play() {
                 var soundboard = new Soundboard(skin.valueOf().assetManager);
 
                 var score = 0;
                 var accuracy = 0;
+
+                var mouseHistory = new History();
+                var isLeftDown = false;
+                var isRightDown = false;
+                var trackMouse = true;
 
                 setState({
                     render: function (renderer) {
@@ -65,13 +70,28 @@ define('Game', [ 'q', 'MapState', 'Util/PubSub', 'Soundboard', 'Util/Timeline', 
                         score = mapState.getScore(time);
 
                         renderer.renderStoryboard(mapInfo.storyboard, mapAssetManager, time);
-                        renderer.renderMap(mapState, skin.valueOf(), time);
+                        renderer.renderMap({
+                            mapState: mapState,
+                            skin: skin.valueOf(),
+                            mouseHistory: mouseHistory
+                        }, time);
                     },
                     enter: function () {
                         audio.play();
 
-                        boundEvents.push(clickPubSub.subscribe(function (e) {
-                            mapState.clickAt(e.x, e.y, timeline.getCurrentTime());
+                        boundEvents.push(mousePubSub.subscribe(function (e) {
+                            var time = timeline.getCurrentTime();
+
+                            if (trackMouse) {
+                                mouseHistory.add(time, e);
+                            }
+
+                            if (e.left && !isLeftDown || e.right && !isRightDown) {
+                                mapState.clickAt(e.x, e.y, time);
+                            }
+
+                            isLeftDown = e.left;
+                            isRightDown = e.right;
                         }));
 
                         boundEvents.push(timeline.subscribe(MapState.HIT_MARKER_CREATION, function (hitMarker) {
@@ -79,8 +99,14 @@ define('Game', [ 'q', 'MapState', 'Util/PubSub', 'Soundboard', 'Util/Timeline', 
                                 return;
                             }
 
-                            mapState.ruleSet.getHitSoundNames(hitMarker).forEach(function (soundName) {
-                                soundboard.playSound(soundName);
+                            var hitSounds = mapState.ruleSet.getHitSoundNames(hitMarker);
+
+                            hitSounds.forEach(function (soundName) {
+                                soundboard.playSound(soundName, {
+                                    // Scale volume to how many hit sounds are
+                                    // being played
+                                    volume: 1 / hitSounds.length
+                                });
                             });
 
                             gPubSub.publish('tick');
@@ -89,6 +115,7 @@ define('Game', [ 'q', 'MapState', 'Util/PubSub', 'Soundboard', 'Util/Timeline', 
                         gPubSub.subscribe(function () {
                             var time = timeline.getCurrentTime();
 
+                            mapState.processSlides(time, mouseHistory);
                             mapState.processMisses(time);
 
                             timeline.update(time);
@@ -107,7 +134,7 @@ define('Game', [ 'q', 'MapState', 'Util/PubSub', 'Soundboard', 'Util/Timeline', 
                         };
                     }
                 });
-            };
+            }
 
             if (!skin) {
                 throw new Error('Must set a skin before starting a map');
@@ -138,26 +165,24 @@ define('Game', [ 'q', 'MapState', 'Util/PubSub', 'Soundboard', 'Util/Timeline', 
             ]);
 
             return Q.when(load).then(play);
-        };
+        }
 
-        var click = function () {
-            clickPubSub.publishSync.apply(clickPubSub, arguments);
-        };
-
-        var debugInfo = function () {
+        function debugInfo() {
             if (currentState && currentState.debugInfo) {
                 return currentState.debugInfo();
             }
-        };
+        }
 
         return {
             startMap: startMap,
             render: render,
             setSkin: setSkin,
-            click: click,
+            mouse: function (e) {
+                mousePubSub.publishSync(e);
+            },
             debugInfo: debugInfo
         };
-    };
+    }
 
     return Game;
 });

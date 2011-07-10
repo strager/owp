@@ -1,9 +1,9 @@
 define('Util/FramerateCounter', [ ], function () {
-    var milliseconds = function () {
+    function milliseconds() {
         return (new Date()).valueOf();
-    };
+    }
 
-    var FramerateCounter = function () {
+    function FramerateCounter() {
         this.ticks = 0;
 
         this.lastFramerate = null;
@@ -11,7 +11,7 @@ define('Util/FramerateCounter', [ ], function () {
 
         this.lastMeasure = null;
         this.measureFrequency = 1000; // every second
-    };
+    }
 
     FramerateCounter.prototype.addTick = function () {
         return this.addTicks(1);

@@ -1,9 +1,11 @@
-define('MapState', [ 'Util/Timeline', 'Util/Map', 'HitMarker', 'Util/PubSub' ], function (Timeline, Map, HitMarker, PubSub) {
-    var MapState = function (ruleSet, objects, timeline) {
+define('MapState', [ 'mapObject', 'Util/Timeline', 'Util/Map', 'Util/PubSub' ], function (mapObject, Timeline, Map, PubSub) {
+    function MapState(ruleSet, objects, timeline) {
         this.ruleSet = ruleSet;
         this.timeline = timeline;
 
         this.events = new PubSub();
+
+        var hittableObjects = [ ];
 
         objects.forEach(function (hitObject) {
             var appearTime = ruleSet.getObjectAppearTime(hitObject);
@@ -17,14 +19,29 @@ define('MapState', [ 'Util/Timeline', 'Util/Map', 'HitMarker', 'Util/PubSub' ], 
             var latestHitTime = ruleSet.getObjectLatestHitTime(hitObject);
 
             timeline.add(MapState.HIT_OBJECT_HITABLE, hitObject, earliestHitTime, latestHitTime);
+
+            mapObject.match(hitObject, {
+                Slider: function (slider) {
+                    var ticks = ruleSet.getSliderTicks(hitObject);
+                    hittableObjects = hittableObjects.concat(ticks);
+                    slider.ticks = ticks; // Temporary (I hope)
+
+                    var ends = ruleSet.getSliderEnds(hitObject);
+                    hittableObjects = hittableObjects.concat(ends);
+                    slider.ends = ends; // Temporary (I hope)
+                },
+                HitCircle: function (hitCircle) {
+                    hittableObjects.push(hitCircle);
+                }
+            });
         });
 
-        this.unhitObjects = objects.map(function (hitObject) {
+        this.unhitObjects = hittableObjects.map(function (hitObject) {
             return [ hitObject, ruleSet.getObjectLatestHitTime(hitObject) ];
         }).sort(function (a, b) {
             return a[1] < b[1] ? -1 : 1;
         });
-    };
+    }
 
     MapState.HIT_OBJECT_VISIBILITY = 'hit object visibility';
     MapState.HIT_OBJECT_HITABLE = 'hit object hitable';
@@ -87,10 +104,10 @@ define('MapState', [ 'Util/Timeline', 'Util/Map', 'HitMarker', 'Util/PubSub' ], 
                 object = hittableObjects[i];
 
                 if (this.ruleSet.canHitObject(object, x, y, time)) {
-                    hitMarker = HitMarker.create(
+                    hitMarker = new mapObject.HitMarker(
                         object,
                         time,
-                        this.ruleSet
+                        this.ruleSet.getHitScore(object, time)
                     );
 
                     this.applyHitMarker(hitMarker);
@@ -120,6 +137,66 @@ define('MapState', [ 'Util/Timeline', 'Util/Map', 'HitMarker', 'Util/PubSub' ], 
             this.applyHitMarkerNoRemove(hitMarker);
         },
 
+        processSlides: function (time, mouseHistory) {
+            var removedUnhitObjects = [ ];
+
+            var i;
+            var unhitObject;
+            var hitMarker;
+            var mouseState = null;
+            var score;
+
+            for (i = 0; i < this.unhitObjects.length; ++i) {
+                unhitObject = this.unhitObjects[i];
+
+                if (unhitObject[1] >= time) {
+                    break;
+                }
+
+                if (!mapObject.match(unhitObject[0], { SliderTick: true, SliderEnd: true, _: false })) {
+                    continue;
+                }
+
+                mouseState = mouseHistory.getDataAtTime(unhitObject[0].time);
+
+                if (mouseState && (mouseState.left || mouseState.right)) {
+                    if (this.ruleSet.canHitObject(
+                        unhitObject[0],
+                        mouseState.x,
+                        mouseState.y,
+                        unhitObject[0].time
+                    )) {
+                        // Hit
+                        score = mapObject.match(unhitObject[0], { SliderTick: 10, SliderEnd: 30 });
+                    } else {
+                        // Miss
+                        score = 0;
+                    }
+                } else {
+                    score = 0;
+                }
+
+                hitMarker = new mapObject.HitMarker(
+                    unhitObject[0],
+                    unhitObject[0].time,
+                    score
+                );
+
+                unhitObject[0].hitMarker = hitMarker; // Temporary (I hope)
+
+                this.applyHitMarkerNoRemove(hitMarker);
+
+                // We unshift because we need to remove objects in reverse
+                // order.  Else we need to keep track of index changes while
+                // removing items, which is ugly and slow.
+                removedUnhitObjects.push(i);
+            }
+
+            removedUnhitObjects.forEach(function (index) {
+                this.unhitObjects.splice(index, 1);
+            }, this);
+        },
+
         processMisses: function (time) {
             var i;
             var unhitObject;
@@ -132,7 +209,7 @@ define('MapState', [ 'Util/Timeline', 'Util/Map', 'HitMarker', 'Util/PubSub' ], 
                     break;
                 }
 
-                hitMarker = new HitMarker(
+                hitMarker = new mapObject.HitMarker(
                     unhitObject[0],
                     unhitObject[1] + 1,
                     0

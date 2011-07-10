@@ -1,16 +1,16 @@
-define('RuleSet', [ 'Util/util', 'Slider' ], function (util, Slider) {
-    var RuleSet = function () {
+define('RuleSet', [ 'Util/util', 'mapObject' ], function (util, mapObject) {
+    function RuleSet() {
         this.approachRate = 5;
         this.overallDifficulty = 5;
         this.hpDrain = 5;
         this.circleSize = 5;
-    };
+    }
 
     RuleSet.fromSettings = function (settings) {
         var ruleSet = new RuleSet();
 
         var fields = (
-            'approachRate,overallDifficulty,hpDrain,circleSize,sliderMultiplier'
+            'approachRate,overallDifficulty,hpDrain,circleSize,sliderMultiplier,sliderTickRate'
         ).split(',');
 
         util.extendObjectWithFields(ruleSet, fields, settings);
@@ -43,23 +43,30 @@ define('RuleSet', [ 'Util/util', 'Slider' ], function (util, Slider) {
         },
 
         getObjectDisappearTime: function (object) {
-            // Allow players to hit a late 50
-            return this.getObjectEndTime(object) + this.getHitWindow(50);
+            return this.getObjectLatestHitTime(object);
         },
 
-        getObjectStartTime: function (object) {
-            return object.time;
-        },
-
-        getObjectEndTime: function (object) {
-            var duration = 0;
-
-            if (object instanceof Slider) {
-                duration = object.repeats * this.getSliderRepeatLength(object.time, object.length);
+        getObjectStartTime: mapObject.matcher({
+            SliderTick: function (object) {
+                return this.getObjectStartTime(object.slider);
+            },
+            _: function (object) {
+                return object.time;
             }
+        }),
 
-            return this.getObjectStartTime(object) + duration;
-        },
+        getObjectEndTime: mapObject.matcher({
+            SliderTick: function (object) {
+                return object.time;
+            },
+            Slider: function (object) {
+                var duration = object.repeats * this.getSliderRepeatLength(object.time, object.length);
+                return this.getObjectStartTime(object) + duration;
+            },
+            HitCircle: function (object) {
+                return this.getObjectStartTime(object);
+            }
+        }),
 
         getSliderRepeatLength: function (time, sliderLength) {
             return 1000 * sliderLength / this.getEffectiveSliderSpeed(time);
@@ -135,9 +142,14 @@ define('RuleSet', [ 'Util/util', 'Slider' ], function (util, Slider) {
             return object.time - this.getHitWindow(0);
         },
 
-        getObjectLatestHitTime: function (object) {
-            return object.time + this.getHitWindow(50);
-        },
+        getObjectLatestHitTime: mapObject.matcher({
+            HitCircle: function (object) {
+                return this.getObjectEndTime(object) + this.getHitWindow(50);
+            },
+            _: function (object) {
+                return this.getObjectEndTime(object);
+            }
+        }),
 
         canHitObject: function (object, x, y, time) {
             var distance = Math.sqrt(Math.pow(object.x - x, 2) + Math.pow(object.y - y, 2));
@@ -150,6 +162,29 @@ define('RuleSet', [ 'Util/util', 'Slider' ], function (util, Slider) {
         // Gives diameter
         getCircleSize: function () {
             return -(this.circleSize - 5) * 16 + 64;
+        },
+
+        getHitMarkerImageName: function (hitMarker) {
+            // Should this be here?
+
+            var imageNames = {
+                300: 'hit300',
+                100: 'hit100',
+                50: 'hit50',
+                30: 'sliderpoint30',
+                10: 'sliderpoint10',
+                0: 'hit0'
+            };
+
+            if (hitMarker.hitObject instanceof mapObject.SliderTick && hitMarker.score === 0) {
+                return null;
+            }
+
+            if (!imageNames.hasOwnProperty(hitMarker.score)) {
+                throw new Error('Invalid hit marker with score ' + hitMarker.score);
+            }
+
+            return imageNames[hitMarker.score];
         },
 
         getHitWindow: function (score) {
@@ -169,8 +204,8 @@ define('RuleSet', [ 'Util/util', 'Slider' ], function (util, Slider) {
             return this.threePartLerp(window[0], window[1], window[2], this.overallDifficulty);
         },
 
-        getHitScore: function (hitMarker) {
-            var delta = Math.abs(this.getObjectEndTime(hitMarker.hitObject) - hitMarker.time);
+        getHitScore: function (object, time) {
+            var delta = Math.abs(this.getObjectEndTime(object) - time);
 
             var scores = [ 300, 100, 50, 0 ];
             var i;
@@ -200,6 +235,11 @@ define('RuleSet', [ 'Util/util', 'Slider' ], function (util, Slider) {
             var suffix = '.wav';
 
             // TODO Slider and spinner sounds
+
+            if (!hitMarker.hitObject.hitSounds) {
+                // TODO This should never happen (I think)
+                return [ ];
+            }
 
             return hitMarker.hitObject.hitSounds.map(function (hitSound) {
                 return prefix + hitSound + suffix;
@@ -249,6 +289,30 @@ define('RuleSet', [ 'Util/util', 'Slider' ], function (util, Slider) {
             return currentScore;
         },
 
+        getObjectsByZ: function (objects) {
+            var hitMarkers = [ ];
+            var hitObjects = [ ];
+
+            objects.forEach(mapObject.matcher({
+                HitMarker: function (object) {
+                    hitMarkers.push(object);
+                },
+                _: function (object) {
+                    hitObjects.push(object);
+                }
+            }));
+
+            function sort(a, b) {
+                // Sort by time descending
+                return a.time > b.time ? -1 : 1;
+            }
+
+            hitObjects = hitObjects.sort(sort);
+            hitMarkers = hitMarkers.sort(sort);
+
+            return hitObjects.concat(hitMarkers);
+        },
+
         getEffectiveSliderSpeed: function (time) {
             // Gives osu!pixels per second
 
@@ -262,6 +326,87 @@ define('RuleSet', [ 'Util/util', 'Slider' ], function (util, Slider) {
             var pixelsPerMinute = bpm * velocity * 100;
 
             return pixelsPerMinute / 60; // Pixels per second
+        },
+
+        getSliderTicks: function (slider) {
+            var startTime = this.getObjectStartTime(slider);
+            var repeatDuration = this.getSliderRepeatLength(slider.time, slider.length);
+
+            var tickLength = this.getTickLength(startTime);
+            var tickDuration = this.getTickDuration(startTime);
+
+            var rawTickPositions = slider.curve.getTickPositions(tickLength);
+
+            var ticks = [ ];
+
+            var repeatIndex;
+
+            function makeTick(tickPosition, tickIndex) {
+                return new mapObject.SliderTick(
+                    startTime + (tickIndex + 1) * tickDuration + repeatIndex * repeatDuration,
+                    tickPosition[0],
+                    tickPosition[1],
+                    slider,
+                    repeatIndex
+                );
+            }
+
+            for (repeatIndex = 0; repeatIndex < slider.repeats; ++repeatIndex) {
+                ticks = ticks.concat(rawTickPositions.map(makeTick));
+
+                rawTickPositions = rawTickPositions.reverse();
+            }
+
+            return ticks;
+        },
+
+        getSliderEnds: function (slider) {
+            var startTime = this.getObjectStartTime(slider);
+            var repeatDuration = this.getSliderRepeatLength(slider.time, slider.length);
+
+            var startPosition = slider.curve.points[0];
+            var endPosition = slider.curve.points.slice(-1)[0];
+
+            var ends = [ ];
+
+            var i;
+
+            for (i = 1; i <= slider.repeats; ++i) {
+                ends.push(new mapObject.SliderEnd(
+                    startTime + i * repeatDuration,
+                    slider,
+                    i,
+                    i === slider.repeats
+                ));
+            }
+
+            return ends;
+        },
+
+        getTickLength: function (time) {
+            // 100ths of osu!pixels per beat
+            var velocity = this.sliderMultiplier;
+
+            // Beats per tick
+            var beatsPerTick = 1 / this.sliderTickRate;
+
+            // ((1/100) pixels/beat) * (beats/tick) = (1/100) pixels/tick
+            var pixelsPerTick = velocity * beatsPerTick * 100;
+
+            return pixelsPerTick;
+        },
+
+        getTickDuration: function (time) {
+            // Beats per minute
+            var bpm = this.getEffectiveBPM(time);
+
+            // Beats per tick
+            var beatsPerTick = 1 / this.sliderTickRate;
+
+            // (beats/tick) / (beats/minute) = (minutes/tick)
+            var minutesPerTick = beatsPerTick / bpm;
+
+            return minutesPerTick * 60 * 1000; // Milliseconds per tick
         },
 
         getEffectiveBPM: function (time) {

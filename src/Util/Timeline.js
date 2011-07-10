@@ -1,11 +1,11 @@
 define('Util/Timeline', [ 'Util/PubSub' ], function (PubSub) {
-    var CueList = function () {
+    function CueList() {
         // Each array corresponds to each other (reverse object).
         // Arrays are sorted by cue start time.
         this.cueValues = [ ];
         this.cueStarts = [ ];
         this.cueEnds = [ ];
-    };
+    }
 
     function sortIndex(array, value) {
         var i;
@@ -21,6 +21,8 @@ define('Util/Timeline', [ 'Util/PubSub' ], function (PubSub) {
 
     CueList.prototype = {
         add: function (value, startTime, endTime) {
+            /*jshint white: false */
+
             if (typeof endTime === 'undefined') {
                 endTime = startTime;
             }
@@ -32,6 +34,8 @@ define('Util/Timeline', [ 'Util/PubSub' ], function (PubSub) {
         },
 
         remove: function (value) {
+            /*jshint white: false */
+
             var index = this.cueValues.indexOf(value);
             this.cueValues.splice(index, 1);
             this.cueStarts.splice(index, 1);
@@ -80,17 +84,17 @@ define('Util/Timeline', [ 'Util/PubSub' ], function (PubSub) {
         }
     };
 
-    var Timeline = function (audio) {
+    function Timeline(audio) {
         this.audio = audio;
         this.cueLists = { };
         this.events = { };
-    };
+    }
 
-    var validateKey = function (key) {
+    function validateKey(key) {
         if (typeof key !== 'string') {
             throw new TypeError('key must be a string');
         }
-    };
+    }
 
     Timeline.prototype = {
         getCurrentTime: function () {

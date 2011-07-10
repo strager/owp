@@ -1,9 +1,9 @@
 define('Util/Cache', [ 'Util/Map' ], function (Map) {
     // TODO Actual caching
 
-    var Cache = function () {
+    function Cache() {
         this.map = new Map();
-    };
+    }
 
     Cache.prototype = {
         get: function (key, creator) {

@@ -2,71 +2,54 @@ require([ 'jQuery', 'WebGLRenderer', 'CanvasRenderer', 'AssetManager', 'q', 'Gam
     var mapAssetManager = new AssetManager('assets');
     var skinAssetManager = new AssetManager('.');
 
-    var makeCanvas = function () {
-        var canvas = document.createElement('canvas');
-        canvas.width = 640;
-        canvas.height = 480;
-        $(canvas).appendTo(document.body);
-
-        return canvas;
-    };
-
-    var init = function () {
+    function init() {
         var renderers = [ ];
         var playAreas = [ ];
 
-        try {
-            var twoDCanvas = makeCanvas();
-            var twoDRenderer = new CanvasRenderer(twoDCanvas.getContext('2d'));
+        function addRenderer(renderer, name) {
+            renderers.push(renderer);
+            playAreas.push(renderer.element);
 
-            renderers.push(twoDRenderer);
-            playAreas.push(twoDCanvas);
-        } catch (e) {
-            throw e;
+            $(document.body)
+                .append('<h3>' + name + '</h3>')
+                .append(renderer.element);
         }
 
-        try {
-            var glCanvas = makeCanvas();
-            var glRenderer = new WebGLRenderer(glCanvas.getContext('experimental-webgl'));
-
-            renderers.push(glRenderer);
-            playAreas.push(glCanvas);
-        } catch (e) {
-            throw e;
-        }
+        addRenderer(new CanvasRenderer(), '2D Canvas');
+        addRenderer(new WebGLRenderer(), 'WebGL');
 
         return {
             renderers: renderers,
             playAreas: playAreas
         };
-    };
+    }
 
-    var loop = function (callback, interval) {
-        var innerLoop = function () {
+    function loop(callback, interval) {
+        function innerLoop() {
             Q.when(callback(), function () {
                 setTimeout(innerLoop, interval);
             });
-        };
+        }
 
         innerLoop();
-    };
+    }
 
-    var hardLoop = function (callback, interval) {
+    function hardLoop(callback, interval) {
         var timer = setInterval(function () {
             if (callback() === false) {
                 clearInterval(timer);
             }
         }, interval);
-    };
+    }
 
-    var renderLoop = function (callback) {
+    function renderLoop(callback) {
         window.requestAnimFrame(function () {
             callback();
             renderLoop(callback);
         }, document.body); // should prolly use the canvas here...
-    };
+    }
 
-    var infLoop = function (callback) {
+    function infLoop(callback) {
         hardLoop(function () {
             var i;
 
@@ -74,14 +57,14 @@ require([ 'jQuery', 'WebGLRenderer', 'CanvasRenderer', 'AssetManager', 'q', 'Gam
                 callback();
             }
         }, 0);
-    };
+    }
 
     var renderFps = new FramerateCounter();
     var gameUpdateFps = new FramerateCounter();
 
     var game;
 
-    var go = function (io) {
+    function go(io) {
         game = new Game();
         game.setSkin(skinAssetManager);
         game.startMap(mapAssetManager, 'map');
@@ -101,32 +84,101 @@ require([ 'jQuery', 'WebGLRenderer', 'CanvasRenderer', 'AssetManager', 'q', 'Gam
         });
 
         var mouseX, mouseY;
+        var isLeftDown = false;
+        var isRightDown = false;
 
-        $(io.playAreas).click(function (e) {
-            var x = e.pageX - this.offsetLeft;
-            var y = e.pageY - this.offsetTop;
+        function mouseStateChanged() {
+            game.mouse({
+                x: mouseX,
+                y: mouseY,
+                left: isLeftDown,
+                right: isRightDown
+            });
+        }
 
-            game.click({ x: x, y: y });
+        $(io.playAreas).mousedown(function (e) {
+            mouseX = e.pageX - this.offsetLeft;
+            mouseY = e.pageY - this.offsetTop;
+
+            switch (e.which) {
+            case 1: // LMB
+                isLeftDown = true;
+                break;
+
+            case 3: // RMB
+                isRightDown = true;
+                break;
+            }
+
+            mouseStateChanged();
+            return false;
+        });
+
+        $(io.playAreas).mouseup(function (e) {
+            mouseX = e.pageX - this.offsetLeft;
+            mouseY = e.pageY - this.offsetTop;
+
+            switch (e.which) {
+            case 1: // LMB
+                isLeftDown = false;
+                break;
+
+            case 3: // RMB
+                isRightDown = false;
+                break;
+            }
+
+            mouseStateChanged();
+            return false;
+        });
+
+        $(io.playAreas).bind('contextmenu', function (e) {
+            return false;
         });
 
         $(io.playAreas).mousemove(function (e) {
             mouseX = e.pageX - this.offsetLeft;
             mouseY = e.pageY - this.offsetTop;
+            mouseStateChanged();
         });
 
         $('body').keydown(function (e) {
-            game.click({ x: mouseX, y: mouseY });
-        });
-    };
+            switch (e.which) {
+            case 90: // LMB
+                isLeftDown = true;
+                break;
 
-    var getPaintCount = function () {
+            case 88: // RMB
+                isRightDown = true;
+                break;
+            }
+
+            mouseStateChanged();
+        });
+
+        $('body').keyup(function (e) {
+            switch (e.which) {
+            case 90: // LMB
+                isLeftDown = false;
+                break;
+
+            case 88: // RMB
+                isRightDown = false;
+                break;
+            }
+
+            mouseStateChanged();
+        });
+    }
+
+    function getPaintCount() {
         return window.mozPaintCount || 0;
-    };
+    }
 
     var lastPaintCount = 0;
     var paintFps = new FramerateCounter();
 
-    var debugInfo = function () {
+    function debugInfo() {
         var currentPaintCount = getPaintCount();
         paintFps.addTicks(currentPaintCount - lastPaintCount);
         lastPaintCount = currentPaintCount;
@@ -138,9 +190,9 @@ require([ 'jQuery', 'WebGLRenderer', 'CanvasRenderer', 'AssetManager', 'q', 'Gam
         };
 
         return $.extend({ }, debug, game.debugInfo());
-    };
+    }
 
-    var updateDebugInfo = function () {
+    function updateDebugInfo() {
         if (!game) {
             return;
         }
@@ -164,9 +216,9 @@ require([ 'jQuery', 'WebGLRenderer', 'CanvasRenderer', 'AssetManager', 'q', 'Gam
         }).join('\n');
 
         $debug.text(text);
-    };
+    }
 
-    var getMissingFeatures = function () {
+    function getMissingFeatures() {
         var features = [ ];
 
         if (!window.Audio) {
@@ -174,7 +226,7 @@ require([ 'jQuery', 'WebGLRenderer', 'CanvasRenderer', 'AssetManager', 'q', 'Gam
         }
 
         return features;
-    };
+    }
 
     var missingFeatures = getMissingFeatures();
 

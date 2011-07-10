@@ -1,8 +1,8 @@
 define('Soundboard', [ 'jQuery', 'SoundPool' ], function ($, SoundPool) {
-    var Soundboard = function (assetManager) {
+    function Soundboard(assetManager) {
         this.assetManager = assetManager;
         this.soundPools = { };
-    };
+    }
 
     Soundboard.prototype = {
         getSoundPool: function (soundName) {
@@ -13,13 +13,18 @@ define('Soundboard', [ 'jQuery', 'SoundPool' ], function ($, SoundPool) {
             return this.soundPools[soundName];
         },
 
-        playSound: function (soundName) {
+        playSound: function (soundName, options) {
             var soundPool = this.getSoundPool(soundName);
 
             var sound = soundPool.alloc();
             $(sound).one('ended', function () {
                 soundPool.free(sound);
             });
+
+            Object.keys(options || { }).forEach(function (property) {
+                sound[property] = options[property];
+            });
+
             sound.play();
         }
     };

@@ -1,8 +1,8 @@
-define('WebGLRenderer', [ 'HitCircle', 'Slider', 'HitMarker', 'MapState', 'Util/gPubSub', 'Util/Cache' ], function (HitCircle, Slider, HitMarker, MapState, gPubSub, Cache) {
-    var drawers = function (gl, buffers, programs) {
+define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache', 'jQuery' ], function (MapState, mapObject, gPubSub, Cache, $) {
+    function drawers(gl, buffers, programs) {
         var inProgram = false;
 
-        function program (program, init, uninit, callback) {
+        function program(prog, init, uninit, callback) {
             if (inProgram) {
                 throw new Error('Already in program');
             }
@@ -11,7 +11,7 @@ define('WebGLRenderer', [ 'HitCircle', 'Slider', 'HitMarker', 'MapState', 'Util/
 
             // TODO Optimize useProgram and init/uninit calls
 
-            gl.useProgram(program);
+            gl.useProgram(prog);
 
             init();
             callback();
@@ -20,25 +20,25 @@ define('WebGLRenderer', [ 'HitCircle', 'Slider', 'HitMarker', 'MapState', 'Util/
             inProgram = false;
         }
 
-        function initSprite () {
-            var vertexOffset = 0;
-            var uvOffset = 2 * 3 * 2 * 4; // Skip faces (2x3 pairs, x2 floats, x4 bytes)
-
-            gl.bindBuffer(gl.ARRAY_BUFFER, buffers.sprite);
-            gl.vertexAttribPointer(programs.sprite.attr.vertexCoord, 2, gl.FLOAT, false, 0, vertexOffset);
-            gl.vertexAttribPointer(programs.sprite.attr.textureCoord, 2, gl.FLOAT, false, 0, uvOffset);
-            gl.enableVertexAttribArray(programs.sprite.attr.vertexCoord);
-            gl.enableVertexAttribArray(programs.sprite.attr.textureCoord);
-        }
-
-        function uninitSprite () {
-            gl.disableVertexAttribArray(programs.sprite.attr.textureCoord);
-            gl.disableVertexAttribArray(programs.sprite.attr.vertexCoord);
-            gl.bindBuffer(gl.ARRAY_BUFFER, null);
-        }
-
         function sprite(callback) {
-            program(programs.sprite, initSprite, uninitSprite, function () {
+            function init() {
+                var vertexOffset = 0;
+                var uvOffset = 2 * 3 * 2 * 4; // Skip faces (2x3 pairs, x2 floats, x4 bytes)
+
+                gl.bindBuffer(gl.ARRAY_BUFFER, buffers.sprite);
+                gl.vertexAttribPointer(programs.sprite.attr.vertexCoord, 2, gl.FLOAT, false, 0, vertexOffset);
+                gl.vertexAttribPointer(programs.sprite.attr.textureCoord, 2, gl.FLOAT, false, 0, uvOffset);
+                gl.enableVertexAttribArray(programs.sprite.attr.vertexCoord);
+                gl.enableVertexAttribArray(programs.sprite.attr.textureCoord);
+            }
+
+            function uninit() {
+                gl.disableVertexAttribArray(programs.sprite.attr.textureCoord);
+                gl.disableVertexAttribArray(programs.sprite.attr.vertexCoord);
+                gl.bindBuffer(gl.ARRAY_BUFFER, null);
+            }
+
+            program(programs.sprite, init, uninit, function () {
                 gl.uniform2f(programs.sprite.uni.playfield, 640, 480);
 
                 callback(function draw(texture) {
@@ -86,9 +86,9 @@ define('WebGLRenderer', [ 'HitCircle', 'Slider', 'HitMarker', 'MapState', 'Util/
             sprite: sprite,
             curve: curve
         };
-    };
+    }
 
-    var renderMap = function (vars) {
+    function renderMap(vars) {
         var mapState = vars.mapState;
         var ruleSet = mapState.ruleSet;
         var skin = vars.skin;
@@ -98,22 +98,23 @@ define('WebGLRenderer', [ 'HitCircle', 'Slider', 'HitMarker', 'MapState', 'Util/
         var programs = vars.programs;
         var textures = vars.textures;
         var caches = vars.caches;
+        var mouseHistory = vars.mouseHistory;
 
         var draw = drawers(gl, buffers, programs);
 
         // TODO Real work
 
-        var getDigits = function (number) {
+        function getDigits(number) {
             return ('' + number).split('');
-        };
+        }
 
-        var getNumberTextures = function (number) {
+        function getNumberTextures(number) {
             return getDigits(number).map(function (digit) {
                 return textures.digits[digit];
             });
-        };
+        }
 
-        var createSliderTrack = function (points, radius) {
+        function createSliderTrack(points, radius) {
             var data = [ ];
 
             function extrude(point) {
@@ -133,6 +134,8 @@ define('WebGLRenderer', [ 'HitCircle', 'Slider', 'HitMarker', 'MapState', 'Util/
             }
 
             function mark(a) {
+                /*jshint white: false */
+
                 // Vertex, UV, vertex, UV
                 data.push(a[0]); data.push(a[1]);
                 data.push(0);    data.push(0);
@@ -153,9 +156,9 @@ define('WebGLRenderer', [ 'HitCircle', 'Slider', 'HitMarker', 'MapState', 'Util/
                 vertexCount: data.length / 4,
                 buffer: buffer
             };
-        };
+        }
 
-        var renderApproachCircle = function (progress, x, y, color, alpha) {
+        function renderApproachCircle(progress, x, y, color, alpha) {
             var radius = 1;
 
             if (progress > 0) {
@@ -174,9 +177,9 @@ define('WebGLRenderer', [ 'HitCircle', 'Slider', 'HitMarker', 'MapState', 'Util/
 
                 draw(textures.approachCircle);
             });
-        };
+        }
 
-        var renderComboNumber = function (number, x, y, alpha) {
+        function renderComboNumber(number, x, y, alpha) {
             var textures = getNumberTextures(number);
             var spacing = skin.hitCircleFontSpacing;
 
@@ -212,9 +215,9 @@ define('WebGLRenderer', [ 'HitCircle', 'Slider', 'HitMarker', 'MapState', 'Util/
                     offset += width + spacing;
                 });
             });
-        };
+        }
 
-        var renderSliderBall = function (object) {
+        function renderSliderBall(object) {
             var sliderBallPosition = object.curve.getSliderBallPosition(object, time, ruleSet);
 
             if (!sliderBallPosition) {
@@ -231,9 +234,26 @@ define('WebGLRenderer', [ 'HitCircle', 'Slider', 'HitMarker', 'MapState', 'Util/
 
                 draw(textures.sliderBall);
             });
-        };
+        }
 
-        var renderSliderObject = function (object) {
+        function renderSliderTick(tick) {
+            if (tick.hitMarker) {
+                return;
+            }
+
+            var scale = ruleSet.getCircleSize() / 128;
+
+            draw.sprite(function (draw) {
+                gl.uniform2f(programs.sprite.uni.position, tick.x, tick.y);
+                gl.uniform4f(programs.sprite.uni.color, 255, 255, 255, 255);
+                gl.uniform2f(programs.sprite.uni.offset, 0, 0);
+                gl.uniform1f(programs.sprite.uni.scale, scale);
+
+                draw(textures.sliderTick);
+            });
+        }
+
+        function renderSliderObject(object) {
             var key = [ object, mapState ];
 
             var c = caches.sliderTrack.get(key, function () {
@@ -263,6 +283,8 @@ define('WebGLRenderer', [ 'HitCircle', 'Slider', 'HitMarker', 'MapState', 'Util/
                 draw(Math.round(c.vertexCount * growPercentage));
             });
 
+            object.ticks.forEach(renderSliderTick);
+
             var visibility = ruleSet.getObjectVisibilityAtTime(object, time);
 
             var lastPoint = object.curve.render(growPercentage).slice(-1)[0];
@@ -288,12 +310,28 @@ define('WebGLRenderer', [ 'HitCircle', 'Slider', 'HitMarker', 'MapState', 'Util/
 
             renderHitCircleObject(object);
 
+            // Next end (repeat arrow)
+            var repeatArrow = object.ends.filter(function (end) {
+                return !end.hitMarker && !end.isFinal;
+            })[0];
+
+            if (repeatArrow) {
+                draw.sprite(function (draw) {
+                    gl.uniform2f(programs.sprite.uni.position, repeatArrow.x, repeatArrow.y);
+                    gl.uniform4f(programs.sprite.uni.color, 255, 255, 255, alpha * 255);
+                    gl.uniform2f(programs.sprite.uni.offset, 0, 0);
+                    gl.uniform1f(programs.sprite.uni.scale, scale);
+
+                    draw(textures.repeatArrow);
+                });
+            }
+
             if (visibility === 'during') {
                 renderSliderBall(object);
             }
-        };
+        }
 
-        var renderHitCircleObject = function (object) {
+        function renderHitCircleObject(object) {
             var alpha = ruleSet.getObjectOpacity(object, time);
             var color = object.combo.color.concat([ alpha * 255 ]);
 
@@ -324,9 +362,14 @@ define('WebGLRenderer', [ 'HitCircle', 'Slider', 'HitMarker', 'MapState', 'Util/
 
             var approachProgress = ruleSet.getObjectApproachProgress(object, time);
             renderApproachCircle(approachProgress, object.x, object.y, color);
-        };
+        }
 
-        var renderHitMarkerObject = function (object) {
+        function renderHitMarkerObject(object) {
+            var image = ruleSet.getHitMarkerImageName(object);
+            if (!image) {
+                return;
+            }
+
             var scale = ruleSet.getHitMarkerScale(object, time);
 
             draw.sprite(function (draw) {
@@ -335,34 +378,52 @@ define('WebGLRenderer', [ 'HitCircle', 'Slider', 'HitMarker', 'MapState', 'Util/
                 gl.uniform2f(programs.sprite.uni.offset, 0, 0);
                 gl.uniform1f(programs.sprite.uni.scale, scale);
 
-                draw(textures.hitMarkers[object.score]);
+                draw(textures.hitMarkers[image]);
             });
-        };
+        }
 
-        var getObjectRenderer = function (object) {
-            var renderers = [
-                [ HitCircle, renderHitCircleObject ],
-                [ HitMarker, renderHitMarkerObject ],
-                [ Slider,    renderSliderObject ]
-            ];
-
-            var objectRenderers = renderers.filter(function (r) {
-                return object instanceof r[0];
+        function renderObject(object) {
+            mapObject.match(object, {
+                HitCircle:  renderHitCircleObject,
+                HitMarker:  renderHitMarkerObject,
+                Slider:     renderSliderObject,
+                _: function () {
+                    throw new TypeError('Unknown object type');
+                }
             });
+        }
 
-            if (objectRenderers.length !== 1) {
-                throw new TypeError('Unknown object type');
+        function renderCursor(state) {
+            if (!state) {
+                return;
             }
 
-            return objectRenderers[0][1];
-        };
+            draw.sprite(function (draw) {
+                gl.uniform2f(programs.sprite.uni.position, state.x, state.y);
+                gl.uniform4f(programs.sprite.uni.color, 255, 255, 255, 255);
+                gl.uniform2f(programs.sprite.uni.offset, 0, 0);
+                gl.uniform1f(programs.sprite.uni.scale, 1);
 
-        var renderObject = function (object) {
-            var renderer = getObjectRenderer(object);
-            renderer(object);
-        };
+                draw(textures.cursor);
+            });
+        }
 
-        var getObjectsToRender = function () {
+        function renderCursorTrail(state, alpha) {
+            if (!state) {
+                return;
+            }
+
+            draw.sprite(function (draw) {
+                gl.uniform2f(programs.sprite.uni.position, state.x, state.y);
+                gl.uniform4f(programs.sprite.uni.color, 255, 255, 255, alpha * 255);
+                gl.uniform2f(programs.sprite.uni.offset, 0, 0);
+                gl.uniform1f(programs.sprite.uni.scale, 1);
+
+                draw(textures.cursorTrail);
+            });
+        }
+
+        function getObjectsToRender() {
             // Visible objects
             var objects = mapState.getVisibleObjects(time);
 
@@ -371,125 +432,130 @@ define('WebGLRenderer', [ 'HitCircle', 'Slider', 'HitMarker', 'MapState', 'Util/
                 mapState.timeline.getAllInTimeRange(time - 2000, time, MapState.HIT_MARKER_CREATION)
             );
 
-            var sortObjectsByZ = function (a, b) {
-                var newA = a;
-                var newB = b;
-
-                // Keep hit marker above object
-                if (a instanceof HitMarker) {
-                    if (b === a.hitObject) {
-                        return 1;
-                    }
-
-                    newA = a.hitObject;
-                }
-
-                if (b instanceof HitMarker) {
-                    if (a === b.hitObject) {
-                        return -1;
-                    }
-
-                    newB = b.hitObject;
-                }
-
-                // Sort by time descending
-                return newA.time > newB.time ? -1 : 1;
-            };
-
-            // Get objects in Z order
-            objects = objects.sort(sortObjectsByZ);
-
-            return objects;
-        };
+            return ruleSet.getObjectsByZ(objects);
+        }
 
         getObjectsToRender().forEach(function (object) {
             renderObject(object);
 
             gPubSub.publish('tick');
         });
-    };
 
-    var spriteVertexShader = [
-        'attribute vec2 aVertexCoord;',
-        'attribute vec2 aTextureCoord;',
+        // TODO Render cursor in another render step
+        // (See cursor + trail rendering code in file history)
+    }
 
-        'uniform vec2 uPlayfield;',
-        'uniform vec2 uSize;',
-        'uniform vec2 uPosition;',
-        'uniform vec2 uOffset;',
-        'uniform float uScale;',
+    var spriteVertexShader, spriteFragmentShader, curveVertexShader, curveFragmentShader;
 
-        'varying vec2 vTextureCoord;',
+    (function () {
+        /*jshint white: false */
 
-        'mat4 projection = mat4(',
-            '2.0 / uPlayfield.x, 0.0, 0.0, -1.0,',
-            '0.0, -2.0 / uPlayfield.y, 0.0, 1.0,',
-            '0.0, 0.0,-2.0,-0.0,',
-            '0.0, 0.0, 0.0, 1.0',
-        ');',
+        spriteVertexShader = [
+            'attribute vec2 aVertexCoord;',
+            'attribute vec2 aTextureCoord;',
 
-        'void main(void) {',
-            'gl_Position = (vec4(aVertexCoord / 2.0, 0.0, 1.0) * vec4(uSize * uScale, 1.0, 1.0) + vec4(uPosition + uOffset, 0.0, 0.0)) * projection;',
-            'vTextureCoord = aTextureCoord;',
-        '}'
-    ].join('\n');
+            'uniform vec2 uPlayfield;',
+            'uniform vec2 uSize;',
+            'uniform vec2 uPosition;',
+            'uniform vec2 uOffset;',
+            'uniform float uScale;',
 
-    var spriteFragmentShader = [
-        'varying vec2 vTextureCoord;',
+            'varying vec2 vTextureCoord;',
 
-        'uniform sampler2D uSampler;',
-        'uniform vec4 uColor;',
+            'mat4 projection = mat4(',
+                '2.0 / uPlayfield.x, 0.0, 0.0, -1.0,',
+                '0.0, -2.0 / uPlayfield.y, 0.0, 1.0,',
+                '0.0, 0.0,-2.0,-0.0,',
+                '0.0, 0.0, 0.0, 1.0',
+            ');',
 
-        'void main(void) {',
-            'gl_FragColor = texture2D(uSampler, vec2(vTextureCoord.s, vTextureCoord.t)) * (vec4(uColor) / 255.0);',
-        '}'
-    ].join('\n');
+            'void main(void) {',
+                'gl_Position = (vec4(aVertexCoord / 2.0, 0.0, 1.0) * vec4(uSize * uScale, 1.0, 1.0) + vec4(uPosition + uOffset, 0.0, 0.0)) * projection;',
+                'vTextureCoord = aTextureCoord;',
+            '}'
+        ].join('\n');
 
-    var curveVertexShader = [
-        'attribute vec2 aVertexCoord;',
-        'attribute vec2 aTextureCoord;',
+        spriteFragmentShader = [
+            'varying vec2 vTextureCoord;',
 
-        'uniform vec2 uPlayfield;',
+            'uniform sampler2D uSampler;',
+            'uniform vec4 uColor;',
 
-        'varying vec2 vTextureCoord;',
+            'void main(void) {',
+                'gl_FragColor = texture2D(uSampler, vec2(vTextureCoord.s, vTextureCoord.t)) * (vec4(uColor) / 255.0);',
+            '}'
+        ].join('\n');
 
-        'mat4 projection = mat4(',
-            '2.0 / uPlayfield.x, 0.0, 0.0, -1.0,',
-            '0.0, -2.0 / uPlayfield.y, 0.0, 1.0,',
-            '0.0, 0.0,-2.0,-0.0,',
-            '0.0, 0.0, 0.0, 1.0',
-        ');',
+        curveVertexShader = [
+            'attribute vec2 aVertexCoord;',
+            'attribute vec2 aTextureCoord;',
 
-        'void main(void) {',
-            'gl_Position = vec4(aVertexCoord, 0.0, 1.0) * projection;',
-            'vTextureCoord = aTextureCoord;',
-        '}'
-    ].join('\n');
+            'uniform vec2 uPlayfield;',
 
-    var curveFragmentShader = [
-        'uniform vec4 uColor;',
+            'varying vec2 vTextureCoord;',
 
-        'varying vec2 vTextureCoord;',
+            'mat4 projection = mat4(',
+                '2.0 / uPlayfield.x, 0.0, 0.0, -1.0,',
+                '0.0, -2.0 / uPlayfield.y, 0.0, 1.0,',
+                '0.0, 0.0,-2.0,-0.0,',
+                '0.0, 0.0, 0.0, 1.0',
+            ');',
 
-        'vec4 getSliderColor(float t, vec4 baseColor) {',
-            'float u = abs(t - 0.5) / 0.5;',
-            'float intensity = 1.0;',
+            'void main(void) {',
+                'gl_Position = vec4(aVertexCoord, 0.0, 1.0) * projection;',
+                'vTextureCoord = aTextureCoord;',
+            '}'
+        ].join('\n');
 
-            'if (u > 0.85) {',
-                'baseColor = vec4(1, 1, 1, 1);',
-            '} else {',
-                'intensity = (u + 1.5) / (1.0 + 1.5);',
+        curveFragmentShader = [
+            'uniform vec4 uColor;',
+
+            'varying vec2 vTextureCoord;',
+
+            'vec4 getSliderColor(float t, vec4 baseColor) {',
+                'float u = abs(t - 0.5) / 0.5;',
+                'float intensity = 1.0;',
+
+                'if (u > 0.85) {',
+                    'baseColor = vec4(1, 1, 1, 1);',
+                '} else {',
+                    'intensity = (u + 1.5) / (1.0 + 1.5);',
+                '}',
+
+                'return baseColor * vec4(intensity, intensity, intensity, 1.0);',
             '}',
 
-            'return baseColor * vec4(intensity, intensity, intensity, 1.0);',
-        '}',
+            'void main(void) {',
+                'gl_FragColor = getSliderColor(vTextureCoord.t, vec4(uColor) / 255.0);',
+            '}'
+        ].join('\n');
+    }());
 
-        'void main(void) {',
-            'gl_FragColor = getSliderColor(vTextureCoord.t, vec4(uColor) / 255.0);',
-        '}'
-    ].join('\n');
+    function WebGLRenderer() {
+        var canvas = document.createElement('canvas');
+        canvas.width = 640;
+        canvas.height = 480;
 
-    var WebGLRenderer = function (context) {
+        var context;
+
+        try {
+            context = canvas.getContext('webgl');
+
+            if (!context) {
+                throw new Error();
+            }
+        } catch (e) {
+            try {
+                context = canvas.getContext('experimental-webgl');
+
+                if (!context) {
+                    throw new Error();
+                }
+            } catch (e) {
+                throw new Error('WebGL not supported');
+            }
+        }
+
         var gl = context;
 
         var buffers = { };
@@ -502,6 +568,8 @@ define('WebGLRenderer', [ 'HitCircle', 'Slider', 'HitMarker', 'MapState', 'Util/
         };
 
         function init() {
+            /*jshint white: false */
+
             buffers.sprite = gl.createBuffer();
             gl.bindBuffer(gl.ARRAY_BUFFER, buffers.sprite);
             gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
@@ -521,7 +589,7 @@ define('WebGLRenderer', [ 'HitCircle', 'Slider', 'HitMarker', 'MapState', 'Util/
 
                  1, 0,
                  1, 1,
-                 0, 1,
+                 0, 1
             ]), gl.STATIC_DRAW);
 
             buffers.curves = [ ];
@@ -538,7 +606,7 @@ define('WebGLRenderer', [ 'HitCircle', 'Slider', 'HitMarker', 'MapState', 'Util/
                 position: gl.getUniformLocation(programs.sprite, 'uPosition'),
                 offset: gl.getUniformLocation(programs.sprite, 'uOffset'),
                 scale: gl.getUniformLocation(programs.sprite, 'uScale'),
-                color: gl.getUniformLocation(programs.sprite, 'uColor'),
+                color: gl.getUniformLocation(programs.sprite, 'uColor')
             };
 
             programs.curve = createProgram(gl, curveVertexShader, curveFragmentShader);
@@ -548,7 +616,7 @@ define('WebGLRenderer', [ 'HitCircle', 'Slider', 'HitMarker', 'MapState', 'Util/
             };
             programs.curve.uni = {
                 playfield: gl.getUniformLocation(programs.curve, 'uPlayfield'),
-                color: gl.getUniformLocation(programs.curve, 'uColor'),
+                color: gl.getUniformLocation(programs.curve, 'uColor')
             };
 
             gl.enable(gl.BLEND);
@@ -556,7 +624,7 @@ define('WebGLRenderer', [ 'HitCircle', 'Slider', 'HitMarker', 'MapState', 'Util/
             gl.blendFuncSeparate(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA, gl.SRC_ALPHA, gl.ONE);
 
             resize();
-        };
+        }
 
         function makeTexture(image) {
             var texture = gl.createTexture();
@@ -574,7 +642,7 @@ define('WebGLRenderer', [ 'HitCircle', 'Slider', 'HitMarker', 'MapState', 'Util/
 
         var skinInitd = false;
 
-        function initSkin(skin) {
+        function initSkin(skin, ruleSet) {
             if (skinInitd) {
                 return;
             }
@@ -583,11 +651,22 @@ define('WebGLRenderer', [ 'HitCircle', 'Slider', 'HitMarker', 'MapState', 'Util/
             var hitCircleOverlayGraphic = skin.assetManager.get('hitcircleoverlay', 'image-set');
             var approachCircleGraphic = skin.assetManager.get('approachcircle', 'image-set');
             var sliderBallGraphic = skin.assetManager.get('sliderb0', 'image-set');
+            var cursorGraphic = skin.assetManager.get('cursor', 'image-set');
+            var cursorTrailGraphic = skin.assetManager.get('cursortrail', 'image-set');
+            var sliderTickGraphic = skin.assetManager.get('sliderscorepoint', 'image-set');
+            var repeatArrowGraphic = skin.assetManager.get('reversearrow', 'image-set');
 
             textures.hitCircle = makeTexture(hitCircleGraphic[0]);
             textures.hitCircleOverlay = makeTexture(hitCircleOverlayGraphic[0]);
             textures.approachCircle = makeTexture(approachCircleGraphic[0]);
             textures.sliderBall = makeTexture(sliderBallGraphic[0]);
+            textures.cursor = makeTexture(cursorGraphic[0]);
+            textures.cursorTrail = makeTexture(cursorTrailGraphic[0]);
+            textures.sliderTick = makeTexture(sliderTickGraphic[0]);
+            textures.repeatArrow = makeTexture(repeatArrowGraphic[0]);
+
+            // FIXME Possible XSS?
+            canvas.style.cursor = 'url("' + cursorGraphic[0].src + '") ' + Math.floor(cursorGraphic[0].width / 2) + ' ' + Math.floor(cursorGraphic[0].height / 2) + ', none';
 
             var i;
             var graphic;
@@ -599,14 +678,21 @@ define('WebGLRenderer', [ 'HitCircle', 'Slider', 'HitMarker', 'MapState', 'Util/
                 textures.digits[i] = makeTexture(graphic[0]);
             }
 
-            var hitScores = [ 0, 50, 100, 300 ];
+            var hitMarkerImageNames = [
+                'hit300',
+                'hit100',
+                'hit50',
+                'sliderpoint30',
+                'sliderpoint10',
+                'hit0'
+            ];
 
             textures.hitMarkers = [ ];
 
-            for (i = 0; i < hitScores.length; ++i) {
-                graphic = skin.assetManager.get('hit' + hitScores[i], 'image-set');
-                textures.hitMarkers[hitScores[i]] = makeTexture(graphic[0]);
-            }
+            hitMarkerImageNames.forEach(function (imageName) {
+                var graphic = skin.assetManager.get(imageName, 'image-set');
+                textures.hitMarkers[imageName] = makeTexture(graphic[0]);
+            });
 
             gl.bindTexture(gl.TEXTURE_2D, null);
 
@@ -630,10 +716,12 @@ define('WebGLRenderer', [ 'HitCircle', 'Slider', 'HitMarker', 'MapState', 'Util/
         init();
 
         function resize() {
-            gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
+            gl.viewport(0, 0, canvas.width, canvas.height);
         }
 
         return {
+            element: canvas,
+
             beginRender: function () {
                 gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
             },
@@ -641,12 +729,13 @@ define('WebGLRenderer', [ 'HitCircle', 'Slider', 'HitMarker', 'MapState', 'Util/
             endRender: function () {
             },
 
-            renderMap: function (mapState, skin, time) {
-                initSkin(skin);
+            renderMap: function (state, time) {
+                initSkin(state.skin, state.mapState.ruleSet);
 
                 renderMap({
-                    mapState: mapState,
-                    skin: skin,
+                    mapState: state.mapState,
+                    skin: state.skin,
+                    mouseHistory: state.mouseHistory,
                     time: time,
                     context: context,
                     buffers: buffers,
@@ -669,8 +758,8 @@ define('WebGLRenderer', [ 'HitCircle', 'Slider', 'HitMarker', 'MapState', 'Util/
 
                     var backgroundWidth = backgroundImage.width;
                     var backgroundHeight = backgroundImage.height;
-                    var canvasWidth = 640;
-                    var canvasHeight = 480;
+                    var canvasWidth = canvas.width;
+                    var canvasHeight = canvas.height;
 
                     var canvasAR = canvasWidth / canvasHeight;
                     var imageAR = backgroundWidth / backgroundHeight;
@@ -695,58 +784,64 @@ define('WebGLRenderer', [ 'HitCircle', 'Slider', 'HitMarker', 'MapState', 'Util/
                 // TODO Real storyboard stuff
             }
         };
-    };
+    }
 
-    // Support methods
-    // Taken from webgl-boilerplate, modified for owp
-    // https://github.com/jaredwilli/webgl-boilerplate/
-    function createProgram( gl, vertex, fragment ) {
+    var createProgram;
 
-        var program = gl.createProgram();
+    (function () {
+        /*jshint white: false, eqeqeq: false, eqnull: true */
 
-        var vs = createShader( gl, vertex, gl.VERTEX_SHADER );
-        var fs = createShader( gl, '#ifdef GL_ES\nprecision highp float;\n#endif\n\n' + fragment, gl.FRAGMENT_SHADER );
+        // Support methods
+        // Taken from webgl-boilerplate, modified for owp
+        // https://github.com/jaredwilli/webgl-boilerplate/
+        function createShader( gl, src, type ) {
 
-        if ( vs == null || fs == null ) return null;
+            var shader = gl.createShader( type );
 
-        gl.attachShader( program, vs );
-        gl.attachShader( program, fs );
+            gl.shaderSource( shader, src );
+            gl.compileShader( shader );
 
-        gl.deleteShader( vs );
-        gl.deleteShader( fs );
+            if ( !gl.getShaderParameter( shader, gl.COMPILE_STATUS ) ) {
 
-        gl.linkProgram( program );
+                throw new Error( ( type == gl.VERTEX_SHADER ? "VERTEX" : "FRAGMENT" ) + " SHADER:\n" + gl.getShaderInfoLog( shader ) + "\nSOURCE:\n" + src );
 
-        if ( !gl.getProgramParameter( program, gl.LINK_STATUS ) ) {
+            }
 
-            throw new Error( "ERROR:\n" +
-            "VALIDATE_STATUS: " + gl.getProgramParameter( program, gl.VALIDATE_STATUS ) + "\n" +
-            "ERROR: " + gl.getError() + "\n\n" +
-            "- Vertex Shader -\n" + vertex + "\n\n" +
-            "- Fragment Shader -\n" + fragment );
+            return shader;
 
         }
 
-        return program;
+        createProgram = function createProgram( gl, vertex, fragment ) {
 
-    }
+            var program = gl.createProgram();
 
-    function createShader( gl, src, type ) {
+            var vs = createShader( gl, vertex, gl.VERTEX_SHADER );
+            var fs = createShader( gl, '#ifdef GL_ES\nprecision highp float;\n#endif\n\n' + fragment, gl.FRAGMENT_SHADER );
 
-        var shader = gl.createShader( type );
+            if ( vs == null || fs == null ) return null;
 
-        gl.shaderSource( shader, src );
-        gl.compileShader( shader );
+            gl.attachShader( program, vs );
+            gl.attachShader( program, fs );
 
-        if ( !gl.getShaderParameter( shader, gl.COMPILE_STATUS ) ) {
+            gl.deleteShader( vs );
+            gl.deleteShader( fs );
 
-            throw new Error( ( type == gl.VERTEX_SHADER ? "VERTEX" : "FRAGMENT" ) + " SHADER:\n" + gl.getShaderInfoLog( shader ) + "\nSOURCE:\n" + src );
+            gl.linkProgram( program );
 
-        }
+            if ( !gl.getProgramParameter( program, gl.LINK_STATUS ) ) {
 
-        return shader;
+                throw new Error( "ERROR:\n" +
+                "VALIDATE_STATUS: " + gl.getProgramParameter( program, gl.VALIDATE_STATUS ) + "\n" +
+                "ERROR: " + gl.getError() + "\n\n" +
+                "- Vertex Shader -\n" + vertex + "\n\n" +
+                "- Fragment Shader -\n" + fragment );
 
-    }
+            }
+
+            return program;
+
+        };
+    }());
 
     return WebGLRenderer;
 });
