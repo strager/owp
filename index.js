@@ -112,6 +112,10 @@ require([ 'jQuery', 'WebGLRenderer', 'CanvasRenderer', 'AssetManager', 'q', 'Gam
             return false;
         });
 
+        $(io.playAreas).bind('contextmenu', function (e) {
+            return false;
+        });
+
         $(io.playAreas).mousemove(function (e) {
             mouseX = e.pageX - this.offsetLeft;
             mouseY = e.pageY - this.offsetTop;
