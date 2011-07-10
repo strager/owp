@@ -99,8 +99,14 @@ define('Game', [ 'q', 'MapState', 'Util/PubSub', 'Soundboard', 'Util/Timeline', 
                                 return;
                             }
 
-                            mapState.ruleSet.getHitSoundNames(hitMarker).forEach(function (soundName) {
-                                soundboard.playSound(soundName);
+                            var hitSounds = mapState.ruleSet.getHitSoundNames(hitMarker);
+
+                            hitSounds.forEach(function (soundName) {
+                                soundboard.playSound(soundName, {
+                                    // Scale volume to how many hit sounds are
+                                    // being played
+                                    volume: 1 / hitSounds.length
+                                });
                             });
 
                             gPubSub.publish('tick');
