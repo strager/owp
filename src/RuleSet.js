@@ -56,15 +56,15 @@ define('RuleSet', [ 'Util/util', 'mapObject' ], function (util, mapObject) {
         }),
 
         getObjectEndTime: mapObject.matcher({
-            SliderTick: function (object) {
-                return object.time;
-            },
             Slider: function (object) {
                 var duration = object.repeats * this.getSliderRepeatLength(object.time, object.length);
                 return this.getObjectStartTime(object) + duration;
             },
             HitCircle: function (object) {
                 return this.getObjectStartTime(object);
+            },
+            _: function (object) {
+                return object.time;
             }
         }),
 
