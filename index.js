@@ -101,6 +101,7 @@ require([ 'jQuery', 'WebGLRenderer', 'CanvasRenderer', 'AssetManager', 'q', 'Gam
             mouseY = e.pageY - this.offsetTop;
             isLeftDown = true;
             mouseStateChanged();
+            return false;
         });
 
         $(io.playAreas).mouseup(function (e) {
@@ -108,6 +109,7 @@ require([ 'jQuery', 'WebGLRenderer', 'CanvasRenderer', 'AssetManager', 'q', 'Gam
             mouseY = e.pageY - this.offsetTop;
             isLeftDown = false;
             mouseStateChanged();
+            return false;
         });
 
         $(io.playAreas).mousemove(function (e) {
