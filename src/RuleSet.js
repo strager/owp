@@ -218,7 +218,19 @@ define('RuleSet', [ 'Util/util', 'mapObject', 'Util/History' ], function (util, 
                 0: 'hit0'
             };
 
-            if (hitMarker.hitObject instanceof mapObject.SliderTick && hitMarker.score === 0) {
+            var ignore = mapObject.match(hitMarker.hitObject, {
+                SliderTick: function () {
+                    return hitMarker.score === 0;
+                },
+                SliderEnd: function (object) {
+                    return !object.isFinal && hitMarker.score === 0;
+                },
+                Slider: function () {
+                    return hitMarker.score === 0;
+                }
+            });
+
+            if (ignore) {
                 return null;
             }
 
