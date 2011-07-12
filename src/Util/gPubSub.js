@@ -1,23 +1,30 @@
 define('Util/gPubSub', [ 'Util/PubSub' ], function (PubSub) {
     var secret = 'gpubsub';
+    var secretRe = /^gpubsub/;
+    var secretLength = secret.length;
 
     var events = new PubSub();
+
+    function serialize(args) {
+        return secret + args.join(',');
+    }
+
+    function deserialize(string) {
+        if (!secretRe.test(string)) {
+            return null;
+        }
+
+        return string.substr(secretLength).split(',');
+    }
 
     window.addEventListener('message', function (event) {
         if (event.source !== window) {
             return;
         }
 
-        var data;
+        var data = deserialize(event.data);
 
-        try {
-            data = JSON.parse(event.data);
-        } catch (e) {
-            // Ignore non-JSON data
-            return;
-        }
-
-        if (data.secret !== secret) {
+        if (!data) {
             return;
         }
 
@@ -33,7 +40,7 @@ define('Util/gPubSub', [ 'Util/PubSub' ], function (PubSub) {
     return {
         publish: function () {
             var args = Array.prototype.slice.call(arguments, 1);
-            var data = JSON.stringify({ secret: secret, args: args });
+            var data = serialize(args);
 
             window.postMessage(data, '*');
         },
