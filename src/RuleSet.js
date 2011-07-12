@@ -169,17 +169,41 @@ define('RuleSet', [ 'Util/util', 'mapObject', 'Util/History' ], function (util, 
             }
         }),
 
-        canHitObject: function (object, x, y, time) {
-            var distance = Math.sqrt(Math.pow(object.x - x, 2) + Math.pow(object.y - y, 2));
+        // Meh, code duplication
+        canHitObject: mapObject.matcher({
+            HitCircle: function (object, x, y, time) {
+                var distance = Math.pow(object.x - x, 2) + Math.pow(object.y - y, 2);
+                var radius = this.getCircleSize() / 2;
 
-            // TODO Better logic
+                return distance <= radius * radius;
+            },
+            Slider: function (object, x, y, time) {
+                var distance = Math.pow(object.x - x, 2) + Math.pow(object.y - y, 2);
+                var radius = this.getCircleSize() / 2;
 
-            return distance <= this.getCircleSize() / 2;
-        },
+                return distance <= radius * radius;
+            },
+            SliderTick: function (object, x, y, time) {
+                var distance = Math.pow(object.x - x, 2) + Math.pow(object.y - y, 2);
+                var radius = this.getSliderSize() / 2;
+
+                return distance <= radius * radius;
+            },
+            SliderEnd: function (object, x, y, time) {
+                var distance = Math.pow(object.x - x, 2) + Math.pow(object.y - y, 2);
+                var radius = this.getSliderSize() / 2;
+
+                return distance <= radius * radius;
+            }
+        }),
 
         // Gives diameter
         getCircleSize: function () {
             return -(this.circleSize - 5) * 16 + 64;
+        },
+
+        getSliderSize: function () {
+            return this.getCircleSize() * 2;
         },
 
         getHitMarkerImageName: function (hitMarker) {
