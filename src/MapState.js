@@ -15,10 +15,6 @@ define('MapState', [ 'mapObject', 'Util/Timeline', 'Util/Map', 'Util/PubSub' ], 
 
             // FIXME This won't work for the future
             //   ... Why not?
-            var earliestHitTime = ruleSet.getObjectEarliestHitTime(hitObject);
-            var latestHitTime = ruleSet.getObjectLatestHitTime(hitObject);
-
-            timeline.add(MapState.HIT_OBJECT_HITABLE, hitObject, earliestHitTime, latestHitTime);
 
             mapObject.match(hitObject, {
                 Slider: function (slider) {
@@ -29,8 +25,16 @@ define('MapState', [ 'mapObject', 'Util/Timeline', 'Util/Map', 'Util/PubSub' ], 
                     var ends = ruleSet.getSliderEnds(hitObject);
                     hittableObjects = hittableObjects.concat(ends);
                     slider.ends = ends; // Temporary (I hope)
+
+                    var earliestHitTime = ruleSet.getObjectEarliestHitTime(hitObject);
+                    var latestHitTime = ruleSet.getObjectLatestHitTime(hitObject);
+                    timeline.add(MapState.HIT_OBJECT_HITABLE, hitObject, earliestHitTime, latestHitTime);
+                    hittableObjects.push(slider);
                 },
                 HitCircle: function (hitCircle) {
+                    var earliestHitTime = ruleSet.getObjectEarliestHitTime(hitObject);
+                    var latestHitTime = ruleSet.getObjectLatestHitTime(hitObject);
+                    timeline.add(MapState.HIT_OBJECT_HITABLE, hitObject, earliestHitTime, latestHitTime);
                     hittableObjects.push(hitCircle);
                 }
             });
@@ -59,7 +63,6 @@ define('MapState', [ 'mapObject', 'Util/Timeline', 'Util/Map', 'Util/PubSub' ], 
 
         getHittableObjects: function (time) {
             var rawHittables = this.timeline.getAllAtTime(time, MapState.HIT_OBJECT_HITABLE);
-            var unhitObjects = this.unhitObjects;
 
             return rawHittables.filter(this.isObjectHittable, this);
         },
@@ -67,7 +70,6 @@ define('MapState', [ 'mapObject', 'Util/Timeline', 'Util/Map', 'Util/PubSub' ], 
         getUnhitObjectIndex: function (object) {
             var i;
 
-            // Object is now hit; remove it from unhit objects list
             for (i = 0; i < this.unhitObjects.length; ++i) {
                 if (this.unhitObjects[i][0] === object) {
                     return i;

@@ -52,9 +52,14 @@ define('RuleSet', [ 'Util/util', 'mapObject', 'Util/History' ], function (util, 
             return this.getObjectStartTime(object) - this.getAppearTime();
         },
 
-        getObjectDisappearTime: function (object) {
-            return this.getObjectLatestHitTime(object);
-        },
+        getObjectDisappearTime: mapObject.matcher({
+            Slider: function (object) {
+                return this.getObjectEndTime(object);
+            },
+            _: function (object) {
+                return this.getObjectLatestHitTime(object);
+            }
+        }),
 
         getObjectStartTime: mapObject.matcher({
             SliderTick: function (object) {
@@ -154,7 +159,10 @@ define('RuleSet', [ 'Util/util', 'mapObject', 'Util/History' ], function (util, 
 
         getObjectLatestHitTime: mapObject.matcher({
             HitCircle: function (object) {
-                return this.getObjectEndTime(object) + this.getHitWindow(50);
+                return object.time + this.getHitWindow(50);
+            },
+            Slider: function (object) {
+                return object.time + this.getHitWindow(50);
             },
             _: function (object) {
                 return this.getObjectEndTime(object);
@@ -214,20 +222,26 @@ define('RuleSet', [ 'Util/util', 'mapObject', 'Util/History' ], function (util, 
             return this.threePartLerp(window[0], window[1], window[2], this.overallDifficulty);
         },
 
-        getHitScore: function (object, time) {
-            var delta = Math.abs(this.getObjectEndTime(object) - time);
+        getHitScore: mapObject.matcher({
+            HitCircle: function (object, time) {
+                console.log(time);
+                var delta = Math.abs(this.getObjectEndTime(object) - time);
 
-            var scores = [ 300, 100, 50, 0 ];
-            var i;
+                var scores = [ 300, 100, 50, 0 ];
+                var i;
 
-            for (i = 0; i < scores.length; ++i) {
-                if (delta <= this.getHitWindow(scores[i])) {
-                    return scores[i];
+                for (i = 0; i < scores.length; ++i) {
+                    if (delta <= this.getHitWindow(scores[i])) {
+                        return scores[i];
+                    }
                 }
-            }
 
-            return 0;   // TODO Return "shouldn't be hit" or throw or something
-        },
+                return 0;   // TODO Return "shouldn't be hit" or throw or something
+            },
+            Slider: function (object, time) {
+                return 30;
+            }
+        }),
 
         getHitMarkerScale: function (hitMarker, time) {
             // TODO
