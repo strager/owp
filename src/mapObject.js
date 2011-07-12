@@ -51,10 +51,10 @@ define('mapObject', [ ], function () {
         HitMarker: HitMarker,
         SliderTick: SliderTick,
         SliderEnd: SliderEnd,
-        match: function (object, callbacks, context) {
+        match: function (object, callbacks, context, args) {
             function call(value) {
                 if (typeof value === 'function') {
-                    return value.call(context, object);
+                    return value.apply(context, [ object ].concat(args));
                 }
 
                 return value;
@@ -75,7 +75,7 @@ define('mapObject', [ ], function () {
         },
         matcher: function (callbacks) {
             return function (object) {
-                return classes.match(object, callbacks, this);
+                return classes.match(object, callbacks, this, [ ].slice.call(arguments, 1));
             };
         }
     };
