@@ -261,9 +261,9 @@ define('RuleSet', [ 'Util/util', 'mapObject', 'Util/History' ], function (util, 
 
                 return 0;   // TODO Return "shouldn't be hit" or throw or something
             },
-            Slider: function (object, time) {
-                return 30;
-            }
+            Slider: 30
+            // TODO Move SliderTick, SliderEnd from
+            // MapState#hitSlide to here
         }),
 
         getHitMarkerScale: function (hitMarker, time) {

@@ -124,6 +124,9 @@ define('MapState', [ 'mapObject', 'Util/Timeline', 'Util/Map', 'Util/PubSub' ], 
             this.timeline.add(MapState.HIT_MARKER_CREATION, hitMarker, hitMarker.time);
 
             this.events.publishSync(hitMarker);
+
+            // Temporary (I hope)
+            hitMarker.hitObject.hitMarker = hitMarker;
         },
 
         applyHitMarker: function (hitMarker, removeObject) {
@@ -144,32 +147,69 @@ define('MapState', [ 'mapObject', 'Util/Timeline', 'Util/Map', 'Util/PubSub' ], 
                 return null;
             }
 
-            var score;
-
-            if (mouseState && (mouseState.left || mouseState.right)) {
-                if (this.ruleSet.canHitObject(
+            var isHit = mouseState
+             && (mouseState.left || mouseState.right)
+             && this.ruleSet.canHitObject(
                     object,
                     mouseState.x,
                     mouseState.y,
                     object.time
-                )) {
-                    // Hit
-                    score = mapObject.match(object, { SliderTick: 10, SliderEnd: 30 });
-                } else {
-                    // Miss
-                    score = 0;
+                );
+
+            // This should be in RuleSet, but =[
+            var score = mapObject.match(object, {
+                SliderTick: isHit ? 10 : 0,
+                SliderEnd: function (object) {
+                    if (!object.isFinal) {
+                        return isHit ? 30 : 0;
+                    }
+
+                    var hittables = [ object.slider ].concat(object.slider.ends).concat(object.slider.ticks);
+
+                    // At least one miss => at most 100 points
+                    // 50% (?) or less misses => at most 50 points
+                    // No hits => 0 points
+                    // FIXME is the 50% correct?
+                    var hits = 0;
+                    var total = 0;
+
+                    hittables.forEach(function (hittable) {
+                        if (!hittable.hitMarker) {
+                            return;
+                        }
+
+                        if (hittable.hitMarker.score !== 0) {
+                            ++hits;
+                        }
+
+                        ++total;
+                    });
+
+                    // Account for this object (which doesn't
+                    // have a hit marker yet)
+                    if (isHit) {
+                        ++hits;
+                    }
+
+                    ++total;
+
+                    if (hits === 0) {
+                        return 0;
+                    } else if (hits === total) {
+                        return 300;
+                    } else if (hits < total / 2) {
+                        return 50;
+                    } else {
+                        return 100;
+                    }
                 }
-            } else {
-                score = 0;
-            }
+            });
 
             var hitMarker = new mapObject.HitMarker(
                 object,
                 object.time,
                 score
             );
-
-            object.hitMarker = hitMarker; // Temporary (I hope)
 
             return hitMarker;
         },
