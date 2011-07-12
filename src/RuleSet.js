@@ -224,7 +224,6 @@ define('RuleSet', [ 'Util/util', 'mapObject', 'Util/History' ], function (util, 
 
         getHitScore: mapObject.matcher({
             HitCircle: function (object, time) {
-                console.log(time);
                 var delta = Math.abs(this.getObjectEndTime(object) - time);
 
                 var scores = [ 300, 100, 50, 0 ];
