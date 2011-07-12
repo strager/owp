@@ -1,8 +1,4 @@
 define('Util/FramerateCounter', [ ], function () {
-    function milliseconds() {
-        return (new Date()).valueOf();
-    }
-
     function FramerateCounter() {
         this.ticks = 0;
 
@@ -28,7 +24,7 @@ define('Util/FramerateCounter', [ ], function () {
     };
 
     FramerateCounter.prototype.check = function () {
-        var now = milliseconds();
+        var now = Date.now();
 
         if (this.lastMeasure === null) {
             this.lastMeasure = now;
