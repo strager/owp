@@ -66,7 +66,7 @@ define('mapObject', [ ], function () {
             for (i = 0; i < keys.length; ++i) {
                 className = keys[i];
 
-                if (callbacks[className] && object instanceof classes[className]) {
+                if (Object.prototype.hasOwnProperty.call(callbacks, className) && object instanceof classes[className]) {
                     return call(callbacks[className]);
                 }
             }
