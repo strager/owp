@@ -18,9 +18,9 @@ define('Game', [ 'q', 'MapState', 'Util/PubSub', 'Soundboard', 'Util/Timeline', 
         }
 
         function setSkin(skinAssetManager) {
-            skin = Q.when(skinAssetManager.load('skin', 'skin'))
+            skin = Q.ref(skinAssetManager.load('skin', 'skin'))
                 .then(function (skin_) {
-                    return Q.when(skin_.preload())
+                    return Q.ref(skin_.preload())
                         .then(function () {
                             // preload returns an array of assets;
                             // we want the actual skin object
@@ -141,12 +141,12 @@ define('Game', [ 'q', 'MapState', 'Util/PubSub', 'Soundboard', 'Util/Timeline', 
             }
 
             // TODO Refactor this mess
-            var load = Q.shallow([
-                Q.when(mapAssetManager.load(mapName, 'map'))
+            var load = Q.all([
+                Q.ref(mapAssetManager.load(mapName, 'map'))
                     .then(function (mapInfo_) {
                         mapInfo = mapInfo_;
 
-                        return Q.shallow([
+                        return Q.all([
                             mapAssetManager.load(mapInfo.audioFile, 'audio'),
                             mapInfo.storyboard.preload(mapAssetManager)
                         ]);
@@ -161,10 +161,10 @@ define('Game', [ 'q', 'MapState', 'Util/PubSub', 'Soundboard', 'Util/Timeline', 
 
                         mapState = MapState.fromMapInfo(mapInfo, timeline);
                     }),
-                Q.when(skin)
+                Q.ref(skin)
             ]);
 
-            return Q.when(load).then(play);
+            return Q.ref(load).then(play);
         }
 
         function debugInfo() {

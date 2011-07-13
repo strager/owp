@@ -241,5 +241,5 @@ require([ 'jQuery', 'WebGLRenderer', 'CanvasRenderer', 'AssetManager', 'q', 'Gam
 
     loop(updateDebugInfo, 100);
 
-    Q.when(init()).then(go);
+    Q.ref(init()).then(go);
 });

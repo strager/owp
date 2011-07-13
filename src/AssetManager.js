@@ -67,7 +67,9 @@ define('AssetManager', [ 'jQuery', 'MapInfo', 'mapFile', 'assetConfig', 'Util/Ma
                 .one('canplaythrough', function () {
                     ret.resolve(audio);
                 })
-                .one('error', fail);
+                .one('error', function (event) {
+                    ret.reject(new Error());
+                });
 
             $(originalTrack).one('error', fail);
             $(vorbisTrack).one('error', fail);
@@ -82,7 +84,7 @@ define('AssetManager', [ 'jQuery', 'MapInfo', 'mapFile', 'assetConfig', 'Util/Ma
         },
 
         map: function (assetManager, name) {
-            return Q.when(assetManager.load(name + '.osu', 'asset-config'))
+            return Q.ref(assetManager.load(name + '.osu', 'asset-config'))
                 .then(function (assetConfig) {
                     var mapInfo = mapFile.readMap(assetConfig);
 
@@ -105,7 +107,7 @@ define('AssetManager', [ 'jQuery', 'MapInfo', 'mapFile', 'assetConfig', 'Util/Ma
         skin: function (assetManager, name, loaded) {
             var skinAssetManager = new AssetManager(assetManager.root + '/' + name);
 
-            return Q.when(assetManager.load(name + '/skin.ini', 'asset-config'))
+            return Q.ref(assetManager.load(name + '/skin.ini', 'asset-config'))
                 .then(function (assetConfig) {
                     var skin = mapFile.readSkin(assetConfig, skinAssetManager);
 
@@ -156,7 +158,7 @@ define('AssetManager', [ 'jQuery', 'MapInfo', 'mapFile', 'assetConfig', 'Util/Ma
                 });
             });
 
-            return Q.shallow(assets);
+            return Q.all(assets);
         }
     };
 
