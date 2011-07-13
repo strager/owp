@@ -26,7 +26,6 @@ define('SoundPool', [ 'jQuery' ], function ($) {
             }
 
             sound.pause();
-            sound.currentTime = 0;
 
             this.takenSounds.splice(index, 1);
             this.freeSounds.push(sound);
