@@ -1,4 +1,53 @@
 define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache', 'jQuery' ], function (MapState, mapObject, gPubSub, Cache, $) {
+    function checkGLError(gl) {
+        var error = gl.getError();
+
+        if (error !== 0) {
+            // Find the error name
+            var key;
+
+            for (key in gl) {
+                // Include properties of prototype
+                if (gl[key] === error) {
+                    throw new Error('GL error ' + key + ' (code ' + error + ')');
+                }
+            }
+
+            throw new Error('GL error code ' + error);
+        }
+    }
+
+    function wrapGL(gl) {
+        if (gl.orig) {
+            return gl;
+        }
+
+        var wrapped = {
+            orig: gl
+        };
+
+        function wrap(key) {
+            return function () {
+                var ret = gl[key].apply(gl, arguments);
+                checkGLError(gl);
+                return ret;
+            }
+        }
+
+        var key;
+
+        for (key in gl) {
+            // Include properties of prototype
+            if (typeof gl[key] === 'function') {
+                wrapped[key] = wrap(key);
+            } else {
+                wrapped[key] = gl[key];
+            }
+        }
+
+        return wrapped;
+    }
+
     function drawers(gl, buffers, programs) {
         var inProgram = false;
 
@@ -101,8 +150,6 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
         var mouseHistory = vars.mouseHistory;
 
         var draw = drawers(gl, buffers, programs);
-
-        // TODO Real work
 
         function getDigits(number) {
             return ('' + number).split('');
@@ -557,6 +604,9 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
         }
 
         var gl = context;
+
+        // XXX TODO DEBUG ONLY!!!
+        gl = wrapGL(gl);
 
         var buffers = { };
         var programs = { };
