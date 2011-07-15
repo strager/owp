@@ -926,7 +926,7 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
             element: canvas,
 
             beginRender: function () {
-                gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+                gl.clear(gl.COLOR_BUFFER_BIT);
             },
 
             endRender: function () {
