@@ -36,7 +36,7 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
                 var ret = gl[key].apply(gl, arguments);
                 checkGLError(gl);
                 return ret;
-            }
+            };
         }
 
         var key;
@@ -239,28 +239,36 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
             };
         }
 
-        function renderApproachCircle(progress, x, y, color, alpha) {
-            var radius = 1;
+        function renderApproachProgress(object) {
+            var color = object.combo.color;
+
+            var progress = ruleSet.getObjectApproachProgress(object, time);
+
+            var radius;
 
             if (progress > 0) {
-                radius += (1 - progress);
+                radius = 1 + (1 - progress);
             } else {
-                radius += (1 - (-progress)) / 4;
+                radius = 1 + (1 - (-progress)) / 4;
             }
 
-            radius *= ruleSet.getCircleSize() / 128;
+            renderApproachCircle(radius, object.x, object.y, color);
+        }
+
+        function renderApproachCircle(radius, x, y, color) {
+            var scale = radius * ruleSet.getCircleSize() / 128;
 
             draw.sprite(function (draw) {
-                gl.uniform4f(programs.sprite.uni.color, color[0], color[1], color[2], color[3]);
+                gl.uniform4f(programs.sprite.uni.color, color[0], color[1], color[2], 255);
                 gl.uniform2f(programs.sprite.uni.position, x, y);
-                gl.uniform1f(programs.sprite.uni.scale, radius);
+                gl.uniform1f(programs.sprite.uni.scale, scale);
                 gl.uniform2f(programs.sprite.uni.offset, 0, 0);
 
                 draw(textures.approachCircle);
             });
         }
 
-        function renderComboNumber(number, x, y, alpha) {
+        function renderComboNumber(number, x, y) {
             var textures = getNumberTextures(number);
             var spacing = skin.hitCircleFontSpacing;
 
@@ -280,7 +288,7 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
             var offset = -totalWidth / 2;
 
             draw.sprite(function (draw) {
-                gl.uniform4f(programs.sprite.uni.color, 255, 255, 255, alpha);
+                gl.uniform4f(programs.sprite.uni.color, 255, 255, 255, 255);
                 gl.uniform2f(programs.sprite.uni.position, x, y);
                 gl.uniform1f(programs.sprite.uni.scale, scale);
 
@@ -334,93 +342,19 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
             });
         }
 
-        function renderSliderObject(object) {
-            var key = [ object, mapState ];
-
-            var c = caches.sliderTrack.get(key, function () {
-                var points = object.curve.points;
-
-                var adjustmentScale = 128 / (128 - 10); // Don't ask...
-
-                var b = createSliderTrack(points, ruleSet.getCircleSize() / adjustmentScale / 2);
-                var buffer = b.buffer;
-                buffers.curves.push(buffer);
-
-                return {
-                    vertexCount: b.vertexCount,
-                    buffer: buffer,
-                    id: buffers.curves.length - 1
-                };
-            });
-
-            var alpha = ruleSet.getObjectOpacity(object, time);
-            var color = object.combo.color.concat([ alpha * 255 ]);
-            var scale = ruleSet.getCircleSize() / 128;
-            var growPercentage = ruleSet.getSliderGrowPercentage(object, time);
-
+        function renderUnit(callback) {
             gl.bindFramebuffer(gl.FRAMEBUFFER, misc.objectTarget.framebuffer);
             gl.clearColor(0, 0, 0, 0);
             gl.clear(gl.COLOR_BUFFER_BIT);
 
-            draw.curve(c.id, function (draw) {
-                gl.uniform4f(programs.curve.uni.color, color[0], color[1], color[2], color[3]);
-
-                draw(Math.round(c.vertexCount * growPercentage));
-            });
-
-            object.ticks.forEach(renderSliderTick);
-
-            var visibility = ruleSet.getObjectVisibilityAtTime(object, time);
-
-            var lastPoint = object.curve.render(growPercentage).slice(-1)[0];
-
-            if (lastPoint) {
-                // End
-                draw.sprite(function (draw) {
-                    gl.uniform2f(programs.sprite.uni.position, lastPoint[0], lastPoint[1]);
-                    gl.uniform4f(programs.sprite.uni.color, color[0], color[1], color[2], color[3]);
-                    gl.uniform2f(programs.sprite.uni.offset, 0, 0);
-                    gl.uniform1f(programs.sprite.uni.scale, scale);
-
-                    draw(textures.hitCircle);
-
-                    gl.uniform2f(programs.sprite.uni.position, lastPoint[0], lastPoint[1]);
-                    gl.uniform4f(programs.sprite.uni.color, 255, 255, 255, alpha * 255);
-                    gl.uniform2f(programs.sprite.uni.offset, 0, 0);
-                    gl.uniform1f(programs.sprite.uni.scale, scale);
-
-                    draw(textures.hitCircleOverlay);
-                });
-            }
-
-            renderHitCircleObject(object);
-
-            // Next end (repeat arrow)
-            var repeatArrow = object.ends.filter(function (end) {
-                return !end.hitMarker && !end.isFinal;
-            })[0];
-
-            if (repeatArrow) {
-                draw.sprite(function (draw) {
-                    gl.uniform2f(programs.sprite.uni.position, repeatArrow.x, repeatArrow.y);
-                    gl.uniform4f(programs.sprite.uni.color, 255, 255, 255, alpha * 255);
-                    gl.uniform2f(programs.sprite.uni.offset, 0, 0);
-                    gl.uniform1f(programs.sprite.uni.scale, scale);
-
-                    draw(textures.repeatArrow);
-                });
-            }
-
-            if (visibility === 'during') {
-                renderSliderBall(object);
-            }
+            var options = callback();
 
             gl.bindFramebuffer(gl.FRAMEBUFFER, null);
 
             draw.objectTarget(function (draw) {
                 gl.uniform2f(programs.objectTarget.uni.playfield, 640, 480);
                 gl.uniform2f(programs.objectTarget.uni.size, misc.objectTarget.width, misc.objectTarget.height);
-                gl.uniform1f(programs.objectTarget.uni.alpha, alpha);
+                gl.uniform1f(programs.objectTarget.uni.alpha, options.alpha || 1);
 
                 gl.activeTexture(gl.TEXTURE0);
                 gl.bindTexture(gl.TEXTURE_2D, misc.objectTarget.texture);
@@ -430,37 +364,131 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
             });
         }
 
-        function renderHitCircleObject(object) {
-            var alpha = ruleSet.getObjectOpacity(object, time);
-            var color = object.combo.color.concat([ alpha * 255 ]);
+        function renderSliderObject(object) {
+            renderUnit(function () {
+                var key = [ object, mapState ];
 
+                var c = caches.sliderTrack.get(key, function () {
+                    var points = object.curve.points;
+
+                    var adjustmentScale = 128 / (128 - 10); // Don't ask...
+
+                    var b = createSliderTrack(points, ruleSet.getCircleSize() / adjustmentScale / 2);
+                    var buffer = b.buffer;
+                    buffers.curves.push(buffer);
+
+                    return {
+                        vertexCount: b.vertexCount,
+                        buffer: buffer,
+                        id: buffers.curves.length - 1
+                    };
+                });
+
+                var color = object.combo.color;
+                var scale = ruleSet.getCircleSize() / 128;
+                var growPercentage = ruleSet.getSliderGrowPercentage(object, time);
+
+                draw.curve(c.id, function (draw) {
+                    gl.uniform4f(programs.curve.uni.color, color[0], color[1], color[2], 255);
+
+                    draw(Math.round(c.vertexCount * growPercentage));
+                });
+
+                object.ticks.forEach(renderSliderTick);
+
+                var visibility = ruleSet.getObjectVisibilityAtTime(object, time);
+
+                var lastPoint = object.curve.render(growPercentage).slice(-1)[0];
+
+                if (lastPoint) {
+                    // End
+                    draw.sprite(function (draw) {
+                        gl.uniform2f(programs.sprite.uni.position, lastPoint[0], lastPoint[1]);
+                        gl.uniform4f(programs.sprite.uni.color, color[0], color[1], color[2], 255);
+                        gl.uniform2f(programs.sprite.uni.offset, 0, 0);
+                        gl.uniform1f(programs.sprite.uni.scale, scale);
+
+                        draw(textures.hitCircle);
+
+                        gl.uniform2f(programs.sprite.uni.position, lastPoint[0], lastPoint[1]);
+                        gl.uniform4f(programs.sprite.uni.color, 255, 255, 255, 255);
+                        gl.uniform2f(programs.sprite.uni.offset, 0, 0);
+                        gl.uniform1f(programs.sprite.uni.scale, scale);
+
+                        draw(textures.hitCircleOverlay);
+                    });
+                }
+
+                renderHitCircleBackground(object.x, object.y, color);
+                renderComboNumber(object.comboIndex + 1, object.x, object.y);
+                renderHitCircleOverlay(object.x, object.y);
+
+                // Next end (repeat arrow)
+                // TODO Position properly when sliding
+                var repeatArrow = object.ends.filter(function (end) {
+                    return !end.hitMarker && !end.isFinal;
+                })[0];
+
+                if (repeatArrow) {
+                    draw.sprite(function (draw) {
+                        gl.uniform2f(programs.sprite.uni.position, repeatArrow.x, repeatArrow.y);
+                        gl.uniform4f(programs.sprite.uni.color, 255, 255, 255, 255);
+                        gl.uniform2f(programs.sprite.uni.offset, 0, 0);
+                        gl.uniform1f(programs.sprite.uni.scale, scale);
+
+                        draw(textures.repeatArrow);
+                    });
+                }
+
+                if (visibility === 'during') {
+                    renderSliderBall(object);
+                }
+
+                renderApproachProgress(object);
+
+                return {
+                    alpha: ruleSet.getObjectOpacity(object, time)
+                };
+            });
+        }
+
+        function renderHitCircleBackground(x, y, color) {
             var scale = ruleSet.getCircleSize() / 128;
 
-            // Hit circle background
             draw.sprite(function (draw) {
-                gl.uniform2f(programs.sprite.uni.position, object.x, object.y);
-                gl.uniform4f(programs.sprite.uni.color, color[0], color[1], color[2], color[3]);
+                gl.uniform2f(programs.sprite.uni.position, x, y);
+                gl.uniform4f(programs.sprite.uni.color, color[0], color[1], color[2], 255);
                 gl.uniform2f(programs.sprite.uni.offset, 0, 0);
                 gl.uniform1f(programs.sprite.uni.scale, scale);
 
                 draw(textures.hitCircle);
             });
+        }
 
-            // Numbering
-            renderComboNumber(object.comboIndex + 1, object.x, object.y, alpha * 255);
+        function renderHitCircleOverlay(x, y) {
+            var scale = ruleSet.getCircleSize() / 128;
 
-            // Hit circle overlay
             draw.sprite(function (draw) {
-                gl.uniform2f(programs.sprite.uni.position, object.x, object.y);
-                gl.uniform4f(programs.sprite.uni.color, 255, 255, 255, alpha * 255);
+                gl.uniform2f(programs.sprite.uni.position, x, y);
+                gl.uniform4f(programs.sprite.uni.color, 255, 255, 255, 255);
                 gl.uniform2f(programs.sprite.uni.offset, 0, 0);
                 gl.uniform1f(programs.sprite.uni.scale, scale);
 
                 draw(textures.hitCircleOverlay);
             });
+        }
 
-            var approachProgress = ruleSet.getObjectApproachProgress(object, time);
-            renderApproachCircle(approachProgress, object.x, object.y, color);
+        function renderHitCircleObject(object) {
+            renderUnit(function () {
+                renderHitCircleBackground(object.x, object.y, object.combo.color);
+                renderComboNumber(object.comboIndex + 1, object.x, object.y);
+                renderHitCircleOverlay(object.x, object.y);
+                renderApproachProgress(object);
+
+                return {
+                    alpha: ruleSet.getObjectOpacity(object, time)
+                };
+            });
         }
 
         function renderHitMarkerObject(object) {
@@ -544,7 +572,9 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
         // (See cursor + trail rendering code in file history)
     }
 
-    var spriteVertexShader, spriteFragmentShader, curveVertexShader, curveFragmentShader;
+    var spriteVertexShader, spriteFragmentShader;
+    var objectTargetVertexShader, objectTargetFragmentShader;
+    var curveVertexShader, curveFragmentShader;
 
     (function () {
         /*jshint white: false */
