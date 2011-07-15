@@ -182,6 +182,7 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
         var misc = vars.misc;
         var caches = vars.caches;
         var mouseHistory = vars.mouseHistory;
+        var viewport = vars.viewport;
 
         var draw = drawers(gl, buffers, programs);
 
@@ -347,12 +348,14 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
             gl.clearColor(0, 0, 0, 0);
             gl.clear(gl.COLOR_BUFFER_BIT);
 
+            gl.viewport(0, 0, viewport.width, viewport.height);
             var options = callback();
+            gl.viewport(viewport.x, viewport.y, viewport.width, viewport.height);
 
             gl.bindFramebuffer(gl.FRAMEBUFFER, null);
 
             draw.objectTarget(function (draw) {
-                gl.uniform2f(programs.objectTarget.uni.playfield, 640, 480);
+                gl.uniform2f(programs.objectTarget.uni.playfield, viewport.width, viewport.height);
                 gl.uniform2f(programs.objectTarget.uni.size, misc.objectTarget.width, misc.objectTarget.height);
                 gl.uniform1f(programs.objectTarget.uni.alpha, options.alpha || 1);
 
@@ -826,7 +829,7 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
 
             gl.bindFramebuffer(gl.FRAMEBUFFER, null);
 
-            resize();
+            resize(640, 480);
         }
 
         function makeTexture(image) {
@@ -916,17 +919,65 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
             storyboardInitd = true;
         }
 
+        var viewport = { };
+
         init();
 
-        function resize() {
-            gl.viewport(0, 0, canvas.width, canvas.height);
+        function fitImage(containerW, containerH, innerW, innerH) {
+            var containerAR = containerW / containerH;
+            var innerAR = innerW / innerH;
+
+            var ratio = innerAR;
+            var target_ratio = containerAR;
+
+            if (ratio > target_ratio) {
+                return containerW / ratio / innerH;
+            } else {
+                return containerH  * ratio / innerW;
+            }
+        }
+
+        function resize(width, height) {
+            canvas.width = width;
+            canvas.height = height;
+
+            var viewportWidth = 640;
+            var viewportHeight = 480;
+
+            var viewportScale = fitImage(width, height, viewportWidth, viewportHeight);
+            viewportWidth *= viewportScale;
+            viewportHeight *= viewportScale;
+
+            var viewportX = (width - viewportWidth) / 2;
+            var viewportY = (height - viewportHeight) / 2;
+
+            viewport = {
+                x: Math.max(0, viewportX),
+                y: Math.max(0, viewportY),
+                width: Math.min(width, viewportWidth),
+                height: Math.min(height, viewportHeight)
+            };
         }
 
         return {
             element: canvas,
 
+            resize: resize,
+
+            mouseToGame: function (x, y) {
+                return {
+                    x: (x - viewport.x) / viewport.width * 640,
+                    y: (y - viewport.y) / viewport.height * 480
+                };
+            },
+
             beginRender: function () {
                 gl.clear(gl.COLOR_BUFFER_BIT);
+
+                gl.viewport(
+                    viewport.x, viewport.y,
+                    viewport.width, viewport.height
+                );
             },
 
             endRender: function () {
@@ -945,7 +996,8 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
                     programs: programs,
                     textures: textures,
                     misc: misc,
-                    caches: caches
+                    caches: caches,
+                    viewport: viewport
                 });
             },
 
@@ -960,22 +1012,12 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
                     var texture = textures.background;
                     var backgroundImage = texture.image;
 
-                    var backgroundWidth = backgroundImage.width;
-                    var backgroundHeight = backgroundImage.height;
-                    var canvasWidth = canvas.width;
-                    var canvasHeight = canvas.height;
+                    var containerW = 640;
+                    var containerH = 480;
+                    var innerW = backgroundImage.width;
+                    var innerH = backgroundImage.height;
 
-                    var canvasAR = canvasWidth / canvasHeight;
-                    var imageAR = backgroundWidth / backgroundHeight;
-                    var scale;
-
-                    if (imageAR > canvasAR) {
-                        // Image is wider
-                        scale = canvasWidth / backgroundWidth;
-                    } else {
-                        // Image is taller
-                        scale = canvasHeight / backgroundHeight;
-                    }
+                    var scale = fitImage(containerW, containerH, innerW, innerH);
 
                     gl.uniform4f(programs.sprite.uni.color, 255, 255, 255, 255);
                     gl.uniform2f(programs.sprite.uni.position, 320, 240);

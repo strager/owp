@@ -87,10 +87,14 @@ require([ 'jQuery', 'WebGLRenderer', 'CanvasRenderer', 'AssetManager', 'q', 'Gam
         var isLeftDown = false;
         var isRightDown = false;
 
+        var renderer = io.renderers[0]; // HACK...
+
         function mouseStateChanged() {
+            var pos = renderer.mouseToGame(mouseX, mouseY);
+
             game.mouse({
-                x: mouseX,
-                y: mouseY,
+                x: pos.x,
+                y: pos.y,
                 left: isLeftDown,
                 right: isRightDown
             });
@@ -169,6 +173,19 @@ require([ 'jQuery', 'WebGLRenderer', 'CanvasRenderer', 'AssetManager', 'q', 'Gam
 
             mouseStateChanged();
         });
+
+        $('<button/>').text('Full Screen').click(function () {
+            // TODO Use (webkit|moz)RequestFullScreenWithKeys
+            var $e = $(io.playAreas[0]);
+            $e.addClass('full-screen');
+
+            function resize() {
+                renderer.resize(document.width, document.height);
+            }
+
+            resize();
+            $(window).resize(resize);
+        }).appendTo('body');
     }
 
     function getPaintCount() {
