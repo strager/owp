@@ -1,4 +1,13 @@
 define('CanvasRenderer', [ 'mapObject', 'Util/Cache', 'canvasShaders', 'MapState', 'Util/gPubSub', 'Util/util' ], function (mapObject, Cache, shaders, MapState, gPubSub, util) {
+    function getColorStyle(color) {
+        function c(x) {
+            var s = x.toString(16);
+            return s.length === 1 ? '0' + s : s;
+        }
+
+        return '#' + color.map(c).join('');
+    }
+
     function renderMap(vars) {
         var mapState = vars.mapState;
         var ruleSet = mapState.ruleSet;
@@ -211,30 +220,29 @@ define('CanvasRenderer', [ 'mapObject', 'Util/Cache', 'canvasShaders', 'MapState
         }
 
         function renderSliderTrack(points, object) {
-            var key = [ object, mapState, skin ];
+            function draw() {
+                c.beginPath();
 
-            var cachedTrack = caches.sliderTrack.get(key, function () {
-                var sliderImage = document.createElement('canvas');
-                sliderImage.width = c.canvas.width;
-                sliderImage.height = c.canvas.height;
+                c.moveTo(points[0][0], points[0][1]);
+                points.slice(1).forEach(function (point) {
+                    c.lineTo(point[0], point[1]);
+                });
 
-                return {
-                    image: sliderImage,
-                    pointCount: 0
-                };
-            });
-
-            if (cachedTrack.pointCount > points.length) {
-                // Cache has the slider track rendered "too much".
-                // We need to re-render the whole track now.
-                caches.sliderTrack.unset(key);
-                renderSliderTrack(points, object);
-                return;
+                c.stroke();
+                c.closePath();
             }
 
-            var pointsToRender = points.slice(cachedTrack.pointCount);
+            c.lineCap = 'round';
+            c.lineJoin = 'round';
+            c.lineWidth = ruleSet.getCircleSize();
+            c.strokeStyle = '#FFFFFF';
 
-            var sc = cachedTrack.image.getContext('2d');
+            draw();
+
+            c.lineWidth = ruleSet.getCircleSize() * .9;
+            c.strokeStyle = getColorStyle(object.combo.color);
+
+            draw();
 
             var hitCircleGraphic = getShadedGraphic(
                 skin, 'hitcircle',
@@ -243,23 +251,13 @@ define('CanvasRenderer', [ 'mapObject', 'Util/Cache', 'canvasShaders', 'MapState
 
             var hitCircleFrame = 0;
 
-            var g = hitCircleGraphic[hitCircleFrame];
-            var scale = ruleSet.getCircleSize() / 128;
-
-            pointsToRender.forEach(function (point) {
-                sc.save();
-                sc.translate(point[0], point[1]);
-                sc.scale(scale, scale);
-                sc.drawImage(g, -g.width / 2, -g.height / 2);
-                sc.restore();
-            });
-
-            cachedTrack.pointCount = points.length;
-
-            // TODO Possible optimization: only render the part of the image
-            // which contains slider data; currently it's the same size as the
-            // playfield (ew! but easy!), which is (probably) inefficient
-            c.drawImage(cachedTrack.image, 0, 0);
+            drawImage(
+                hitCircleGraphic[hitCircleFrame],
+                ruleSet.getCircleSize() / 128,
+                points[points.length - 1][0],
+                points[points.length - 1][1],
+                true
+            );
         }
 
         function renderSliderBall(object) {
