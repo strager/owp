@@ -1,4 +1,4 @@
-define('CanvasRenderer', [ 'mapObject', 'Util/Cache', 'canvasShaders', 'MapState', 'Util/gPubSub' ], function (mapObject, Cache, shaders, MapState, gPubSub) {
+define('CanvasRenderer', [ 'mapObject', 'Util/Cache', 'canvasShaders', 'MapState', 'Util/gPubSub', 'Util/util' ], function (mapObject, Cache, shaders, MapState, gPubSub, util) {
     function renderMap(vars) {
         var mapState = vars.mapState;
         var ruleSet = mapState.ruleSet;
@@ -390,7 +390,10 @@ define('CanvasRenderer', [ 'mapObject', 'Util/Cache', 'canvasShaders', 'MapState
     }
 
     function CanvasRenderer(context) {
+        // TODO Double-buffering
+
         var canvas = document.createElement('canvas');
+        canvas.style.position = 'absolute';
         canvas.width = 640;
         canvas.height = 480;
 
@@ -407,6 +410,11 @@ define('CanvasRenderer', [ 'mapObject', 'Util/Cache', 'canvasShaders', 'MapState
         }
 
         var c = context;
+
+        var container = document.createElement('div');
+        container.style.display = 'block';
+        container.style.position = 'relative';
+        container.appendChild(canvas);
 
         var caches = {
             // [ 'graphic-name', skin, shader, shaderData ] => graphic
@@ -460,8 +468,40 @@ define('CanvasRenderer', [ 'mapObject', 'Util/Cache', 'canvasShaders', 'MapState
             c.drawImage(backgroundGraphic, 0, 0);
         }
 
+        var viewport = { };
+
+        function resize(width, height) {
+            container.style.width = width + 'px';
+            container.style.height = height + 'px';
+
+            var rect = util.fitRectangle(width, height, 640, 480);
+
+            viewport = {
+                x: Math.max(0, rect.x),
+                y: Math.max(0, rect.y),
+                width: Math.min(width, rect.width),
+                height: Math.min(height, rect.height)
+            };
+
+            canvas.style.left = viewport.x + 'px';
+            canvas.style.right = viewport.y + 'px';
+            canvas.style.width = viewport.width + 'px';
+            canvas.style.height = viewport.height + 'px';
+        }
+
+        resize(640, 480);
+
         return {
-            element: canvas,
+            element: container,
+
+            resize: resize,
+
+            mouseToGame: function (x, y) {
+                return {
+                    x: (x - viewport.x) / viewport.width * 640,
+                    y: (y - viewport.y) / viewport.height * 480
+                };
+            },
 
             beginRender: function () {
                 c.save();

@@ -1,4 +1,4 @@
-define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache', 'jQuery' ], function (MapState, mapObject, gPubSub, Cache, $) {
+define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache', 'jQuery', 'Util/util' ], function (MapState, mapObject, gPubSub, Cache, $, util) {
     function reportGLError(gl, error) {
         // Find the error name
         var key;
@@ -923,39 +923,17 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
 
         init();
 
-        function fitImage(containerW, containerH, innerW, innerH) {
-            var containerAR = containerW / containerH;
-            var innerAR = innerW / innerH;
-
-            var ratio = innerAR;
-            var target_ratio = containerAR;
-
-            if (ratio > target_ratio) {
-                return containerW / ratio / innerH;
-            } else {
-                return containerH  * ratio / innerW;
-            }
-        }
-
         function resize(width, height) {
             canvas.width = width;
             canvas.height = height;
 
-            var viewportWidth = 640;
-            var viewportHeight = 480;
-
-            var viewportScale = fitImage(width, height, viewportWidth, viewportHeight);
-            viewportWidth *= viewportScale;
-            viewportHeight *= viewportScale;
-
-            var viewportX = (width - viewportWidth) / 2;
-            var viewportY = (height - viewportHeight) / 2;
+            var rect = util.fitRectangle(width, height, 640, 480);
 
             viewport = {
-                x: Math.max(0, viewportX),
-                y: Math.max(0, viewportY),
-                width: Math.min(width, viewportWidth),
-                height: Math.min(height, viewportHeight)
+                x: Math.max(0, rect.x),
+                y: Math.max(0, rect.y),
+                width: Math.min(width, rect.width),
+                height: Math.min(height, rect.height)
             };
         }
 
