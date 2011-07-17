@@ -995,7 +995,7 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
                     var innerW = backgroundImage.width;
                     var innerH = backgroundImage.height;
 
-                    var scale = fitImage(containerW, containerH, innerW, innerH);
+                    var scale = util.fitRectangleScale(containerW, containerH, innerW, innerH);
 
                     gl.uniform4f(programs.sprite.uni.color, 255, 255, 255, 255);
                     gl.uniform2f(programs.sprite.uni.position, 320, 240);

@@ -32,6 +32,20 @@ define('Util/Cache', [ 'Util/Map' ], function (Map) {
 
         contains: function (key) {
             return this.map.contains(key);
+        },
+
+        collect: function (callback, context) {
+            var keysToRemove = [ ];
+
+            this.map.forEach(function (key, value) {
+                if (callback.call(context, key, value) === false) {
+                    keysToRemove.push(key);
+                }
+            });
+
+            keysToRemove.forEach(function (key) {
+                this.map.unset(key);
+            }, this);
         }
     };
 
