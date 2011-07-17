@@ -69,21 +69,17 @@ define('Game', [ 'q', 'MapState', 'Util/PubSub', 'Soundboard', 'Util/Timeline', 
                     'soft-slidertick.wav'
                 ]);
 
-                var score = 0;
-                var accuracy = 0;
-
                 var mouseHistory = new History();
                 var isLeftDown = false;
                 var isRightDown = false;
                 var trackMouse = true;
 
+                var scoreHistory = new History();
+                var accuracyHistory = new History();
+
                 setState({
                     render: function (renderer) {
                         var time = timeline.getCurrentTime();
-
-                        // FIXME shouldn't be here exactly
-                        accuracy = mapState.getAccuracy(time);
-                        score = mapState.getScore(time);
 
                         renderer.renderStoryboard(mapInfo.storyboard, mapAssetManager, time);
                         renderer.renderMap({
@@ -108,6 +104,16 @@ define('Game', [ 'q', 'MapState', 'Util/PubSub', 'Soundboard', 'Util/Timeline', 
 
                             isLeftDown = e.left;
                             isRightDown = e.right;
+                        }));
+
+                        boundEvents.push(mapState.events.subscribe(function (hitMarker) {
+                            var time = hitMarker.time;
+
+                            var accuracy = mapState.getAccuracy(time);
+                            var score = mapState.getScore(time);
+
+                            accuracyHistory.add(time, accuracy);
+                            scoreHistory.add(time, score);
                         }));
 
                         boundEvents.push(timeline.subscribe(MapState.HIT_MARKER_CREATION, function (hitMarker) {
@@ -143,10 +149,12 @@ define('Game', [ 'q', 'MapState', 'Util/PubSub', 'Soundboard', 'Util/Timeline', 
                         });
                     },
                     debugInfo: function () {
+                        var time = timeline.getCurrentTime();
+
                         return {
-                            'current map time (ms)': timeline.getCurrentTime(),
-                            'current accuracy': accuracy * 100,
-                            'current score': score
+                            'current map time (ms)': time,
+                            'current accuracy': accuracyHistory.getDataAtTime(time) * 100,
+                            'current score': scoreHistory.getDataAtTime(time)
                         };
                     }
                 });
