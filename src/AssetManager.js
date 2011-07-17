@@ -1,10 +1,13 @@
 /*global window: false */
 define('AssetManager', [ 'jQuery', 'MapInfo', 'mapFile', 'assetConfig', 'Util/Map', 'Util/Cache', 'q' ], function ($, MapInfo, mapFile, assetConfig, Map, Cache, Q) {
     function setAudioSourceType(source) {
+        // Safari hates it when you put .wav here, and Midori throws up when
+        // you put .ogg here.  Guess this method isn't as useful as I thought
+        // it'd be...  =[
         var types = {
-            'audio/mpeg': /\.mp3$/i,
-            'audio/x-wav': /\.wav$/i,
-            'application/ogg': /\.ogg$/i
+            //'application/ogg': /\.ogg$/i,
+            //'audio/x-wav': /\.wav$/i,
+            'audio/mpeg': /\.mp3$/i
         };
 
         Object.keys(types).forEach(function (mimeType) {
@@ -43,17 +46,11 @@ define('AssetManager', [ 'jQuery', 'MapInfo', 'mapFile', 'assetConfig', 'Util/Ma
         audio: function (assetManager, name) {
             var ret = Q.defer();
 
-            var originalTrack = document.createElement('source');
-            originalTrack.src = assetManager.root + '/' + name;
-            setAudioSourceType(originalTrack);
-
-            var vorbisTrack = document.createElement('source');
-            vorbisTrack.src = assetManager.root + '/' + name + '.ogg';
-            setAudioSourceType(vorbisTrack);
-
             var audio = new window.Audio();
             audio.autobuffer = true;
             audio.preload = 'auto';
+
+            var $audio = $(audio);
 
             function fail(event) {
                 if (audio.networkState === audio.NETWORK_NO_SOURCE) {
@@ -61,18 +58,23 @@ define('AssetManager', [ 'jQuery', 'MapInfo', 'mapFile', 'assetConfig', 'Util/Ma
                 }
             }
 
-            $(audio)
-                .append(originalTrack)
-                .append(vorbisTrack)
+            var originalTrack = document.createElement('source');
+            originalTrack.src = assetManager.root + '/' + name;
+            setAudioSourceType(originalTrack);
+            $(originalTrack).one('error', fail).appendTo($audio);
+
+            var vorbisTrack = document.createElement('source');
+            vorbisTrack.src = assetManager.root + '/' + name + '.ogg';
+            setAudioSourceType(vorbisTrack);
+            $(vorbisTrack).one('error', fail).appendTo($audio);
+
+            $audio
                 .one('canplaythrough', function () {
                     ret.resolve(audio);
                 })
                 .one('error', function (event) {
                     ret.reject(new Error());
                 });
-
-            $(originalTrack).one('error', fail);
-            $(vorbisTrack).one('error', fail);
 
             audio.load();
 
