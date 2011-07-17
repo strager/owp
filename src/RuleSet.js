@@ -293,10 +293,7 @@ define('RuleSet', [ 'Util/util', 'mapObject', 'Util/History' ], function (util, 
             var prefix = 'normal-';
             var suffix = '.wav';
 
-            // TODO Slider and spinner sounds
-
-            if (!hitMarker.hitObject.hitSounds) {
-                // TODO This should never happen (I think)
+            if (!hitMarker.isHit) {
                 return [ ];
             }
 

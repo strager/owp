@@ -109,7 +109,8 @@ define('MapState', [ 'mapObject', 'Util/Timeline', 'Util/Map', 'Util/PubSub' ], 
                     hitMarker = new mapObject.HitMarker(
                         object,
                         time,
-                        this.ruleSet.getHitScore(object, time)
+                        this.ruleSet.getHitScore(object, time),
+                        true
                     );
 
                     this.applyHitMarker(hitMarker);
@@ -208,7 +209,8 @@ define('MapState', [ 'mapObject', 'Util/Timeline', 'Util/Map', 'Util/PubSub' ], 
             var hitMarker = new mapObject.HitMarker(
                 object,
                 object.time,
-                score
+                score,
+                isHit
             );
 
             return hitMarker;
@@ -263,7 +265,8 @@ define('MapState', [ 'mapObject', 'Util/Timeline', 'Util/Map', 'Util/PubSub' ], 
                 hitMarker = new mapObject.HitMarker(
                     unhitObject[0],
                     unhitObject[1] + 1,
-                    0
+                    0,
+                    false
                 );
 
                 this.applyHitMarkerNoRemove(hitMarker);
