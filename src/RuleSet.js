@@ -481,6 +481,17 @@ define('RuleSet', [ 'Util/util', 'mapObject', 'Util/History' ], function (util, 
             } else {
                 return inherited.getEffectiveBPM(uninherited);
             }
+        },
+
+        getHitSoundVolume: function (time) {
+            var inherited = this.inheritedTimingPointHistory.getDataAtTime(time);
+            var uninherited = this.uninheritedTimingPointHistory.getDataAtTime(time);
+
+            if (inherited && inherited.time > uninherited.time) {
+                return inherited.hitSoundVolume;
+            } else {
+                return uninherited.hitSoundVolume;
+            }
         }
     };
 
