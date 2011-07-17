@@ -39,10 +39,11 @@ define('mapObject', [ ], function () {
         this.hitSounds = [ 'hitnormal' ];
     }
 
-    function HitMarker(object, time, score) {
+    function HitMarker(object, time, score, isHit) {
         this.hitObject = object; // TODO Rename to object
         this.time = time;
         this.score = score;
+        this.isHit = isHit;
     }
 
     var classes = {

@@ -1,4 +1,58 @@
-define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache', 'jQuery' ], function (MapState, mapObject, gPubSub, Cache, $) {
+define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache', 'jQuery', 'Util/util' ], function (MapState, mapObject, gPubSub, Cache, $, util) {
+    function reportGLError(gl, error) {
+        // Find the error name
+        var key;
+
+        for (key in gl) {
+            // Include properties of prototype
+            if (gl[key] === error) {
+                throw new Error('GL error ' + key + ' (code ' + error + ')');
+            }
+        }
+
+        // Couldn't find it; whatever
+        throw new Error('GL error code ' + error);
+    }
+
+    function checkGLError(gl) {
+        var error = gl.getError();
+
+        if (error !== 0) {
+            reportGLError(gl, error);
+        }
+    }
+
+    function wrapGL(gl) {
+        if (gl.orig) {
+            return gl;
+        }
+
+        var wrapped = {
+            orig: gl
+        };
+
+        function wrap(key) {
+            return function () {
+                var ret = gl[key].apply(gl, arguments);
+                checkGLError(gl);
+                return ret;
+            };
+        }
+
+        var key;
+
+        for (key in gl) {
+            // Include properties of prototype
+            if (typeof gl[key] === 'function') {
+                wrapped[key] = wrap(key);
+            } else {
+                wrapped[key] = gl[key];
+            }
+        }
+
+        return wrapped;
+    }
+
     function drawers(gl, buffers, programs) {
         var inProgram = false;
 
@@ -22,6 +76,7 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
 
         function sprite(callback) {
             function init() {
+                // Same as objectTarget
                 var vertexOffset = 0;
                 var uvOffset = 2 * 3 * 2 * 4; // Skip faces (2x3 pairs, x2 floats, x4 bytes)
 
@@ -50,6 +105,32 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
                         gl.uniform1i(programs.sprite.uni.sampler, 0);
                     }
 
+                    gl.drawArrays(gl.TRIANGLES, 0, 6);
+                });
+            });
+        }
+
+        function objectTarget(callback) {
+            function init() {
+                // Same as sprite
+                var vertexOffset = 0;
+                var uvOffset = 2 * 3 * 2 * 4; // Skip faces (2x3 pairs, x2 floats, x4 bytes)
+
+                gl.bindBuffer(gl.ARRAY_BUFFER, buffers.sprite);
+                gl.vertexAttribPointer(programs.objectTarget.attr.vertexCoord, 2, gl.FLOAT, false, 0, vertexOffset);
+                gl.vertexAttribPointer(programs.objectTarget.attr.textureCoord, 2, gl.FLOAT, false, 0, uvOffset);
+                gl.enableVertexAttribArray(programs.objectTarget.attr.vertexCoord);
+                gl.enableVertexAttribArray(programs.objectTarget.attr.textureCoord);
+            }
+
+            function uninit() {
+                gl.disableVertexAttribArray(programs.objectTarget.attr.textureCoord);
+                gl.disableVertexAttribArray(programs.objectTarget.attr.vertexCoord);
+                gl.bindBuffer(gl.ARRAY_BUFFER, null);
+            }
+
+            program(programs.objectTarget, init, uninit, function () {
+                callback(function draw() {
                     gl.drawArrays(gl.TRIANGLES, 0, 6);
                 });
             });
@@ -84,6 +165,7 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
         return {
             program: program,
             sprite: sprite,
+            objectTarget: objectTarget,
             curve: curve
         };
     }
@@ -97,12 +179,12 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
         var buffers = vars.buffers;
         var programs = vars.programs;
         var textures = vars.textures;
+        var misc = vars.misc;
         var caches = vars.caches;
         var mouseHistory = vars.mouseHistory;
+        var viewport = vars.viewport;
 
         var draw = drawers(gl, buffers, programs);
-
-        // TODO Real work
 
         function getDigits(number) {
             return ('' + number).split('');
@@ -158,28 +240,36 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
             };
         }
 
-        function renderApproachCircle(progress, x, y, color, alpha) {
-            var radius = 1;
+        function renderApproachProgress(object) {
+            var color = object.combo.color;
+
+            var progress = ruleSet.getObjectApproachProgress(object, time);
+
+            var radius;
 
             if (progress > 0) {
-                radius += (1 - progress);
+                radius = 1 + (1 - progress);
             } else {
-                radius += (1 - (-progress)) / 4;
+                radius = 1 + (1 - (-progress)) / 4;
             }
 
-            radius *= ruleSet.getCircleSize() / 128;
+            renderApproachCircle(radius, object.x, object.y, color);
+        }
+
+        function renderApproachCircle(radius, x, y, color) {
+            var scale = radius * ruleSet.getCircleSize() / 128;
 
             draw.sprite(function (draw) {
-                gl.uniform4f(programs.sprite.uni.color, color[0], color[1], color[2], color[3]);
+                gl.uniform4f(programs.sprite.uni.color, color[0], color[1], color[2], 255);
                 gl.uniform2f(programs.sprite.uni.position, x, y);
-                gl.uniform1f(programs.sprite.uni.scale, radius);
+                gl.uniform1f(programs.sprite.uni.scale, scale);
                 gl.uniform2f(programs.sprite.uni.offset, 0, 0);
 
                 draw(textures.approachCircle);
             });
         }
 
-        function renderComboNumber(number, x, y, alpha) {
+        function renderComboNumber(number, x, y) {
             var textures = getNumberTextures(number);
             var spacing = skin.hitCircleFontSpacing;
 
@@ -199,7 +289,7 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
             var offset = -totalWidth / 2;
 
             draw.sprite(function (draw) {
-                gl.uniform4f(programs.sprite.uni.color, 255, 255, 255, alpha);
+                gl.uniform4f(programs.sprite.uni.color, 255, 255, 255, 255);
                 gl.uniform2f(programs.sprite.uni.position, x, y);
                 gl.uniform1f(programs.sprite.uni.scale, scale);
 
@@ -253,115 +343,155 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
             });
         }
 
-        function renderSliderObject(object) {
-            var key = [ object, mapState ];
+        function renderUnit(callback) {
+            gl.bindFramebuffer(gl.FRAMEBUFFER, misc.objectTarget.framebuffer);
+            gl.clearColor(0, 0, 0, 0);
+            gl.clear(gl.COLOR_BUFFER_BIT);
 
-            var c = caches.sliderTrack.get(key, function () {
-                var points = object.curve.points;
+            gl.viewport(0, 0, viewport.width, viewport.height);
+            var options = callback();
+            gl.viewport(viewport.x, viewport.y, viewport.width, viewport.height);
 
-                var adjustmentScale = 128 / (128 - 10); // Don't ask...
+            gl.bindFramebuffer(gl.FRAMEBUFFER, null);
 
-                var b = createSliderTrack(points, ruleSet.getCircleSize() / adjustmentScale / 2);
-                var buffer = b.buffer;
-                buffers.curves.push(buffer);
+            draw.objectTarget(function (draw) {
+                gl.uniform2f(programs.objectTarget.uni.playfield, viewport.width, viewport.height);
+                gl.uniform2f(programs.objectTarget.uni.size, misc.objectTarget.width, misc.objectTarget.height);
+                gl.uniform1f(programs.objectTarget.uni.alpha, options.alpha || 1);
 
-                return {
-                    vertexCount: b.vertexCount,
-                    buffer: buffer,
-                    id: buffers.curves.length - 1
-                };
+                gl.activeTexture(gl.TEXTURE0);
+                gl.bindTexture(gl.TEXTURE_2D, misc.objectTarget.texture);
+                gl.uniform1i(programs.objectTarget.uni.sampler, 0);
+
+                draw();
             });
-
-            var alpha = ruleSet.getObjectOpacity(object, time);
-            var color = object.combo.color.concat([ alpha * 255 ]);
-            var scale = ruleSet.getCircleSize() / 128;
-            var growPercentage = ruleSet.getSliderGrowPercentage(object, time);
-
-            draw.curve(c.id, function (draw) {
-                gl.uniform4f(programs.curve.uni.color, color[0], color[1], color[2], color[3]);
-
-                draw(Math.round(c.vertexCount * growPercentage));
-            });
-
-            object.ticks.forEach(renderSliderTick);
-
-            var visibility = ruleSet.getObjectVisibilityAtTime(object, time);
-
-            var lastPoint = object.curve.render(growPercentage).slice(-1)[0];
-
-            if (lastPoint) {
-                // End
-                draw.sprite(function (draw) {
-                    gl.uniform2f(programs.sprite.uni.position, lastPoint[0], lastPoint[1]);
-                    gl.uniform4f(programs.sprite.uni.color, color[0], color[1], color[2], color[3]);
-                    gl.uniform2f(programs.sprite.uni.offset, 0, 0);
-                    gl.uniform1f(programs.sprite.uni.scale, scale);
-
-                    draw(textures.hitCircle);
-
-                    gl.uniform2f(programs.sprite.uni.position, lastPoint[0], lastPoint[1]);
-                    gl.uniform4f(programs.sprite.uni.color, 255, 255, 255, alpha * 255);
-                    gl.uniform2f(programs.sprite.uni.offset, 0, 0);
-                    gl.uniform1f(programs.sprite.uni.scale, scale);
-
-                    draw(textures.hitCircleOverlay);
-                });
-            }
-
-            renderHitCircleObject(object);
-
-            // Next end (repeat arrow)
-            var repeatArrow = object.ends.filter(function (end) {
-                return !end.hitMarker && !end.isFinal;
-            })[0];
-
-            if (repeatArrow) {
-                draw.sprite(function (draw) {
-                    gl.uniform2f(programs.sprite.uni.position, repeatArrow.x, repeatArrow.y);
-                    gl.uniform4f(programs.sprite.uni.color, 255, 255, 255, alpha * 255);
-                    gl.uniform2f(programs.sprite.uni.offset, 0, 0);
-                    gl.uniform1f(programs.sprite.uni.scale, scale);
-
-                    draw(textures.repeatArrow);
-                });
-            }
-
-            if (visibility === 'during') {
-                renderSliderBall(object);
-            }
         }
 
-        function renderHitCircleObject(object) {
-            var alpha = ruleSet.getObjectOpacity(object, time);
-            var color = object.combo.color.concat([ alpha * 255 ]);
+        function renderSliderObject(object) {
+            renderUnit(function () {
+                var key = [ object, mapState ];
 
+                var c = caches.sliderTrack.get(key, function () {
+                    var points = object.curve.points;
+
+                    var adjustmentScale = 128 / (128 - 10); // Don't ask...
+
+                    var b = createSliderTrack(points, ruleSet.getCircleSize() / adjustmentScale / 2);
+                    var buffer = b.buffer;
+                    buffers.curves.push(buffer);
+
+                    return {
+                        vertexCount: b.vertexCount,
+                        buffer: buffer,
+                        id: buffers.curves.length - 1
+                    };
+                });
+
+                var color = object.combo.color;
+                var scale = ruleSet.getCircleSize() / 128;
+                var growPercentage = ruleSet.getSliderGrowPercentage(object, time);
+
+                draw.curve(c.id, function (draw) {
+                    gl.uniform4f(programs.curve.uni.color, color[0], color[1], color[2], 255);
+
+                    draw(Math.round(c.vertexCount * growPercentage));
+                });
+
+                object.ticks.forEach(renderSliderTick);
+
+                var visibility = ruleSet.getObjectVisibilityAtTime(object, time);
+
+                var lastPoint = object.curve.render(growPercentage).slice(-1)[0];
+
+                if (lastPoint) {
+                    // End
+                    draw.sprite(function (draw) {
+                        gl.uniform2f(programs.sprite.uni.position, lastPoint[0], lastPoint[1]);
+                        gl.uniform4f(programs.sprite.uni.color, color[0], color[1], color[2], 255);
+                        gl.uniform2f(programs.sprite.uni.offset, 0, 0);
+                        gl.uniform1f(programs.sprite.uni.scale, scale);
+
+                        draw(textures.hitCircle);
+
+                        gl.uniform2f(programs.sprite.uni.position, lastPoint[0], lastPoint[1]);
+                        gl.uniform4f(programs.sprite.uni.color, 255, 255, 255, 255);
+                        gl.uniform2f(programs.sprite.uni.offset, 0, 0);
+                        gl.uniform1f(programs.sprite.uni.scale, scale);
+
+                        draw(textures.hitCircleOverlay);
+                    });
+                }
+
+                renderHitCircleBackground(object.x, object.y, color);
+                renderComboNumber(object.comboIndex + 1, object.x, object.y);
+                renderHitCircleOverlay(object.x, object.y);
+
+                // Next end (repeat arrow)
+                // TODO Position properly when sliding
+                var repeatArrow = object.ends.filter(function (end) {
+                    return !end.hitMarker && !end.isFinal;
+                })[0];
+
+                if (repeatArrow) {
+                    draw.sprite(function (draw) {
+                        gl.uniform2f(programs.sprite.uni.position, repeatArrow.x, repeatArrow.y);
+                        gl.uniform4f(programs.sprite.uni.color, 255, 255, 255, 255);
+                        gl.uniform2f(programs.sprite.uni.offset, 0, 0);
+                        gl.uniform1f(programs.sprite.uni.scale, scale);
+
+                        draw(textures.repeatArrow);
+                    });
+                }
+
+                if (visibility === 'during') {
+                    renderSliderBall(object);
+                }
+
+                renderApproachProgress(object);
+
+                return {
+                    alpha: ruleSet.getObjectOpacity(object, time)
+                };
+            });
+        }
+
+        function renderHitCircleBackground(x, y, color) {
             var scale = ruleSet.getCircleSize() / 128;
 
-            // Hit circle background
             draw.sprite(function (draw) {
-                gl.uniform2f(programs.sprite.uni.position, object.x, object.y);
-                gl.uniform4f(programs.sprite.uni.color, color[0], color[1], color[2], color[3]);
+                gl.uniform2f(programs.sprite.uni.position, x, y);
+                gl.uniform4f(programs.sprite.uni.color, color[0], color[1], color[2], 255);
                 gl.uniform2f(programs.sprite.uni.offset, 0, 0);
                 gl.uniform1f(programs.sprite.uni.scale, scale);
 
                 draw(textures.hitCircle);
             });
+        }
 
-            // Numbering
-            renderComboNumber(object.comboIndex + 1, object.x, object.y, alpha * 255);
+        function renderHitCircleOverlay(x, y) {
+            var scale = ruleSet.getCircleSize() / 128;
 
-            // Hit circle overlay
             draw.sprite(function (draw) {
-                gl.uniform2f(programs.sprite.uni.position, object.x, object.y);
-                gl.uniform4f(programs.sprite.uni.color, 255, 255, 255, alpha * 255);
+                gl.uniform2f(programs.sprite.uni.position, x, y);
+                gl.uniform4f(programs.sprite.uni.color, 255, 255, 255, 255);
                 gl.uniform2f(programs.sprite.uni.offset, 0, 0);
                 gl.uniform1f(programs.sprite.uni.scale, scale);
 
                 draw(textures.hitCircleOverlay);
             });
+        }
 
-            var approachProgress = ruleSet.getObjectApproachProgress(object, time);
-            renderApproachCircle(approachProgress, object.x, object.y, color);
+        function renderHitCircleObject(object) {
+            renderUnit(function () {
+                renderHitCircleBackground(object.x, object.y, object.combo.color);
+                renderComboNumber(object.comboIndex + 1, object.x, object.y);
+                renderHitCircleOverlay(object.x, object.y);
+                renderApproachProgress(object);
+
+                return {
+                    alpha: ruleSet.getObjectOpacity(object, time)
+                };
+            });
         }
 
         function renderHitMarkerObject(object) {
@@ -445,7 +575,9 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
         // (See cursor + trail rendering code in file history)
     }
 
-    var spriteVertexShader, spriteFragmentShader, curveVertexShader, curveFragmentShader;
+    var spriteVertexShader, spriteFragmentShader;
+    var objectTargetVertexShader, objectTargetFragmentShader;
+    var curveVertexShader, curveFragmentShader;
 
     (function () {
         /*jshint white: false */
@@ -483,6 +615,41 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
 
             'void main(void) {',
                 'gl_FragColor = texture2D(uSampler, vec2(vTextureCoord.s, vTextureCoord.t)) * (vec4(uColor) / 255.0);',
+            '}'
+        ].join('\n');
+
+        objectTargetVertexShader = [
+            'attribute vec2 aVertexCoord;',
+            'attribute vec2 aTextureCoord;',
+
+            'varying vec2 vTextureCoord;',
+
+            'uniform vec2 uPlayfield;',
+            'uniform vec2 uSize;',
+
+            'mat4 projection = mat4(',
+                '2.0 / uPlayfield.x, 0.0, 0.0, -1.0,',
+                '0.0, 2.0 / uPlayfield.y, 0.0, -1.0,',
+                '0.0, 0.0,-2.0,-0.0,',
+                '0.0, 0.0, 0.0, 1.0',
+            ');',
+
+            'void main(void) {',
+                'gl_Position = (vec4(aVertexCoord / 2.0, 0.0, 1.0) + vec4(0.5, 0.5, 0.0, 0.0)) * vec4(uSize, 1.0, 1.0) * projection;',
+                'vTextureCoord = aTextureCoord;',
+            '}'
+        ].join('\n');
+
+        objectTargetFragmentShader = [
+            'varying vec2 vTextureCoord;',
+
+            'uniform sampler2D uSampler;',
+            'uniform float uAlpha;',
+
+            'vec4 color = vec4(1.0, 1.0, 1.0, uAlpha);',
+
+            'void main(void) {',
+                'gl_FragColor = texture2D(uSampler, vec2(vTextureCoord.s, vTextureCoord.t)) * color;',
             '}'
         ].join('\n');
 
@@ -558,9 +725,13 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
 
         var gl = context;
 
+        // XXX TODO DEBUG ONLY!!!
+        gl = wrapGL(gl);
+
         var buffers = { };
         var programs = { };
         var textures = { };
+        var misc = { };
 
         var caches = {
             // [ sliderObject, mapState, skin ] => curveId
@@ -609,6 +780,18 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
                 color: gl.getUniformLocation(programs.sprite, 'uColor')
             };
 
+            programs.objectTarget = createProgram(gl, objectTargetVertexShader, objectTargetFragmentShader);
+            programs.objectTarget.attr = {
+                vertexCoord: gl.getAttribLocation(programs.objectTarget, 'aVertexCoord'),
+                textureCoord: gl.getAttribLocation(programs.objectTarget, 'aTextureCoord')
+            };
+            programs.objectTarget.uni = {
+                sampler: gl.getUniformLocation(programs.objectTarget, 'uSampler'),
+                playfield: gl.getUniformLocation(programs.objectTarget, 'uPlayfield'),
+                size: gl.getUniformLocation(programs.objectTarget, 'uSize'),
+                alpha: gl.getUniformLocation(programs.objectTarget, 'uAlpha')
+            };
+
             programs.curve = createProgram(gl, curveVertexShader, curveFragmentShader);
             programs.curve.attr = {
                 vertexCoord: gl.getAttribLocation(programs.curve, 'aVertexCoord'),
@@ -623,7 +806,30 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
             gl.blendEquationSeparate(gl.FUNC_ADD, gl.FUNC_ADD);
             gl.blendFuncSeparate(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA, gl.SRC_ALPHA, gl.ONE);
 
-            resize();
+            misc.objectTarget = {
+                width: 1024,  // XXX TEMPORARY XXX
+                height: 1024, // XXX TEMPORARY XXX
+                framebuffer: gl.createFramebuffer(),
+                texture: gl.createTexture()
+            };
+
+            gl.bindTexture(gl.TEXTURE_2D, misc.objectTarget.texture);
+            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, misc.objectTarget.width, misc.objectTarget.height, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+            gl.bindTexture(gl.TEXTURE_2D, null);
+
+            gl.bindFramebuffer(gl.FRAMEBUFFER, misc.objectTarget.framebuffer);
+            gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, misc.objectTarget.texture, 0);
+
+            var status = gl.checkFramebufferStatus(gl.FRAMEBUFFER);
+            if (status !== gl.FRAMEBUFFER_COMPLETE) {
+                reportGLError(gl, status);
+            }
+
+            gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+
+            resize(640, 480);
         }
 
         function makeTexture(image) {
@@ -713,17 +919,43 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
             storyboardInitd = true;
         }
 
+        var viewport = { };
+
         init();
 
-        function resize() {
-            gl.viewport(0, 0, canvas.width, canvas.height);
+        function resize(width, height) {
+            canvas.width = width;
+            canvas.height = height;
+
+            var rect = util.fitRectangle(width, height, 640, 480);
+
+            viewport = {
+                x: Math.max(0, rect.x),
+                y: Math.max(0, rect.y),
+                width: Math.min(width, rect.width),
+                height: Math.min(height, rect.height)
+            };
         }
 
         return {
             element: canvas,
 
+            resize: resize,
+
+            mouseToGame: function (x, y) {
+                return {
+                    x: (x - viewport.x) / viewport.width * 640,
+                    y: (y - viewport.y) / viewport.height * 480
+                };
+            },
+
             beginRender: function () {
-                gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+                gl.clear(gl.COLOR_BUFFER_BIT);
+
+                gl.viewport(
+                    viewport.x, viewport.y,
+                    viewport.width, viewport.height
+                );
             },
 
             endRender: function () {
@@ -741,7 +973,9 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
                     buffers: buffers,
                     programs: programs,
                     textures: textures,
-                    caches: caches
+                    misc: misc,
+                    caches: caches,
+                    viewport: viewport
                 });
             },
 
@@ -756,22 +990,12 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
                     var texture = textures.background;
                     var backgroundImage = texture.image;
 
-                    var backgroundWidth = backgroundImage.width;
-                    var backgroundHeight = backgroundImage.height;
-                    var canvasWidth = canvas.width;
-                    var canvasHeight = canvas.height;
+                    var containerW = 640;
+                    var containerH = 480;
+                    var innerW = backgroundImage.width;
+                    var innerH = backgroundImage.height;
 
-                    var canvasAR = canvasWidth / canvasHeight;
-                    var imageAR = backgroundWidth / backgroundHeight;
-                    var scale;
-
-                    if (imageAR > canvasAR) {
-                        // Image is wider
-                        scale = canvasWidth / backgroundWidth;
-                    } else {
-                        // Image is taller
-                        scale = canvasHeight / backgroundHeight;
-                    }
+                    var scale = util.fitRectangleScale(containerW, containerH, innerW, innerH);
 
                     gl.uniform4f(programs.sprite.uni.color, 255, 255, 255, 255);
                     gl.uniform2f(programs.sprite.uni.position, 320, 240);

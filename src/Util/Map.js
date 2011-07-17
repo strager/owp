@@ -46,7 +46,7 @@ define('Util/Map', [ ], function () {
                     keyString = getKeyString(key);
                     index = this.keys.length - 1;
 
-                    if (Object.prototype.hasOwnProperty(this.arrayKeyStrings, keyString)) {
+                    if (Object.prototype.hasOwnProperty.call(this.arrayKeyStrings, keyString)) {
                         this.arrayKeyStrings[keyString].push(index);
                     } else {
                         this.arrayKeyStrings[keyString] = [ index ];

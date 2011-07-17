@@ -21,12 +21,19 @@ define('mapFile', [ 'RuleSet', 'Map', 'Combo', 'MapInfo', 'mapObject', 'Storyboa
     function readTimingPoints(assetConfig) {
         return assetConfig.TimingPoints.lists.map(function (data) {
             var isInherited = data[1] < 0;
+            var options = {
+                isInherited: isInherited,
+                time: parseInt(data[0], 10),
+                hitSoundVolume: parseInt(data[5], 10) / 100
+            };
 
             if (isInherited) {
-                return new TimingPoint(parseInt(data[0], 10), parseFloat(data[1], 10) / -100, true);
+                options.bpm = parseFloat(data[1], 10) / -100;
             } else {
-                return new TimingPoint(parseInt(data[0], 10), 60 / parseFloat(data[1], 10) * 1000, false);
+                options.bpm = 60 / parseFloat(data[1], 10) * 1000;
             }
+
+            return new TimingPoint(options);
         });
     }
 

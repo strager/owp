@@ -1,8 +1,9 @@
 define('TimingPoint', [ ], function () {
-    function TimingPoint(time, bpm, isInherited) {
-        this.time = time;
-        this.bpm = bpm;
-        this.isInherited = isInherited;
+    function TimingPoint(options) {
+        this.time = options.time;
+        this.bpm = options.bpm;
+        this.isInherited = options.isInherited;
+        this.hitSoundVolume = options.hitSoundVolume;
     }
 
     TimingPoint.prototype.getEffectiveBPM = function (parent) {

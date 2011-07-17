@@ -15,8 +15,15 @@ require([ 'jQuery', 'WebGLRenderer', 'CanvasRenderer', 'AssetManager', 'q', 'Gam
                 .append(renderer.element);
         }
 
-        addRenderer(new CanvasRenderer(), '2D Canvas');
-        addRenderer(new WebGLRenderer(), 'WebGL');
+        try {
+            addRenderer(new WebGLRenderer(), 'WebGL');
+        } catch (e) {
+            try {
+                addRenderer(new CanvasRenderer(), '2D Canvas');
+            } catch (e) {
+                throw new Error('Browser not supported');
+            }
+        }
 
         return {
             renderers: renderers,
@@ -87,10 +94,14 @@ require([ 'jQuery', 'WebGLRenderer', 'CanvasRenderer', 'AssetManager', 'q', 'Gam
         var isLeftDown = false;
         var isRightDown = false;
 
+        var renderer = io.renderers[0]; // HACK...
+
         function mouseStateChanged() {
+            var pos = renderer.mouseToGame(mouseX, mouseY);
+
             game.mouse({
-                x: mouseX,
-                y: mouseY,
+                x: pos.x,
+                y: pos.y,
                 left: isLeftDown,
                 right: isRightDown
             });
@@ -169,6 +180,19 @@ require([ 'jQuery', 'WebGLRenderer', 'CanvasRenderer', 'AssetManager', 'q', 'Gam
 
             mouseStateChanged();
         });
+
+        $('<button/>').text('Full Screen').click(function () {
+            // TODO Use (webkit|moz)RequestFullScreenWithKeys
+            var $e = $(io.playAreas[0]);
+            $e.addClass('full-screen');
+
+            function resize() {
+                renderer.resize(document.width, document.height);
+            }
+
+            resize();
+            $(window).resize(resize);
+        }).appendTo('body');
     }
 
     function getPaintCount() {

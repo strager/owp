@@ -95,17 +95,19 @@ define('Game', [ 'q', 'MapState', 'Util/PubSub', 'Soundboard', 'Util/Timeline', 
                         }));
 
                         boundEvents.push(timeline.subscribe(MapState.HIT_MARKER_CREATION, function (hitMarker) {
-                            if (!hitMarker.score) {
-                                return;
-                            }
-
                             var hitSounds = mapState.ruleSet.getHitSoundNames(hitMarker);
+
+                            // Note that osu! uses the hit marker time itself,
+                            // where we use the more mapper-friendly hit object
+                            // time.  FIXME Maybe this detail should be moved
+                            // to RuleSet (i.e. pass in a HitMarker)?
+                            var volume = mapState.ruleSet.getHitSoundVolume(hitMarker.hitObject.time);
 
                             hitSounds.forEach(function (soundName) {
                                 soundboard.playSound(soundName, {
                                     // Scale volume to how many hit sounds are
                                     // being played
-                                    volume: 1 / hitSounds.length
+                                    volume: volume / hitSounds.length
                                 });
                             });
 
