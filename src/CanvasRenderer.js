@@ -130,8 +130,6 @@ define('CanvasRenderer', [ 'mapObject', 'Util/Cache', 'canvasShaders', 'MapState
         }
 
         function renderApproachProgress(object, alpha) {
-            var color = object.combo.color;
-
             var progress = ruleSet.getObjectApproachProgress(object, time);
 
             var radius;
@@ -142,11 +140,11 @@ define('CanvasRenderer', [ 'mapObject', 'Util/Cache', 'canvasShaders', 'MapState
                 radius = 1 + (1 - (-progress)) / 4;
             }
 
-            renderApproachCircle(radius, object.x, object.y, color, alpha);
+            renderApproachCircle(radius, object.x, object.y, object.combo.color, alpha, object);
         }
 
-        function renderApproachCircle(radius, x, y, color, alpha) {
-            var el = dom.get([ 'approach-circle', x, y, color, radius, alpha ], function () {
+        function renderApproachCircle(radius, x, y, color, alpha, object) {
+            var el = dom.get([ 'approach-circle', object ], function () {
                 var approachCircleGraphic = getShadedGraphic(
                     skin, 'approachcircle',
                     shaders.multiplyByColor, color
@@ -179,6 +177,8 @@ define('CanvasRenderer', [ 'mapObject', 'Util/Cache', 'canvasShaders', 'MapState
             el.style.width = width + 'px';
             el.style.height = height + 'px';
             el.style.opacity = alpha;
+
+            setZ(el);
         }
 
         function renderHitCircleFace(color, number, c) {
@@ -374,6 +374,40 @@ define('CanvasRenderer', [ 'mapObject', 'Util/Cache', 'canvasShaders', 'MapState
             }
         }
 
+        function renderSliderTick(object) {
+            if (object.hitMarker) {
+                return;
+            }
+
+            var el = dom.get(object, function () {
+                var sliderTickGraphic = skin.assetManager.get('sliderscorepoint', 'image-set');
+                var sliderTickFrame = 0;
+
+                var graphic = sliderTickGraphic[sliderTickFrame];
+
+                var el = $(graphic).clone()
+                    .css('position', 'absolute').get(0);
+
+                el.origWidth = el.width;
+                el.origHeight = el.height;
+
+                return el;
+            });
+
+            var scale = ruleSet.getCircleSize() / 128;
+            var width = getCoord(el.origWidth * scale);
+            var height = getCoord(el.origHeight * scale);
+            var x = getCoord(object.x - width / 2);
+            var y = getCoord(object.y - height / 2);
+
+            el.style.left = x + 'px';
+            el.style.top = y + 'px';
+            el.style.width = width + 'px';
+            el.style.height = height + 'px';
+
+            setZ(el);
+        }
+
         function renderSliderObject(object) {
             var el = dom.get(object, function () {
                 var canvas = document.createElement('canvas');
@@ -410,6 +444,44 @@ define('CanvasRenderer', [ 'mapObject', 'Util/Cache', 'canvasShaders', 'MapState
             el.style.opacity = alpha;
 
             setZ(el);
+
+            object.ticks.forEach(renderSliderTick);
+
+            // Next end (repeat arrow)
+            // TODO Position properly when sliding
+            var repeatArrow = object.ends.filter(function (end) {
+                return !end.hitMarker && !end.isFinal;
+            })[0];
+
+            if (repeatArrow) {
+                var repeatArrowEl = dom.get([ 'repeat-arrow', object ], function () {
+                    var reverseArrowGraphic = skin.assetManager.get('reversearrow', 'image-set');
+                    var reverseArrowFrame = 0;
+
+                    var graphic = reverseArrowGraphic[reverseArrowFrame];
+
+                    var el = $(graphic).clone()
+                        .css('position', 'absolute').get(0);
+
+                    el.origWidth = el.width;
+                    el.origHeight = el.height;
+
+                    return el;
+                });
+
+                var scale = ruleSet.getCircleSize() / 128;
+                var width = getCoord(repeatArrowEl.origWidth * scale);
+                var height = getCoord(repeatArrowEl.origHeight * scale);
+                var x = getCoord(repeatArrow.x - width / 2);
+                var y = getCoord(repeatArrow.y - height / 2);
+
+                repeatArrowEl.style.left = x + 'px';
+                repeatArrowEl.style.top = y + 'px';
+                repeatArrowEl.style.width = width + 'px';
+                repeatArrowEl.style.height = height + 'px';
+
+                setZ(repeatArrowEl);
+            }
 
             var visibility = ruleSet.getObjectVisibilityAtTime(object, time);
 
