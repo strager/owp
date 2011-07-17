@@ -528,11 +528,21 @@ define('CanvasRenderer', [ 'mapObject', 'Util/Cache', 'canvasShaders', 'MapState
     function CanvasRenderer() {
         // TODO Double-buffering
 
+        var front = document.createElement('div');
+        front.style.display = 'block';
+        front.style.position = 'relative';
+        var frontDom = new DOMAllocator(front);
+
+        var back = document.createElement('div');
+        back.style.display = 'block';
+        back.style.position = 'relative';
+        var backDom = new DOMAllocator(back);
+
         var container = document.createElement('div');
         container.style.display = 'block';
         container.style.position = 'relative';
-
-        var dom = new DOMAllocator(container);
+        container.appendChild(front);
+        container.appendChild(back);
 
         var caches = {
             // [ 'graphic-name', skin, shader, shaderData ] => graphic
@@ -581,6 +591,22 @@ define('CanvasRenderer', [ 'mapObject', 'Util/Cache', 'canvasShaders', 'MapState
             skinInitd = true;
         }
 
+        function swap() {
+            // No XOR swap here.  =[
+            var tmp = front;
+            front = back;
+            back = tmp;
+
+            tmp = frontDom;
+            frontDom = backDom;
+            backDom = tmp;
+
+            front.style.visibility = 'visible';
+            back.style.visibility = 'hidden';
+        }
+
+        swap();
+
         return {
             element: container,
 
@@ -594,11 +620,12 @@ define('CanvasRenderer', [ 'mapObject', 'Util/Cache', 'canvasShaders', 'MapState
             },
 
             beginRender: function () {
-                dom.begin();
+                backDom.begin();
             },
 
             endRender: function () {
-                dom.end();
+                backDom.end();
+                swap();
             },
 
             renderMap: function (state, time) {
@@ -610,7 +637,7 @@ define('CanvasRenderer', [ 'mapObject', 'Util/Cache', 'canvasShaders', 'MapState
                     mouseHistory: state.mouseHistory,
                     time: time,
                     caches: caches,
-                    dom: dom
+                    dom: backDom
                 });
             },
 
@@ -622,7 +649,7 @@ define('CanvasRenderer', [ 'mapObject', 'Util/Cache', 'canvasShaders', 'MapState
                 if (background) {
                     backgroundGraphic = assetManager.get(background.fileName, 'image');
 
-                    var el = dom.get(backgroundGraphic, function () {
+                    var el = backDom.get(backgroundGraphic, function () {
                         return $(backgroundGraphic).clone()
                             .css('position', 'absolute').get(0);
                     });
