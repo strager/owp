@@ -130,11 +130,13 @@ define('BezierSliderCurve', [ ], function () {
         return -1;
     }
 
+    var tolerance = 0.1;
+
     BezierSliderCurve.prototype.getTickPositions = function (tickLength) {
         var ticks = [ ];
         var i, pointIndex;
 
-        for (i = 1; i < Math.floor(this.length / tickLength); ++i) {
+        for (i = 1; i < Math.floor(tolerance + this.length / tickLength); ++i) {
             // TODO smarter calculation
             pointIndex = getLengthIndex(this.points, tickLength * i);
             ticks.push(this.points[pointIndex]);
