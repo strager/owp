@@ -6,6 +6,16 @@ define('SoundPool', [ 'jQuery' ], function ($) {
     }
 
     SoundPool.prototype = {
+        prealloc: function (count) {
+            var alloced = [ ];
+            var i;
+
+            for (i = 0; i < count; ++i) {
+                alloced.push(this.alloc());
+            }
+
+            alloced.forEach(this.free, this); },
+
         alloc: function () {
             var sound = this.freeSounds.pop();
 

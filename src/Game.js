@@ -52,6 +52,22 @@ define('Game', [ 'q', 'MapState', 'Util/PubSub', 'Soundboard', 'Util/Timeline', 
 
             function play() {
                 var soundboard = new Soundboard(skin.valueOf().assetManager);
+                soundboard.preload([
+                    'normal-hitclap.wav',
+                    'normal-hitfinish.wav',
+                    'normal-hitnormal.wav',
+                    'normal-hitwhistle.wav',
+                    'normal-sliderslide.wav',
+                    'normal-slidertick.wav',
+                    'normal-sliderwhistle.wav',
+
+                    'soft-hitclap.wav',
+                    'soft-hitfinish.wav',
+                    'soft-hitnormal.wav',
+                    'soft-hitwhistle.wav',
+                    'soft-sliderslide.wav',
+                    'soft-slidertick.wav'
+                ]);
 
                 var score = 0;
                 var accuracy = 0;
