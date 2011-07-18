@@ -302,14 +302,30 @@ define('RuleSet', [ 'Util/util', 'mapObject', 'Util/History' ], function (util, 
             });
         },
 
+        doesObjectAffectAccuracy: mapObject.matcher({
+            HitCircle: true,
+            SliderEnd: function (object) {
+                return object.isFinal;
+            },
+            _: false
+        }),
+
         getTotalAccuracy: function (hitMarkers) {
             var maxScoreValue = 0;
             var currentScoreValue = 0;
 
             hitMarkers.forEach(function (hitMarker) {
+                if (!this.doesObjectAffectAccuracy(hitMarker.hitObject)) {
+                    return;
+                }
+
                 maxScoreValue += 300;
                 currentScoreValue += hitMarker.score;
-            });
+            }, this);
+
+            if (!maxScoreValue) {
+                return 0;
+            }
 
             return currentScoreValue / maxScoreValue;
         },
@@ -333,6 +349,12 @@ define('RuleSet', [ 'Util/util', 'mapObject', 'Util/History' ], function (util, 
                     return;
                 }
 
+                if (!this.doesObjectAffectAccuracy(hitMarker.hitObject)) {
+                    currentScore += hitMarker.score;
+
+                    return;
+                }
+
                 currentScore += hitMarker.score * (1 + (
                     Math.max(currentCombo - 1, 0) *
                     difficultyMultiplier *
@@ -340,7 +362,7 @@ define('RuleSet', [ 'Util/util', 'mapObject', 'Util/History' ], function (util, 
                 ) / 25);
 
                 ++currentCombo;
-            });
+            }, this);
 
             return currentScore;
         },
