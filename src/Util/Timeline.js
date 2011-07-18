@@ -137,7 +137,7 @@ define('Util/Timeline', [ 'Util/PubSub' ], function (PubSub) {
                 // FIXME This is pretty broken and doesn't really work as it
                 // should (but it works 'good enough' for the game to
                 // work...)
-                var x = this.getAllInTimeRange(lastUpdateTime, time, key);
+                var x = this.getAllInTimeRange(lastUpdateTime + 1, time, key);
                 var events = this.getEvents(key);
 
                 x.forEach(function (item) {
