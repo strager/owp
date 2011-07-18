@@ -76,6 +76,7 @@ define('Game', [ 'q', 'MapState', 'Util/PubSub', 'Soundboard', 'Util/Timeline', 
 
                 var scoreHistory = new History();
                 var accuracyHistory = new History();
+                var comboHistory = new History();
 
                 setState({
                     render: function (renderer) {
@@ -112,8 +113,11 @@ define('Game', [ 'q', 'MapState', 'Util/PubSub', 'Soundboard', 'Util/Timeline', 
                             var accuracy = mapState.getAccuracy(time);
                             var score = mapState.getScore(time);
 
+                            var combo = mapState.getActiveCombo(time);
+
                             accuracyHistory.add(time, accuracy);
                             scoreHistory.add(time, score);
+                            comboHistory.add(time, combo);
                         }));
 
                         boundEvents.push(timeline.subscribe(MapState.HIT_MARKER_CREATION, function (hitMarker) {
@@ -155,6 +159,8 @@ define('Game', [ 'q', 'MapState', 'Util/PubSub', 'Soundboard', 'Util/Timeline', 
                             'current map time (ms)': time,
                             'current accuracy': accuracyHistory.getDataAtTime(time) * 100,
                             'current score': scoreHistory.getDataAtTime(time)
+                            'current score': scoreHistory.getDataAtTime(time),
+                            'current combo': comboHistory.getDataAtTime(time) + 'x'
                         };
                     }
                 });

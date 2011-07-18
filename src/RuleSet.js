@@ -302,14 +302,30 @@ define('RuleSet', [ 'Util/util', 'mapObject', 'Util/History' ], function (util, 
             });
         },
 
+        doesObjectAffectAccuracy: mapObject.matcher({
+            HitCircle: true,
+            SliderEnd: function (object) {
+                return object.isFinal;
+            },
+            _: false
+        }),
+
         getTotalAccuracy: function (hitMarkers) {
             var maxScoreValue = 0;
             var currentScoreValue = 0;
 
             hitMarkers.forEach(function (hitMarker) {
+                if (!this.doesObjectAffectAccuracy(hitMarker.hitObject)) {
+                    return;
+                }
+
                 maxScoreValue += 300;
                 currentScoreValue += hitMarker.score;
-            });
+            }, this);
+
+            if (!maxScoreValue) {
+                return 0;
+            }
 
             return currentScoreValue / maxScoreValue;
         },
@@ -327,8 +343,14 @@ define('RuleSet', [ 'Util/util', 'mapObject', 'Util/History' ], function (util, 
             var currentScore = 0;
 
             hitMarkers.forEach(function (hitMarker) {
-                if (hitMarker.score === 0) {
+                if (!hitMarker.isHit) {
                     currentCombo = 0;
+
+                    return;
+                }
+
+                if (!this.doesObjectAffectAccuracy(hitMarker.hitObject)) {
+                    currentScore += hitMarker.score;
 
                     return;
                 }
@@ -340,9 +362,26 @@ define('RuleSet', [ 'Util/util', 'mapObject', 'Util/History' ], function (util, 
                 ) / 25);
 
                 ++currentCombo;
-            });
+            }, this);
 
             return currentScore;
+        },
+
+        getActiveCombo: function (hitMarkers) {
+            hitMarkers = hitMarkers.sort(function (a, b) {
+                return a.time > b.time ? 1 : -1;
+            });
+
+            // We could optimize this by iterating backwards...
+            // Or by keeping state between calls like everybody else.
+
+            return reduce(function (a, hitMarker) {
+                if (hitMarker.isHit) {
+                    return a + 1;
+                } else {
+                    return 0;
+                }
+            }, 0);
         },
 
         getObjectsByZ: function (objects) {

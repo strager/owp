@@ -93,6 +93,12 @@ define('MapState', [ 'mapObject', 'Util/Timeline', 'Util/Map', 'Util/PubSub' ], 
             return this.ruleSet.getTotalScore(hitMarkers);
         },
 
+        getActiveCombo: function (time) {
+            var hitMarkers = this.timeline.getAllInTimeRange(0, time, MapState.HIT_MARKER_CREATION);
+
+            return this.ruleSet.getActiveCombo(hitMarkers);
+        },
+
         clickAt: function (x, y, time) {
             var hittableObjects = this.getHittableObjects(time);
 

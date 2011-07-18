@@ -19,7 +19,7 @@ require([ 'jQuery', 'WebGLRenderer', 'CanvasRenderer', 'AssetManager', 'q', 'Gam
             addRenderer(new WebGLRenderer(), 'WebGL');
         } catch (e) {
             try {
-                addRenderer(new CanvasRenderer(), '2D Canvas');
+                addRenderer(new CanvasRenderer(), 'DOM + Canvas');
             } catch (e) {
                 throw new Error('Browser not supported');
             }
