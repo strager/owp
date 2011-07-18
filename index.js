@@ -153,7 +153,7 @@ require([ 'jQuery', 'WebGLRenderer', 'CanvasRenderer', 'AssetManager', 'q', 'Gam
             mouseStateChanged();
         });
 
-        $('body').keydown(function (e) {
+        $(document).keydown(function (e) {
             switch (e.which) {
             case 90: // LMB
                 isLeftDown = true;
@@ -167,7 +167,7 @@ require([ 'jQuery', 'WebGLRenderer', 'CanvasRenderer', 'AssetManager', 'q', 'Gam
             mouseStateChanged();
         });
 
-        $('body').keyup(function (e) {
+        $(document).keyup(function (e) {
             switch (e.which) {
             case 90: // LMB
                 isLeftDown = false;

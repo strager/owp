@@ -5,9 +5,14 @@ define('Soundboard', [ 'jQuery', 'SoundPool' ], function ($, SoundPool) {
     }
 
     Soundboard.prototype = {
+        preload: function (soundNames) {
+            soundNames.forEach(this.getSoundPool, this);
+        },
+
         getSoundPool: function (soundName) {
             if (!Object.prototype.hasOwnProperty.call(this.soundPools, soundName)) {
                 this.soundPools[soundName] = new SoundPool(this.assetManager.get(soundName, 'sound'));
+                this.soundPools[soundName].prealloc(3);
             }
 
             return this.soundPools[soundName];

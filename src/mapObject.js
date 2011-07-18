@@ -5,12 +5,16 @@ define('mapObject', [ ], function () {
         this.y = y;
     }
 
+    HitCircle.prototype.type = 'HitCircle';
+
     function Slider(time, x, y) {
         this.time = time;
         this.x = x;
         this.y = y;
         this.curve = null;
     }
+
+    Slider.prototype.type = 'Slider';
 
     function SliderTick(time, x, y, slider, repeatNumber) {
         this.time = time;
@@ -21,6 +25,8 @@ define('mapObject', [ ], function () {
 
         this.hitSounds = [ 'slidertick' ];
     }
+
+    SliderTick.prototype.type = 'SliderTick';
 
     function SliderEnd(time, slider, repeatIndex, isFinal) {
         this.time = time;
@@ -39,6 +45,8 @@ define('mapObject', [ ], function () {
         this.hitSounds = [ 'hitnormal' ];
     }
 
+    SliderEnd.prototype.type = 'SliderEnd';
+
     function HitMarker(object, time, score, isHit) {
         this.hitObject = object; // TODO Rename to object
         this.time = time;
@@ -46,39 +54,46 @@ define('mapObject', [ ], function () {
         this.isHit = isHit;
     }
 
+    HitMarker.prototype.type = 'HitMarker';
+
     var classes = {
         HitCircle: HitCircle,
         Slider: Slider,
         HitMarker: HitMarker,
         SliderTick: SliderTick,
-        SliderEnd: SliderEnd,
-        match: function (object, callbacks, context, args) {
-            function call(value) {
-                if (typeof value === 'function') {
-                    return value.apply(context, [ object ].concat(args));
-                }
+        SliderEnd: SliderEnd
+    };
 
-                return value;
-            }
+    var classNames = 'HitCircle,Slider,HitMarker,SliderTick,SliderEnd'.split(',');
 
-            var keys = 'HitCircle,Slider,HitMarker,SliderTick,SliderEnd'.split(',');
-            var i, className;
+    var hasOwnProperty = Object.prototype.hasOwnProperty;
 
-            for (i = 0; i < keys.length; ++i) {
-                className = keys[i];
-
-                if (Object.prototype.hasOwnProperty.call(callbacks, className) && object instanceof classes[className]) {
-                    return call(callbacks[className]);
-                }
-            }
-
-            return call(callbacks._);
-        },
-        matcher: function (callbacks) {
-            return function (object) {
-                return classes.match(object, callbacks, this, [ ].slice.call(arguments, 1));
-            };
+    function call(value, context, args) {
+        if (typeof value === 'function') {
+            return value.apply(context, args);
         }
+
+        return value;
+    }
+
+    classes.match = function (object, callbacks, context, args) {
+        var type = object.type;
+
+        args = args || [ object ];
+
+        if (hasOwnProperty.call(callbacks, type)) {
+            return call(callbacks[type], context, args);
+        } else {
+            return call(callbacks._, context, args);
+        }
+    };
+
+    var slice = Array.prototype.slice;
+
+    classes.matcher = function (callbacks) {
+        return function (object) {
+            return classes.match(object, callbacks, this, arguments);
+        };
     };
 
     return classes;

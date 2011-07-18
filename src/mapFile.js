@@ -21,10 +21,12 @@ define('mapFile', [ 'RuleSet', 'Map', 'Combo', 'MapInfo', 'mapObject', 'Storyboa
     function readTimingPoints(assetConfig) {
         return assetConfig.TimingPoints.lists.map(function (data) {
             var isInherited = data[1] < 0;
+            var flags1 = parseInt(data[3], 10);
             var options = {
                 isInherited: isInherited,
                 time: parseInt(data[0], 10),
-                hitSoundVolume: parseInt(data[5], 10) / 100
+                hitSoundVolume: parseInt(data[5], 10) / 100,
+                sampleSet: flags1 & 2 ? 'soft' : 'normal'
             };
 
             if (isInherited) {

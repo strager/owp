@@ -157,18 +157,17 @@ define('CanvasRenderer', [ 'mapObject', 'Util/Cache', 'canvasShaders', 'MapState
                 canvas.width = approachCircleGraphic[approachCircleFrame].width;
                 canvas.height = approachCircleGraphic[approachCircleFrame].height;
 
-                canvas.origWidth = canvas.width;
-                canvas.origHeight = canvas.height;
-
                 var context = canvas.getContext('2d');
                 context.drawImage(approachCircleGraphic[approachCircleFrame], 0, 0);
 
                 return canvas;
             });
 
+            var g = skin.assetManager.get('approachcircle', 'image-set')[0];
+
             var scale = radius * ruleSet.getCircleSize() / 128;
-            var width = getCoord(el.origWidth * scale);
-            var height = getCoord(el.origHeight * scale);
+            var width = getCoord(g.width * scale);
+            var height = getCoord(g.height * scale);
             x = getCoord(x - width / 2);
             y = getCoord(y - height / 2);
 
@@ -263,33 +262,24 @@ define('CanvasRenderer', [ 'mapObject', 'Util/Cache', 'canvasShaders', 'MapState
         }
 
         function renderHitMarkerObject(object) {
-            var el = dom.get(object, function () {
-                var graphicName = ruleSet.getHitMarkerImageName(object);
-                if (!graphicName) {
-                    return;
-                }
-
-                var hitMarkerGraphic = skin.assetManager.get(graphicName, 'image-set');
-                var hitMarkerFrame = 0;
-
-                var graphic = hitMarkerGraphic[hitMarkerFrame];
-
-                var el = $(graphic).clone()
-                    .css('position', 'absolute').get(0);
-
-                el.origWidth = el.width;
-                el.origHeight = el.height;
-
-                return el;
-            });
-
-            if (!el) {
+            var graphicName = ruleSet.getHitMarkerImageName(object);
+            if (!graphicName) {
                 return;
             }
 
+            var hitMarkerGraphic = skin.assetManager.get(graphicName, 'image-set');
+            var hitMarkerFrame = 0;
+
+            var graphic = hitMarkerGraphic[hitMarkerFrame];
+
+            var el = dom.get(object, function () {
+                return $(graphic).clone()
+                    .css('position', 'absolute').get(0);
+            });
+
             var scale = ruleSet.getHitMarkerScale(object, time);
-            var width = getCoord(el.origWidth * scale);
-            var height = getCoord(el.origHeight * scale);
+            var width = getCoord(graphic.width * scale);
+            var height = getCoord(graphic.height * scale);
             var x = getCoord(object.hitObject.x - width / 2);
             var y = getCoord(object.hitObject.y - height / 2);
 
@@ -338,27 +328,22 @@ define('CanvasRenderer', [ 'mapObject', 'Util/Cache', 'canvasShaders', 'MapState
         }
 
         function renderSliderBall(object) {
+            var sliderBallGraphic = skin.assetManager.get('sliderb0', 'image-set');
+            var sliderBallFrame = 0;
+
+            var graphic = sliderBallGraphic[sliderBallFrame];
+
             var el = dom.get([ 'slider-ball', object ], function () {
-                var sliderBallGraphic = skin.assetManager.get('sliderb0', 'image-set');
-                var sliderBallFrame = 0;
-
-                var graphic = sliderBallGraphic[sliderBallFrame];
-
-                var el = $(graphic).clone()
+                return $(graphic).clone()
                     .css('position', 'absolute').get(0);
-
-                el.origWidth = el.width;
-                el.origHeight = el.height;
-
-                return el;
             });
 
             var sliderBallPosition = object.curve.getSliderBallPosition(object, time, ruleSet);
 
             if (sliderBallPosition) {
                 var scale = ruleSet.getCircleSize() / 128;
-                var width = getCoord(el.origWidth * scale);
-                var height = getCoord(el.origHeight * scale);
+                var width = getCoord(graphic.width * scale);
+                var height = getCoord(graphic.height * scale);
                 var x = getCoord(sliderBallPosition[0] - width / 2);
                 var y = getCoord(sliderBallPosition[1] - height / 2);
 
@@ -379,24 +364,19 @@ define('CanvasRenderer', [ 'mapObject', 'Util/Cache', 'canvasShaders', 'MapState
                 return;
             }
 
+            var sliderTickGraphic = skin.assetManager.get('sliderscorepoint', 'image-set');
+            var sliderTickFrame = 0;
+
+            var graphic = sliderTickGraphic[sliderTickFrame];
+
             var el = dom.get(object, function () {
-                var sliderTickGraphic = skin.assetManager.get('sliderscorepoint', 'image-set');
-                var sliderTickFrame = 0;
-
-                var graphic = sliderTickGraphic[sliderTickFrame];
-
-                var el = $(graphic).clone()
+                return $(graphic).clone()
                     .css('position', 'absolute').get(0);
-
-                el.origWidth = el.width;
-                el.origHeight = el.height;
-
-                return el;
             });
 
             var scale = ruleSet.getCircleSize() / 128;
-            var width = getCoord(el.origWidth * scale);
-            var height = getCoord(el.origHeight * scale);
+            var width = getCoord(graphic.width * scale);
+            var height = getCoord(graphic.height * scale);
             var x = getCoord(object.x - width / 2);
             var y = getCoord(object.y - height / 2);
 
@@ -454,24 +434,19 @@ define('CanvasRenderer', [ 'mapObject', 'Util/Cache', 'canvasShaders', 'MapState
             })[0];
 
             if (repeatArrow) {
+                var reverseArrowGraphic = skin.assetManager.get('reversearrow', 'image-set');
+                var reverseArrowFrame = 0;
+
+                var rGraphic = reverseArrowGraphic[reverseArrowFrame];
+
                 var repeatArrowEl = dom.get([ 'repeat-arrow', object ], function () {
-                    var reverseArrowGraphic = skin.assetManager.get('reversearrow', 'image-set');
-                    var reverseArrowFrame = 0;
-
-                    var graphic = reverseArrowGraphic[reverseArrowFrame];
-
-                    var el = $(graphic).clone()
+                    return $(rGraphic).clone()
                         .css('position', 'absolute').get(0);
-
-                    el.origWidth = el.width;
-                    el.origHeight = el.height;
-
-                    return el;
                 });
 
                 var scale = ruleSet.getCircleSize() / 128;
-                var width = getCoord(repeatArrowEl.origWidth * scale);
-                var height = getCoord(repeatArrowEl.origHeight * scale);
+                var width = getCoord(rGraphic.width * scale);
+                var height = getCoord(rGraphic.height * scale);
                 var x = getCoord(repeatArrow.x - width / 2);
                 var y = getCoord(repeatArrow.y - height / 2);
 
@@ -528,11 +503,21 @@ define('CanvasRenderer', [ 'mapObject', 'Util/Cache', 'canvasShaders', 'MapState
     function CanvasRenderer() {
         // TODO Double-buffering
 
+        var front = document.createElement('div');
+        front.style.display = 'block';
+        front.style.position = 'relative';
+        var frontDom = new DOMAllocator(front);
+
+        var back = document.createElement('div');
+        back.style.display = 'block';
+        back.style.position = 'relative';
+        var backDom = new DOMAllocator(back);
+
         var container = document.createElement('div');
         container.style.display = 'block';
         container.style.position = 'relative';
-
-        var dom = new DOMAllocator(container);
+        container.appendChild(front);
+        container.appendChild(back);
 
         var caches = {
             // [ 'graphic-name', skin, shader, shaderData ] => graphic
@@ -581,6 +566,22 @@ define('CanvasRenderer', [ 'mapObject', 'Util/Cache', 'canvasShaders', 'MapState
             skinInitd = true;
         }
 
+        function swap() {
+            // No XOR swap here.  =[
+            var tmp = front;
+            front = back;
+            back = tmp;
+
+            tmp = frontDom;
+            frontDom = backDom;
+            backDom = tmp;
+
+            front.style.visibility = 'visible';
+            back.style.visibility = 'hidden';
+        }
+
+        swap();
+
         return {
             element: container,
 
@@ -594,11 +595,12 @@ define('CanvasRenderer', [ 'mapObject', 'Util/Cache', 'canvasShaders', 'MapState
             },
 
             beginRender: function () {
-                dom.begin();
+                backDom.begin();
             },
 
             endRender: function () {
-                dom.end();
+                backDom.end();
+                swap();
             },
 
             renderMap: function (state, time) {
@@ -610,7 +612,7 @@ define('CanvasRenderer', [ 'mapObject', 'Util/Cache', 'canvasShaders', 'MapState
                     mouseHistory: state.mouseHistory,
                     time: time,
                     caches: caches,
-                    dom: dom
+                    dom: backDom
                 });
             },
 
@@ -622,7 +624,7 @@ define('CanvasRenderer', [ 'mapObject', 'Util/Cache', 'canvasShaders', 'MapState
                 if (background) {
                     backgroundGraphic = assetManager.get(background.fileName, 'image');
 
-                    var el = dom.get(backgroundGraphic, function () {
+                    var el = backDom.get(backgroundGraphic, function () {
                         return $(backgroundGraphic).clone()
                             .css('position', 'absolute').get(0);
                     });

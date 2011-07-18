@@ -13,9 +13,6 @@ define('MapState', [ 'mapObject', 'Util/Timeline', 'Util/Map', 'Util/PubSub' ], 
 
             timeline.add(MapState.HIT_OBJECT_VISIBILITY, hitObject, appearTime, disappearTime);
 
-            // FIXME This won't work for the future
-            //   ... Why not?
-
             mapObject.match(hitObject, {
                 Slider: function (slider) {
                     var ticks = ruleSet.getSliderTicks(hitObject);

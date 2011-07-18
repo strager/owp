@@ -88,6 +88,9 @@ define('Util/Timeline', [ 'Util/PubSub' ], function (PubSub) {
         this.audio = audio;
         this.cueLists = { };
         this.events = { };
+        this.isUpdating = false;
+        this.lastUpdateTime = null;
+        this.lastUpdatedObjects = [ ];
     }
 
     function validateKey(key) {
@@ -129,9 +132,12 @@ define('Util/Timeline', [ 'Util/PubSub' ], function (PubSub) {
             // This is a bit of a hack ...  =\
             var lastUpdateTime = (this.lastUpdateTime || 0);
 
-            if (lastUpdateTime === time) {
+            if (lastUpdateTime === time || this.isUpdating) {
                 return;
             }
+
+            var updatedObjects = [ ];
+            var lastUpdatedObjects = this.lastUpdatedObjects;
 
             Object.keys(this.events).forEach(function (key) {
                 // FIXME This is pretty broken and doesn't really work as it
@@ -141,10 +147,17 @@ define('Util/Timeline', [ 'Util/PubSub' ], function (PubSub) {
                 var events = this.getEvents(key);
 
                 x.forEach(function (item) {
+                    if (lastUpdatedObjects.indexOf(item) >= 0) {
+                        // Item already updated; don't update again
+                        return;
+                    }
+
                     events.publishSync(item);
-                }, this);
+                    updatedObjects.push(item);
+                });
             }, this);
 
+            this.lastUpdatedObjects = updatedObjects;
             this.lastUpdateTime = time;
         },
 

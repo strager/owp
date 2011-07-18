@@ -52,22 +52,34 @@ define('Game', [ 'q', 'MapState', 'Util/PubSub', 'Soundboard', 'Util/Timeline', 
 
             function play() {
                 var soundboard = new Soundboard(skin.valueOf().assetManager);
+                soundboard.preload([
+                    'normal-hitclap.wav',
+                    'normal-hitfinish.wav',
+                    'normal-hitnormal.wav',
+                    'normal-hitwhistle.wav',
+                    'normal-sliderslide.wav',
+                    'normal-slidertick.wav',
+                    'normal-sliderwhistle.wav',
 
-                var score = 0;
-                var accuracy = 0;
+                    'soft-hitclap.wav',
+                    'soft-hitfinish.wav',
+                    'soft-hitnormal.wav',
+                    'soft-hitwhistle.wav',
+                    'soft-sliderslide.wav',
+                    'soft-slidertick.wav'
+                ]);
 
                 var mouseHistory = new History();
                 var isLeftDown = false;
                 var isRightDown = false;
                 var trackMouse = true;
 
+                var scoreHistory = new History();
+                var accuracyHistory = new History();
+
                 setState({
                     render: function (renderer) {
                         var time = timeline.getCurrentTime();
-
-                        // FIXME shouldn't be here exactly
-                        accuracy = mapState.getAccuracy(time);
-                        score = mapState.getScore(time);
 
                         renderer.renderStoryboard(mapInfo.storyboard, mapAssetManager, time);
                         renderer.renderMap({
@@ -94,6 +106,16 @@ define('Game', [ 'q', 'MapState', 'Util/PubSub', 'Soundboard', 'Util/Timeline', 
                             isRightDown = e.right;
                         }));
 
+                        boundEvents.push(mapState.events.subscribe(function (hitMarker) {
+                            var time = hitMarker.time;
+
+                            var accuracy = mapState.getAccuracy(time);
+                            var score = mapState.getScore(time);
+
+                            accuracyHistory.add(time, accuracy);
+                            scoreHistory.add(time, score);
+                        }));
+
                         boundEvents.push(timeline.subscribe(MapState.HIT_MARKER_CREATION, function (hitMarker) {
                             var hitSounds = mapState.ruleSet.getHitSoundNames(hitMarker);
 
@@ -110,8 +132,6 @@ define('Game', [ 'q', 'MapState', 'Util/PubSub', 'Soundboard', 'Util/Timeline', 
                                     volume: volume / hitSounds.length
                                 });
                             });
-
-                            gPubSub.publish('tick');
                         }));
 
                         gPubSub.subscribe(function () {
@@ -129,10 +149,12 @@ define('Game', [ 'q', 'MapState', 'Util/PubSub', 'Soundboard', 'Util/Timeline', 
                         });
                     },
                     debugInfo: function () {
+                        var time = timeline.getCurrentTime();
+
                         return {
-                            'current map time (ms)': timeline.getCurrentTime(),
-                            'current accuracy': accuracy * 100,
-                            'current score': score
+                            'current map time (ms)': time,
+                            'current accuracy': accuracyHistory.getDataAtTime(time) * 100,
+                            'current score': scoreHistory.getDataAtTime(time)
                         };
                     }
                 });

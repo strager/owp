@@ -289,8 +289,8 @@ define('RuleSet', [ 'Util/util', 'mapObject', 'Util/History' ], function (util, 
             // and is probably what the mapper intended.
             var time = hitMarker.hitObject.time;
 
-            // TODO Base prefix and suffix on time (normal, soft, custom, etc.)
-            var prefix = 'normal-';
+            // TODO Custom hitsounds
+            var prefix = this.getLastTimingSection(time).sampleSet + '-';
             var suffix = '.wav';
 
             if (!hitMarker.isHit) {
@@ -480,15 +480,19 @@ define('RuleSet', [ 'Util/util', 'mapObject', 'Util/History' ], function (util, 
             }
         },
 
-        getHitSoundVolume: function (time) {
+        getLastTimingSection: function (time) {
             var inherited = this.inheritedTimingPointHistory.getDataAtTime(time);
             var uninherited = this.uninheritedTimingPointHistory.getDataAtTime(time);
 
             if (inherited && inherited.time > uninherited.time) {
-                return inherited.hitSoundVolume;
+                return inherited;
             } else {
-                return uninherited.hitSoundVolume;
+                return uninherited;
             }
+        },
+
+        getHitSoundVolume: function (time) {
+            return this.getLastTimingSection(time).hitSoundVolume;
         }
     };
 
