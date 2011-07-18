@@ -126,8 +126,6 @@ define('Game', [ 'q', 'MapState', 'Util/PubSub', 'Soundboard', 'Util/Timeline', 
                                     volume: volume / hitSounds.length
                                 });
                             });
-
-                            gPubSub.publish('tick');
                         }));
 
                         gPubSub.subscribe(function () {
