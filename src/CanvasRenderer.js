@@ -116,17 +116,17 @@ define('CanvasRenderer', [ 'mapObject', 'Util/Cache', 'canvasShaders', 'MapState
             var scale = Math.pow(images.length, -1 / 4) * 0.9;
             var offset = -totalWidth / 2;
 
-            c.save();
-            c.translate(x, y);
-
             images.forEach(function (image) {
+                c.save();
+                c.translate(x, y);
+
                 c.scale(scale, scale);
                 c.drawImage(image, offset, -image.height / 2);
 
+                c.restore();
+
                 offset += image.width + spacing;
             });
-
-            c.restore();
         }
 
         function renderApproachProgress(object, alpha) {
