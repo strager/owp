@@ -347,11 +347,19 @@ define('CanvasRenderer', [ 'mapObject', 'Util/Cache', 'canvasShaders', 'MapState
                 var x = getCoord(sliderBallPosition[0] - width / 2);
                 var y = getCoord(sliderBallPosition[1] - height / 2);
 
+                var angle = Math.atan2(sliderBallPosition[4], sliderBallPosition[3]);
+                var transform = 'rotate(' + angle + 'rad)';
+
                 el.style.left = x + 'px';
                 el.style.top = y + 'px';
                 el.style.width = width + 'px';
                 el.style.height = height + 'px';
                 el.style.visibility = 'visible';
+
+                // TODO More testing (I only have webkit and moz on L here)
+                el.style.cssText += ';-moz-transform:' + transform + ';';
+                el.style.webkitTransform = transform;
+                el.style.transform = transform; // Let's get our hopes up
 
                 setZ(el);
             } else {
