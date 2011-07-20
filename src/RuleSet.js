@@ -375,7 +375,7 @@ define('RuleSet', [ 'Util/util', 'mapObject', 'Util/History' ], function (util, 
             // We could optimize this by iterating backwards...
             // Or by keeping state between calls like everybody else.
 
-            return reduce(function (a, hitMarker) {
+            return hitMarkers.reduce(function (a, hitMarker) {
                 if (hitMarker.isHit) {
                     return a + 1;
                 } else {

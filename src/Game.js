@@ -158,7 +158,6 @@ define('Game', [ 'q', 'MapState', 'Util/PubSub', 'Soundboard', 'Util/Timeline', 
                         return {
                             'current map time (ms)': time,
                             'current accuracy': accuracyHistory.getDataAtTime(time) * 100,
-                            'current score': scoreHistory.getDataAtTime(time)
                             'current score': scoreHistory.getDataAtTime(time),
                             'current combo': comboHistory.getDataAtTime(time) + 'x'
                         };

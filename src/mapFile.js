@@ -30,7 +30,7 @@ define('mapFile', [ 'RuleSet', 'Map', 'Combo', 'MapInfo', 'mapObject', 'Storyboa
             };
 
             if (isInherited) {
-                options.bpm = parseFloat(data[1], 10) / -100;
+                options.bpm = -100 / parseFloat(data[1], 10);
             } else {
                 options.bpm = 60 / parseFloat(data[1], 10) * 1000;
             }
