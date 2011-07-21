@@ -1,4 +1,18 @@
 require([ 'WebGLRenderer', 'CanvasRenderer', 'AssetManager', 'q', 'Game', 'Util/FramerateCounter', 'Util/gPubSub' ], function (WebGLRenderer, CanvasRenderer, AssetManager, Q, Game, FramerateCounter, gPubSub) {
+    // shim layer with setTimeout fallback
+    var requestAnimFrame = (function(){
+        function requestAnimationFrame(callback, element) {
+            window.setTimeout(callback, 1000 / 60);
+        }
+
+        return window.requestAnimationFrame
+            || window.webkitRequestAnimationFrame
+            || window.mozRequestAnimationFrame
+            || window.oRequestAnimationFrame
+            || window.msRequestAnimationFrame
+            || requestAnimationFrame;
+    }());
+
     var mapAssetManager = new AssetManager('assets');
     var skinAssetManager = new AssetManager('.');
 
@@ -51,7 +65,7 @@ require([ 'WebGLRenderer', 'CanvasRenderer', 'AssetManager', 'q', 'Game', 'Util/
     }
 
     function renderLoop(callback) {
-        window.requestAnimFrame(function () {
+        requestAnimFrame(function () {
             callback();
             renderLoop(callback);
         }, document.body); // should prolly use the canvas here...
