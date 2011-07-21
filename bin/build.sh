@@ -5,6 +5,7 @@ ROOT="$DIR/.."
 OUT="$ROOT/owp.min.js"
 
 (
+    # Build main JS file
     NAMES='document, window, Array, Object'
 
     echo ';// I am awesome'
@@ -20,11 +21,18 @@ OUT="$ROOT/owp.min.js"
     echo '};'
     echo "}($NAMES));"
 ) | (
-    # TODO Detect UglifyJS and Java and don't run them if they don't exist
-    java -jar "$DIR/google-closure-compiler-1180.jar" \
-        --compilation_level SIMPLE_OPTIMIZATIONS | \
-    uglifyjs
+    # Minify with Google Closure Compiler
+    type java > /dev/null 2>&1 \
+        && java -jar "$DIR/google-closure-compiler-1180.jar" \
+            --compilation_level SIMPLE_OPTIMIZATIONS \
+        || (echo 'WARNING: Java not installed; skipping Google Closure Compiler minification' >&2; cat)
 ) | (
+    # Minify with UglifyJS
+    type uglifyjs > /dev/null 2>&1 \
+        && uglifyjs \
+        || (echo 'WARNING: UglifyJS not installed; skipping UglifyJS minification' >&2; cat)
+) | (
+    # Add license information
     # TODO Have licenses loaded properly using @preserve
     cat <<'EOF'
 /*
