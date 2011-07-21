@@ -1,4 +1,4 @@
-define('Soundboard', [ 'jQuery', 'SoundPool' ], function ($, SoundPool) {
+define('Soundboard', [ 'SoundPool' ], function (SoundPool) {
     function Soundboard(assetManager) {
         this.assetManager = assetManager;
         this.soundPools = { };
@@ -22,9 +22,9 @@ define('Soundboard', [ 'jQuery', 'SoundPool' ], function ($, SoundPool) {
             var soundPool = this.getSoundPool(soundName);
 
             var sound = soundPool.alloc();
-            $(sound).one('ended', function () {
+            sound.addEventListener('ended', function () {
                 soundPool.free(sound);
-            });
+            }, false);
 
             Object.keys(options || { }).forEach(function (property) {
                 sound[property] = options[property];

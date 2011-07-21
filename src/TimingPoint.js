@@ -13,7 +13,7 @@ define('TimingPoint', [ ], function () {
         } else {
             return this.bpm;
         }
-    }
+    };
 
     return TimingPoint;
 });

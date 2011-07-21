@@ -1,4 +1,4 @@
-define('CanvasRenderer', [ 'mapObject', 'Util/Cache', 'canvasShaders', 'MapState', 'Util/gPubSub', 'Util/util', 'jQuery' ], function (mapObject, Cache, shaders, MapState, gPubSub, util, $) {
+define('CanvasRenderer', [ 'mapObject', 'Util/Cache', 'canvasShaders', 'MapState', 'Util/gPubSub', 'Util/util' ], function (mapObject, Cache, shaders, MapState, gPubSub, util) {
     function DOMAllocator(container) {
         this.container = container;
 
@@ -42,6 +42,12 @@ define('CanvasRenderer', [ 'mapObject', 'Util/Cache', 'canvasShaders', 'MapState
         }
 
         return '#' + color.map(c).join('');
+    }
+
+    function cloneAbsolute(element) {
+        var newElement = element.cloneNode(true);
+        newElement.style.position = 'absolute';
+        return newElement;
     }
 
     function renderMap(vars) {
@@ -273,8 +279,7 @@ define('CanvasRenderer', [ 'mapObject', 'Util/Cache', 'canvasShaders', 'MapState
             var graphic = hitMarkerGraphic[hitMarkerFrame];
 
             var el = dom.get(object, function () {
-                return $(graphic).clone()
-                    .css('position', 'absolute').get(0);
+                return cloneAbsolute(graphic);
             });
 
             var scale = ruleSet.getHitMarkerScale(object, time);
@@ -334,8 +339,7 @@ define('CanvasRenderer', [ 'mapObject', 'Util/Cache', 'canvasShaders', 'MapState
             var graphic = sliderBallGraphic[sliderBallFrame];
 
             var el = dom.get([ 'slider-ball', object ], function () {
-                return $(graphic).clone()
-                    .css('position', 'absolute').get(0);
+                return cloneAbsolute(graphic);
             });
 
             var sliderBallPosition = object.curve.getSliderBallPosition(object, time, ruleSet);
@@ -378,8 +382,7 @@ define('CanvasRenderer', [ 'mapObject', 'Util/Cache', 'canvasShaders', 'MapState
             var graphic = sliderTickGraphic[sliderTickFrame];
 
             var el = dom.get(object, function () {
-                return $(graphic).clone()
-                    .css('position', 'absolute').get(0);
+                return cloneAbsolute(graphic);
             });
 
             var scale = ruleSet.getCircleSize() / 128;
@@ -448,8 +451,7 @@ define('CanvasRenderer', [ 'mapObject', 'Util/Cache', 'canvasShaders', 'MapState
                 var rGraphic = reverseArrowGraphic[reverseArrowFrame];
 
                 var repeatArrowEl = dom.get([ 'repeat-arrow', object ], function () {
-                    return $(rGraphic).clone()
-                        .css('position', 'absolute').get(0);
+                    return cloneAbsolute(rGraphic);
                 });
 
                 var scale = ruleSet.getCircleSize() / 128;
@@ -633,8 +635,7 @@ define('CanvasRenderer', [ 'mapObject', 'Util/Cache', 'canvasShaders', 'MapState
                     backgroundGraphic = assetManager.get(background.fileName, 'image');
 
                     var el = backDom.get(backgroundGraphic, function () {
-                        return $(backgroundGraphic).clone()
-                            .css('position', 'absolute').get(0);
+                        return cloneAbsolute(backgroundGraphic);
                     });
 
                     el.style.x = viewport.x + 'px';

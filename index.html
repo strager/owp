@@ -22,38 +22,7 @@
     </head>
 
     <body>
-        <script src="vendor/es5-shim.js"></script>
-        <script src="vendor/require.js"></script>
-        <script src="vendor/jquery.js"></script>
-        <script type="text/javascript">
-            // shim layer with setTimeout fallback
-            window.requestAnimFrame = (function(){
-                function requestAnimationFrame(callback, element) {
-                    window.setTimeout(callback, 1000 / 60);
-                }
-
-                return window.requestAnimationFrame        
-                    || window.webkitRequestAnimationFrame  
-                    || window.mozRequestAnimationFrame     
-                    || window.oRequestAnimationFrame       
-                    || window.msRequestAnimationFrame      
-                    || requestAnimationFrame;
-            }());
-
-            window.onload = function() {
-                define('jQuery', [ ], function () {
-                    return jQuery.noConflict();
-                });
-
-                define('q', [ '../vendor/q/q'], function (Q) {
-                    return Q;
-                });
-
-                require({
-                    baseUrl: 'src'
-                }, [ './index' ]);
-            };
-        </script>
+        <script src="owp.js"></script>
 
         <pre id="debug"></pre>
     </body>

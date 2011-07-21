@@ -1,4 +1,4 @@
-define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache', 'jQuery', 'Util/util' ], function (MapState, mapObject, gPubSub, Cache, $, util) {
+define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache', 'Util/util' ], function (MapState, mapObject, gPubSub, Cache, util) {
     function reportGLError(gl, error) {
         // Find the error name
         var key;
@@ -725,8 +725,9 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
 
         var gl = context;
 
-        // XXX TODO DEBUG ONLY!!!
-        gl = wrapGL(gl);
+        if (DEBUG) {
+            gl = wrapGL(gl);
+        }
 
         var buffers = { };
         var programs = { };
