@@ -5,8 +5,7 @@ ROOT="$DIR/.."
 OUT="$ROOT/owp.min.js"
 
 (
-    # TODO Optimize NAMES
-    NAMES='Math, Function, Array, String, Date, window'
+    NAMES='document, window, Array, Object'
 
     echo ';// I am awesome'
     echo "(function ($NAMES, undefined) {"
