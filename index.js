@@ -1,4 +1,4 @@
-require([ 'jQuery', 'WebGLRenderer', 'CanvasRenderer', 'AssetManager', 'q', 'Game', 'Util/FramerateCounter', 'Util/gPubSub' ], function ($, WebGLRenderer, CanvasRenderer, AssetManager, Q, Game, FramerateCounter, gPubSub) {
+require([ 'WebGLRenderer', 'CanvasRenderer', 'AssetManager', 'q', 'Game', 'Util/FramerateCounter', 'Util/gPubSub' ], function (WebGLRenderer, CanvasRenderer, AssetManager, Q, Game, FramerateCounter, gPubSub) {
     var mapAssetManager = new AssetManager('assets');
     var skinAssetManager = new AssetManager('.');
 
@@ -10,9 +10,10 @@ require([ 'jQuery', 'WebGLRenderer', 'CanvasRenderer', 'AssetManager', 'q', 'Gam
             renderers.push(renderer);
             playAreas.push(renderer.element);
 
-            $(document.body)
-                .append('<h3>' + name + '</h3>')
-                .append(renderer.element);
+            var header = document.createElement('h3');
+            header.textContent = name;
+            document.body.appendChild(header);
+            document.body.appendChild(renderer.element);
         }
 
         try {
@@ -94,7 +95,8 @@ require([ 'jQuery', 'WebGLRenderer', 'CanvasRenderer', 'AssetManager', 'q', 'Gam
         var isLeftDown = false;
         var isRightDown = false;
 
-        var renderer = io.renderers[0]; // HACK...
+        // HACK
+        var renderer = io.renderers[0];
 
         function mouseStateChanged() {
             var pos = renderer.mouseToGame(mouseX, mouseY);
@@ -107,53 +109,71 @@ require([ 'jQuery', 'WebGLRenderer', 'CanvasRenderer', 'AssetManager', 'q', 'Gam
             });
         }
 
-        $(io.playAreas).mousedown(function (e) {
-            mouseX = e.pageX - this.offsetLeft;
-            mouseY = e.pageY - this.offsetTop;
+        function button(event, callbacks) {
+            var button;
 
-            switch (e.which) {
-            case 1: // LMB
-                isLeftDown = true;
-                break;
-
-            case 3: // RMB
-                isRightDown = true;
-                break;
+            // Taken from jQuery
+            if (!event.which && typeof event.button !== undefined) {
+                button = event.button & 1 ? 1 : (event.button & 2 ? 3 : (event.button & 4 ? 2 : 0));
+            } else {
+                button = event.which;
             }
 
-            mouseStateChanged();
-            return false;
-        });
+            var names = [ /* */, 'left', 'middle', 'right' ];
+            var name = names[button];
 
-        $(io.playAreas).mouseup(function (e) {
-            mouseX = e.pageX - this.offsetLeft;
-            mouseY = e.pageY - this.offsetTop;
-
-            switch (e.which) {
-            case 1: // LMB
-                isLeftDown = false;
-                break;
-
-            case 3: // RMB
-                isRightDown = false;
-                break;
+            if (name && callbacks[name]) {
+                callbacks[name]();
             }
+        }
 
-            mouseStateChanged();
-            return false;
+        io.playAreas.forEach(function (pa, i) {
+            pa.addEventListener('mousedown', function (e) {
+                mouseX = e.pageX - this.offsetLeft;
+                mouseY = e.pageY - this.offsetTop;
+
+                button(e, {
+                    left: function () {
+                        isLeftDown = true;
+                    },
+                    right: function () {
+                        isRightDown = true;
+                    }
+                });
+
+                mouseStateChanged();
+                return false;
+            }, false);
+
+            pa.addEventListener('mouseup', function (e) {
+                mouseX = e.pageX - this.offsetLeft;
+                mouseY = e.pageY - this.offsetTop;
+
+                button(e, {
+                    left: function () {
+                        isLeftDown = false;
+                    },
+                    right: function () {
+                        isRightDown = false;
+                    }
+                });
+
+                mouseStateChanged();
+                return false;
+            }, false);
+
+            pa.addEventListener('contextmenu', function (e) {
+                return false;
+            }, false);
+
+            pa.addEventListener('mousemove', function (e) {
+                mouseX = e.pageX - this.offsetLeft;
+                mouseY = e.pageY - this.offsetTop;
+                mouseStateChanged();
+            }, false);
         });
 
-        $(io.playAreas).bind('contextmenu', function (e) {
-            return false;
-        });
-
-        $(io.playAreas).mousemove(function (e) {
-            mouseX = e.pageX - this.offsetLeft;
-            mouseY = e.pageY - this.offsetTop;
-            mouseStateChanged();
-        });
-
-        $(document).keydown(function (e) {
+        document.addEventListener('keydown', function (e) {
             switch (e.which) {
             case 90: // LMB
                 isLeftDown = true;
@@ -165,9 +185,9 @@ require([ 'jQuery', 'WebGLRenderer', 'CanvasRenderer', 'AssetManager', 'q', 'Gam
             }
 
             mouseStateChanged();
-        });
+        }, false);
 
-        $(document).keyup(function (e) {
+        document.addEventListener('keyup', function (e) {
             switch (e.which) {
             case 90: // LMB
                 isLeftDown = false;
@@ -179,20 +199,25 @@ require([ 'jQuery', 'WebGLRenderer', 'CanvasRenderer', 'AssetManager', 'q', 'Gam
             }
 
             mouseStateChanged();
-        });
+        }, false);
 
-        $('<button/>').text('Full Screen').click(function () {
+        var fullScreenButton = document.createElement('button');
+        fullScreenButton.textContent = 'Full Screen';
+        fullScreenButton.onclick = function () {
             // TODO Use (webkit|moz)RequestFullScreenWithKeys
-            var $e = $(io.playAreas[0]);
-            $e.addClass('full-screen');
+            // HACK HACK hack =[
+            var e = io.playAreas[0];
+            e.className = 'full-screen';
 
             function resize() {
                 renderer.resize(document.width, document.height);
             }
 
             resize();
-            $(window).resize(resize);
-        }).appendTo('body');
+            window.onresize = resize;
+        };
+
+        document.body.appendChild(fullScreenButton);
     }
 
     function getPaintCount() {
@@ -213,7 +238,16 @@ require([ 'jQuery', 'WebGLRenderer', 'CanvasRenderer', 'AssetManager', 'q', 'Gam
             'render fps': renderFps.framerate
         };
 
-        return $.extend({ }, debug, game.debugInfo());
+        var gameDebug = game.debugInfo();
+        var key;
+
+        for (key in gameDebug) {
+            if (Object.prototype.hasOwnProperty.call(gameDebug, key)) {
+                debug[key] = gameDebug[key];
+            }
+        }
+
+        return debug;
     }
 
     function updateDebugInfo() {
@@ -221,9 +255,9 @@ require([ 'jQuery', 'WebGLRenderer', 'CanvasRenderer', 'AssetManager', 'q', 'Gam
             return;
         }
 
-        var $debug = $('#debug');
+        var debugElement = document.getElementById('debug');
 
-        if (!$debug.length) {
+        if (!debugElement) {
             return;
         }
 
@@ -239,7 +273,7 @@ require([ 'jQuery', 'WebGLRenderer', 'CanvasRenderer', 'AssetManager', 'q', 'Gam
             return key + ': ' + value;
         }).join('\n');
 
-        $debug.text(text);
+        debugElement.textContent = text;
     }
 
     function getMissingFeatures() {
@@ -258,7 +292,9 @@ require([ 'jQuery', 'WebGLRenderer', 'CanvasRenderer', 'AssetManager', 'q', 'Gam
         var text = 'Your browser is not supported; it is missing the following features:';
         text = [ text ].concat(missingFeatures).join('\n* ');
 
-        $('<pre/>').text(text).appendTo('body');
+        var messageElement = document.createElement('pre');
+        messageElement.textContent = text;
+        document.body.appendChild(messageElement);
 
         return;
     }

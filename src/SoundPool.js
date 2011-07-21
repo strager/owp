@@ -1,4 +1,4 @@
-define('SoundPool', [ 'jQuery' ], function ($) {
+define('SoundPool', [ ], function () {
     function SoundPool(sound) {
         this.sourceSound = sound;
         this.freeSounds = [ ];
@@ -20,7 +20,7 @@ define('SoundPool', [ 'jQuery' ], function ($) {
             var sound = this.freeSounds.pop();
 
             if (!sound) {
-                sound = $(this.sourceSound).clone().get(0);
+                sound = this.sourceSound.cloneNode(true);
             }
 
             this.takenSounds.push(sound);

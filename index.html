@@ -24,7 +24,6 @@
     <body>
         <script src="vendor/es5-shim.js"></script>
         <script src="vendor/require.js"></script>
-        <script src="vendor/jquery.js"></script>
         <script type="text/javascript">
             // shim layer with setTimeout fallback
             window.requestAnimFrame = (function(){
@@ -41,10 +40,6 @@
             }());
 
             window.onload = function() {
-                define('jQuery', [ ], function () {
-                    return jQuery.noConflict();
-                });
-
                 define('q', [ '../vendor/q/q'], function (Q) {
                     return Q;
                 });

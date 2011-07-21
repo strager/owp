@@ -1,5 +1,5 @@
 /*global window: false */
-define('AssetManager', [ 'jQuery', 'MapInfo', 'mapFile', 'assetConfig', 'Util/Map', 'Util/Cache', 'q' ], function ($, MapInfo, mapFile, assetConfig, Map, Cache, Q) {
+define('AssetManager', [ 'MapInfo', 'mapFile', 'assetConfig', 'Util/Map', 'Util/Cache', 'q' ], function (MapInfo, mapFile, assetConfig, Map, Cache, Q) {
     function setAudioSourceType(source) {
         // Safari hates it when you put .wav here, and Midori throws up when
         // you put .ogg here.  Guess this method isn't as useful as I thought
@@ -34,11 +34,16 @@ define('AssetManager', [ 'jQuery', 'MapInfo', 'mapFile', 'assetConfig', 'Util/Ma
             var ret = Q.defer();
 
             var img = document.createElement('img');
-            img.src = assetManager.root + '/' + name;
-
-            $(img).one('load', function () {
+            img.onload = function () {
                 ret.resolve(img);
-            });
+
+                img.onload = null;
+                img = null;
+            };
+
+
+            // We need to attach the onload event first for IE
+            img.src = assetManager.root + '/' + name;
 
             return ret.promise;
         },
@@ -50,8 +55,6 @@ define('AssetManager', [ 'jQuery', 'MapInfo', 'mapFile', 'assetConfig', 'Util/Ma
             audio.autobuffer = true;
             audio.preload = 'auto';
 
-            var $audio = $(audio);
-
             function fail(event) {
                 if (audio.networkState === audio.NETWORK_NO_SOURCE) {
                     ret.reject(new Error('NETWORK_NO_SOURCE'));
@@ -61,20 +64,23 @@ define('AssetManager', [ 'jQuery', 'MapInfo', 'mapFile', 'assetConfig', 'Util/Ma
             var originalTrack = document.createElement('source');
             originalTrack.src = assetManager.root + '/' + name;
             setAudioSourceType(originalTrack);
-            $(originalTrack).one('error', fail).appendTo($audio);
+            originalTrack.onerror = fail;
 
             var vorbisTrack = document.createElement('source');
             vorbisTrack.src = assetManager.root + '/' + name + '.ogg';
             setAudioSourceType(vorbisTrack);
-            $(vorbisTrack).one('error', fail).appendTo($audio);
+            vorbisTrack.onerror = fail;
 
-            $audio
-                .one('canplaythrough', function () {
-                    ret.resolve(audio);
-                })
-                .one('error', function (event) {
-                    ret.reject(new Error());
-                });
+            audio.addEventListener('canplaythrough', function () {
+                ret.resolve(audio);
+            }, false);
+
+            audio.addEventListener('error', function (event) {
+                ret.reject(new Error());
+            }, false);
+
+            audio.appendChild(originalTrack);
+            audio.appendChild(vorbisTrack);
 
             audio.load();
 
@@ -97,11 +103,21 @@ define('AssetManager', [ 'jQuery', 'MapInfo', 'mapFile', 'assetConfig', 'Util/Ma
         'asset-config': function (assetManager, name) {
             var ret = Q.defer();
 
-            $.get(assetManager.root + '/' + name, function (data) {
-                var config = assetConfig.parseString(data);
+            var xhr = new XMLHttpRequest();
+            xhr.onerror = function () {
+                ret.reject(new Error());
+            };
+            xhr.onreadystatechange = function () {
+                if (xhr.readyState === 4) {
+                    // Done loading
+                    var config = assetConfig.parseString(xhr.responseText);
 
-                ret.resolve(config);
-            }, 'text');
+                    ret.resolve(config);
+                }
+            };
+
+            xhr.open('GET', assetManager.root + '/' + name, true);
+            xhr.send(null);
 
             return ret.promise;
         },
