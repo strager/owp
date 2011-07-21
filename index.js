@@ -313,7 +313,9 @@ require([ 'WebGLRenderer', 'CanvasRenderer', 'AssetManager', 'q', 'Game', 'Util/
         return;
     }
 
-    loop(updateDebugInfo, 100);
+    if (DEBUG) {
+        loop(updateDebugInfo, 100);
+    }
 
     Q.ref(init()).then(go);
 });

@@ -13,7 +13,9 @@ OUT="$ROOT/owp.min.js"
     cat "$ROOT/vendor/es5-shim.js"
     cat "$ROOT/vendor/q/q.js"
     echo
-    echo ';window.onload = function () { var derequire_module__q = Q;'
+    echo ';window.onload = function () {';
+    echo 'var derequire_module__q = Q;'
+    echo 'var DEBUG = false;'
     node "$DIR/derequire.js" "$ROOT/index.js" "$ROOT/src/"
     echo
     echo '};'

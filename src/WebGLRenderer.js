@@ -725,8 +725,9 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
 
         var gl = context;
 
-        // XXX TODO DEBUG ONLY!!!
-        gl = wrapGL(gl);
+        if (DEBUG) {
+            gl = wrapGL(gl);
+        }
 
         var buffers = { };
         var programs = { };
