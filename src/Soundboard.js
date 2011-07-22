@@ -22,8 +22,9 @@ define('Soundboard', [ 'SoundPool' ], function (SoundPool) {
             var soundPool = this.getSoundPool(soundName);
 
             var sound = soundPool.alloc();
-            sound.addEventListener('ended', function () {
+            sound.addEventListener('ended', function handler() {
                 soundPool.free(sound);
+                sound.removeEventListener('ended', handler);
             }, false);
 
             Object.keys(options || { }).forEach(function (property) {
