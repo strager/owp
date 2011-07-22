@@ -8,8 +8,8 @@ define('MapState', [ 'mapObject', 'Util/Timeline', 'Util/Map', 'Util/PubSub' ], 
         var hittableObjects = [ ];
 
         objects.forEach(function (hitObject) {
-            var appearTime = ruleSet.getObjectAppearTime(hitObject);
-            var disappearTime = ruleSet.getObjectDisappearTime(hitObject);
+            var appearTime = ruleSet.getObjectStartAppearTime(hitObject);
+            var disappearTime = ruleSet.getObjectEndDisappearTime(hitObject);
 
             timeline.add(MapState.HIT_OBJECT_VISIBILITY, hitObject, appearTime, disappearTime);
 
