@@ -63,6 +63,9 @@ define('RuleSet', [ 'Util/util', 'mapObject', 'Util/History' ], function (util, 
             Slider: function (object) {
                 return this.getObjectEndTime(object);
             },
+            HitMarker: function (object) {
+                return this.getObjectStartTime(object) + 600;
+            },
             _: function (object) {
                 if (object.hitMarker) {
                     return object.hitMarker.time;
@@ -72,11 +75,16 @@ define('RuleSet', [ 'Util/util', 'mapObject', 'Util/History' ], function (util, 
             }
         }),
 
-        getObjectEndDisappearTime: function (object) {
-            var disappearTime = this.getObjectStartDisappearTime(object);
+        getObjectEndDisappearTime: mapObject.matcher({
+            HitMarker: function (object) {
+                return this.getObjectStartTime(object) + 900;
+            },
+            _: function (object) {
+                var disappearTime = this.getObjectStartDisappearTime(object);
 
-            return disappearTime + 100;
-        },
+                return disappearTime + 100;
+            }
+        }),
 
         getObjectStartTime: mapObject.matcher({
             SliderTick: function (object) {

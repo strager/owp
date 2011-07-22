@@ -501,10 +501,11 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
             }
 
             var scale = ruleSet.getHitMarkerScale(object, time);
+            var alpha = ruleSet.getObjectOpacity(object, time);
 
             draw.sprite(function (draw) {
                 gl.uniform2f(programs.sprite.uni.position, object.hitObject.x, object.hitObject.y);
-                gl.uniform4f(programs.sprite.uni.color, 255, 255, 255, 255);
+                gl.uniform4f(programs.sprite.uni.color, 255, 255, 255, alpha * 255);
                 gl.uniform2f(programs.sprite.uni.offset, 0, 0);
                 gl.uniform1f(programs.sprite.uni.scale, scale);
 
@@ -559,7 +560,7 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
 
             // Hit markers
             objects = objects.concat(
-                mapState.timeline.getAllInTimeRange(time - 2000, time, MapState.HIT_MARKER_CREATION)
+                mapState.timeline.getAllInTimeRange(time - 4000, time, MapState.HIT_MARKER_CREATION)
             );
 
             return ruleSet.getObjectsByZ(objects);
