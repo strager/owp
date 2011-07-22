@@ -14,7 +14,8 @@ define('SoundPool', [ ], function () {
                 alloced.push(this.alloc());
             }
 
-            alloced.forEach(this.free, this); },
+            alloced.forEach(this.free, this);
+        },
 
         alloc: function () {
             var sound = this.freeSounds.pop();
