@@ -1,4 +1,49 @@
-require([ 'WebGLRenderer', 'CanvasRenderer', 'AssetManager', 'q', 'Game', 'Util/FramerateCounter', 'Util/gPubSub' ], function (WebGLRenderer, CanvasRenderer, AssetManager, Q, Game, FramerateCounter, gPubSub) {
+require([ 'WebGLRenderer', 'CanvasRenderer', 'AssetManager', 'q', 'Game', 'Util/FramerateCounter', 'Util/gPubSub', 'agentInfo' ], function (WebGLRenderer, CanvasRenderer, AssetManager, Q, Game, FramerateCounter, gPubSub, agentInfo) {
+    var oldOnError = window.onerror;
+
+    if (!DEBUG) {
+        window.onerror = function (message, url, line) {
+            try {
+                if (typeof oldOnError === 'function') {
+                    oldOnError.apply(this, arguments);
+                }
+            } catch (e) {
+                // Ignore it.  We don't like them anyway.
+            }
+
+            try {
+                agentInfo.crash([ message, url, line ]);
+            } catch (e) {
+                // Well fuck.  =\
+                return true;
+            }
+
+            return false;
+        };
+    }
+
+    if (DEBUG) {
+        agentInfo.crashHandler.subscribe(function (crashInfo) {
+            throw crashInfo.exception;
+        });
+    } else {
+        agentInfo.crashReportHandler.subscribe(function (report) {
+            try {
+                var xhr = new XMLHttpRequest();
+                // If we get an error, oh well.
+
+                xhr.open('POST', '/crash-report', true);
+                xhr.send(JSON.stringify(report));
+            } catch (e) {
+                // Not much we can do now but annoy the user.  And we don't
+                // want that, do we?
+            }
+        });
+    }
+
+    agentInfo.userAgent = window.navigator.userAgent;
+    agentInfo.location = window.location.toString();
+
     // shim layer with setTimeout fallback
     var requestAnimFrame = (function(){
         function requestAnimationFrame(callback, element) {
@@ -24,10 +69,7 @@ require([ 'WebGLRenderer', 'CanvasRenderer', 'AssetManager', 'q', 'Game', 'Util/
             renderers.push(renderer);
             playAreas.push(renderer.element);
 
-            var header = document.createElement('h3');
-            header.textContent = name;
-            document.body.appendChild(header);
-            document.body.appendChild(renderer.element);
+            agentInfo.renderer = name;
         }
 
         try {
@@ -231,7 +273,14 @@ require([ 'WebGLRenderer', 'CanvasRenderer', 'AssetManager', 'q', 'Game', 'Util/
             window.onresize = resize;
         };
 
-        document.body.appendChild(fullScreenButton);
+        var playfield = document.getElementById('playfield');
+        playfield.innerHTML = '';
+
+        io.playAreas.forEach(function (playArea) {
+            playfield.appendChild(playArea);
+        });
+
+        playfield.appendChild(fullScreenButton);
     }
 
     function getPaintCount() {

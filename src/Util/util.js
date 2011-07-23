@@ -45,9 +45,28 @@ define('Util/util', [ ], function () {
         return base;
     }
 
+    function extend(obj /* extensions... */) {
+        var i;
+
+        for (i = 0; i < arguments.length; ++i) {
+            var extension = arguments[i];
+            Object.keys(extension).forEach(function (key) {
+                obj[key] = extension[key];
+            });
+        }
+
+        return obj;
+    }
+
+    function clone(obj) {
+        return extend({ }, obj);
+    }
+
     return {
         fitRectangleScale: fitRectangleScale,
         fitRectangle: fitRectangle,
-        extendObjectWithFields: extendObjectWithFields
+        extendObjectWithFields: extendObjectWithFields,
+        extend: extend,
+        clone: clone
     };
 });

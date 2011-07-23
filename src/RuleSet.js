@@ -48,16 +48,41 @@ define('RuleSet', [ 'Util/util', 'mapObject', 'Util/History' ], function (util, 
             return this.threePartLerp(1800, 1200, 450, this.approachRate);
         },
 
-        getObjectAppearTime: function (object) {
+        getObjectStartAppearTime: function (object) {
             return this.getObjectStartTime(object) - this.getAppearTime();
         },
 
-        getObjectDisappearTime: mapObject.matcher({
+        getObjectEndAppearTime: function (object) {
+            var appearTime = this.getObjectStartAppearTime(object);
+            var startTime = this.getObjectStartTime(object);
+
+            return (appearTime * 2 + startTime * 1) / 3;
+        },
+
+        getObjectStartDisappearTime: mapObject.matcher({
             Slider: function (object) {
                 return this.getObjectEndTime(object);
             },
+            HitMarker: function (object) {
+                return this.getObjectStartTime(object) + 600;
+            },
             _: function (object) {
-                return this.getObjectLatestHitTime(object);
+                if (object.hitMarker) {
+                    return object.hitMarker.time;
+                } else {
+                    return this.getObjectLatestHitTime(object);
+                }
+            }
+        }),
+
+        getObjectEndDisappearTime: mapObject.matcher({
+            HitMarker: function (object) {
+                return this.getObjectStartTime(object) + 900;
+            },
+            _: function (object) {
+                var disappearTime = this.getObjectStartDisappearTime(object);
+
+                return disappearTime + 100;
             }
         }),
 
@@ -91,10 +116,10 @@ define('RuleSet', [ 'Util/util', 'mapObject', 'Util/History' ], function (util, 
          * 'before', 'appearing', 'during', 'disappearing', or 'after'
          */
         getObjectVisibilityAtTime: function (object, time) {
-            var appearTime    = this.getObjectAppearTime(object);
+            var appearTime    = this.getObjectStartAppearTime(object);
             var startTime     = this.getObjectStartTime(object);
             var endTime       = this.getObjectEndTime(object);
-            var disappearTime = this.getObjectDisappearTime(object);
+            var disappearTime = this.getObjectEndDisappearTime(object);
 
             if (time < appearTime) {
                 return 'before';
@@ -110,44 +135,56 @@ define('RuleSet', [ 'Util/util', 'mapObject', 'Util/History' ], function (util, 
         },
 
         getObjectOpacity: function (object, time) {
-            var appearTime    = this.getObjectAppearTime(object);
-            var startTime     = this.getObjectStartTime(object);
-            var disappearTime = this.getObjectDisappearTime(object);
+            var startAppearTime    = this.getObjectStartAppearTime(object);
+            var endAppearTime      = this.getObjectEndAppearTime(object);
+            var startTime          = this.getObjectStartTime(object);
+            var startDisappearTime = this.getObjectStartDisappearTime(object);
+            var endDisappearTime   = this.getObjectEndDisappearTime(object);
 
-            var opaqueTime = (appearTime * 2 + startTime * 1) / 3;
-
-            if (time < appearTime) {
+            if (time < startAppearTime) {
                 return 0;
-            } else if (time < opaqueTime) {
-                return (time - appearTime) / (opaqueTime - appearTime);
-            } else if (time < disappearTime) {
+            } else if (time < endAppearTime) {
+                return (time - startAppearTime) / (endAppearTime - startAppearTime);
+            } else if (time < startTime) {
                 return 1;
+            } else if (time < startDisappearTime) {
+                return 1;
+            } else if (time < endDisappearTime) {
+                return 1 - (time - startDisappearTime) / (endDisappearTime - startDisappearTime);
             } else {
                 return 0;
             }
         },
 
         getSliderGrowPercentage: function (object, time) {
-            // TODO Real calculations
-            var x = this.getObjectOpacity(object, time);
+            var startAppearTime = this.getObjectStartAppearTime(object);
+            var endAppearTime   = this.getObjectEndAppearTime(object);
+
+            if (time < startAppearTime) {
+                return 0;
+            } else if (time < endAppearTime) {
+                return Math.sqrt((time - startAppearTime) / (endAppearTime - startAppearTime));
+            } else {
+                return 1;
+            }
 
             return Math.sqrt(x);
         },
 
         getObjectApproachProgress: function (object, time) {
-            var appearTime    = this.getObjectAppearTime(object);
-            var startTime     = this.getObjectStartTime(object);
-            var endTime       = this.getObjectEndTime(object);
-            var disappearTime = this.getObjectDisappearTime(object);
+            var startAppearTime = this.getObjectStartAppearTime(object);
+            var startTime       = this.getObjectStartTime(object);
+            var endTime         = this.getObjectEndTime(object);
+            var approachEndTime = endTime + 100;
 
-            if (time < appearTime) {
+            if (time < startAppearTime) {
                 return 0;
             } else if (time < startTime) {
-                return (time - appearTime) / (startTime - appearTime);
+                return (time - startAppearTime) / (startTime - startAppearTime);
             } else if (time < endTime) {
                 return 1;
-            } else if (time <= disappearTime) {
-                return ((time - endTime) / (disappearTime - endTime)) - 1;
+            } else if (time <= approachEndTime) {
+                return ((time - endTime) / (approachEndTime - endTime)) - 1;
             } else {
                 return 0;
             }
