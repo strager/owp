@@ -1,4 +1,4 @@
-define('Game', [ 'q', 'MapState', 'Util/PubSub', 'Soundboard', 'Util/Timeline', 'Util/gPubSub', 'Util/History' ], function (Q, MapState, PubSub, Soundboard, Timeline, gPubSub, History) {
+define('Game', [ 'q', 'MapState', 'Util/PubSub', 'Soundboard', 'Util/Timeline', 'Util/gPubSub', 'Util/History', 'agentInfo' ], function (Q, MapState, PubSub, Soundboard, Timeline, gPubSub, History, agentInfo) {
     function Game() {
         var currentState = null;
         var skin = null;
@@ -193,7 +193,7 @@ define('Game', [ 'q', 'MapState', 'Util/PubSub', 'Soundboard', 'Util/Timeline', 
                 Q.ref(skin)
             ]);
 
-            return Q.ref(load).then(play);
+            return Q.ref(load).then(play, agentInfo.crash);
         }
 
         function debugInfo() {

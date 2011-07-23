@@ -1,4 +1,35 @@
-require([ 'WebGLRenderer', 'CanvasRenderer', 'AssetManager', 'q', 'Game', 'Util/FramerateCounter', 'Util/gPubSub' ], function (WebGLRenderer, CanvasRenderer, AssetManager, Q, Game, FramerateCounter, gPubSub) {
+require([ 'WebGLRenderer', 'CanvasRenderer', 'AssetManager', 'q', 'Game', 'Util/FramerateCounter', 'Util/gPubSub', 'agentInfo' ], function (WebGLRenderer, CanvasRenderer, AssetManager, Q, Game, FramerateCounter, gPubSub, agentInfo) {
+    var oldOnError = window.onerror;
+
+    if (!DEBUG) {
+        window.onerror = function (message, url, line) {
+            try {
+                if (typeof oldOnError === 'function') {
+                    oldOnError.apply(this, arguments);
+                }
+            } catch (e) {
+                // Ignore it.  We don't like them anyway.
+            }
+
+            try {
+                agentInfo.crash([ message, url, line ]);
+            } catch (e) {
+                // Well fuck.  =\
+            }
+        };
+    }
+
+    if (DEBUG) {
+        agentInfo.crashHandler.subscribe(function (agentInfo) {
+            throw agentInfo.crashInfo;
+        });
+    } else {
+        // TODO Send crashes
+    }
+
+    agentInfo.userAgent = window.navigator.userAgent;
+    agentInfo.location = window.location.toString();
+
     // shim layer with setTimeout fallback
     var requestAnimFrame = (function(){
         function requestAnimationFrame(callback, element) {
@@ -23,6 +54,8 @@ require([ 'WebGLRenderer', 'CanvasRenderer', 'AssetManager', 'q', 'Game', 'Util/
         function addRenderer(renderer, name) {
             renderers.push(renderer);
             playAreas.push(renderer.element);
+
+            agentInfo.renderer = name;
         }
 
         try {
