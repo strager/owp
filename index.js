@@ -28,8 +28,16 @@ require([ 'WebGLRenderer', 'CanvasRenderer', 'AssetManager', 'q', 'Game', 'Util/
         });
     } else {
         agentInfo.crashReportHandler.subscribe(function (report) {
-            // TODO Send crashes
-            console.log(report);
+            try {
+                var xhr = new XMLHttpRequest();
+                // If we get an error, oh well.
+
+                xhr.open('POST', '/crash-report', true);
+                xhr.send(JSON.stringify(report));
+            } catch (e) {
+                // Not much we can do now but annoy the user.  And we don't
+                // want that, do we?
+            }
         });
     }
 
