@@ -15,16 +15,22 @@ require([ 'WebGLRenderer', 'CanvasRenderer', 'AssetManager', 'q', 'Game', 'Util/
                 agentInfo.crash([ message, url, line ]);
             } catch (e) {
                 // Well fuck.  =\
+                return true;
             }
+
+            return false;
         };
     }
 
     if (DEBUG) {
-        agentInfo.crashHandler.subscribe(function (agentInfo) {
-            throw agentInfo.crashInfo;
+        agentInfo.crashHandler.subscribe(function (crashInfo) {
+            throw crashInfo.exception;
         });
     } else {
-        // TODO Send crashes
+        agentInfo.crashReportHandler.subscribe(function (report) {
+            // TODO Send crashes
+            console.log(report);
+        });
     }
 
     agentInfo.userAgent = window.navigator.userAgent;
