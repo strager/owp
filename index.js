@@ -23,11 +23,6 @@ require([ 'WebGLRenderer', 'CanvasRenderer', 'AssetManager', 'q', 'Game', 'Util/
         function addRenderer(renderer, name) {
             renderers.push(renderer);
             playAreas.push(renderer.element);
-
-            var header = document.createElement('h3');
-            header.textContent = name;
-            document.body.appendChild(header);
-            document.body.appendChild(renderer.element);
         }
 
         try {
@@ -231,7 +226,14 @@ require([ 'WebGLRenderer', 'CanvasRenderer', 'AssetManager', 'q', 'Game', 'Util/
             window.onresize = resize;
         };
 
-        document.body.appendChild(fullScreenButton);
+        var playfield = document.getElementById('playfield');
+        playfield.innerHTML = '';
+
+        io.playAreas.forEach(function (playArea) {
+            playfield.appendChild(playArea);
+        });
+
+        playfield.appendChild(fullScreenButton);
     }
 
     function getPaintCount() {
