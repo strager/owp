@@ -355,9 +355,11 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
             gl.bindFramebuffer(gl.FRAMEBUFFER, null);
 
             draw.objectTarget(function (draw) {
+                var alpha = typeof options.alpha === 'undefined' ? 1 : options.alpha;
+
                 gl.uniform2f(programs.objectTarget.uni.playfield, viewport.width, viewport.height);
                 gl.uniform2f(programs.objectTarget.uni.size, misc.objectTarget.width, misc.objectTarget.height);
-                gl.uniform1f(programs.objectTarget.uni.alpha, options.alpha || 1);
+                gl.uniform1f(programs.objectTarget.uni.alpha, alpha);
 
                 gl.activeTexture(gl.TEXTURE0);
                 gl.bindTexture(gl.TEXTURE_2D, misc.objectTarget.texture);

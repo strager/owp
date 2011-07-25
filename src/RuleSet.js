@@ -82,7 +82,7 @@ define('RuleSet', [ 'Util/util', 'mapObject', 'Util/History' ], function (util, 
             _: function (object) {
                 var disappearTime = this.getObjectStartDisappearTime(object);
 
-                return disappearTime + 100;
+                return disappearTime + 200;
             }
         }),
 
