@@ -355,9 +355,11 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
             gl.bindFramebuffer(gl.FRAMEBUFFER, null);
 
             draw.objectTarget(function (draw) {
+                var alpha = typeof options.alpha === 'undefined' ? 1 : options.alpha;
+
                 gl.uniform2f(programs.objectTarget.uni.playfield, viewport.width, viewport.height);
                 gl.uniform2f(programs.objectTarget.uni.size, misc.objectTarget.width, misc.objectTarget.height);
-                gl.uniform1f(programs.objectTarget.uni.alpha, options.alpha || 1);
+                gl.uniform1f(programs.objectTarget.uni.alpha, alpha);
 
                 gl.activeTexture(gl.TEXTURE0);
                 gl.bindTexture(gl.TEXTURE_2D, misc.objectTarget.texture);
@@ -915,8 +917,11 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
             }
 
             // A bit of a HACK
-            var backgroundGraphic = assetManager.get(storyboard.getBackground(0).fileName, 'image');
-            textures.background = makeTexture(backgroundGraphic);
+            var background = storyboard.getBackground(0);
+            if (background) {
+                var backgroundGraphic = assetManager.get(background.fileName, 'image');
+                textures.background = makeTexture(backgroundGraphic);
+            }
 
             storyboardInitd = true;
         }
@@ -983,6 +988,10 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
 
             renderStoryboard: function (storyboard, assetManager, time) {
                 initStoryboard(storyboard, assetManager);
+
+                if (!textures.background) {
+                    return;
+                }
 
                 var draw = drawers(gl, buffers, programs);
 
