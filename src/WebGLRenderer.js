@@ -915,8 +915,11 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
             }
 
             // A bit of a HACK
-            var backgroundGraphic = assetManager.get(storyboard.getBackground(0).fileName, 'image');
-            textures.background = makeTexture(backgroundGraphic);
+            var background = storyboard.getBackground(0);
+            if (background) {
+                var backgroundGraphic = assetManager.get(background.fileName, 'image');
+                textures.background = makeTexture(backgroundGraphic);
+            }
 
             storyboardInitd = true;
         }
@@ -983,6 +986,10 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
 
             renderStoryboard: function (storyboard, assetManager, time) {
                 initStoryboard(storyboard, assetManager);
+
+                if (!textures.background) {
+                    return;
+                }
 
                 var draw = drawers(gl, buffers, programs);
 
