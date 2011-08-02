@@ -33,14 +33,16 @@ define('AssetManager', [ 'MapInfo', 'mapFile', 'assetConfig', 'Util/Map', 'Util/
         image: function (assetManager, name) {
             var ret = Q.defer();
 
-            var img = document.createElement('img');
-            img.onload = function () {
+            var img = new Image();
+            img.addEventListener('load', function () {
                 ret.resolve(img);
 
                 img.onload = null;
                 img = null;
-            };
-
+            }, false);
+            img.addEventListener('error', function () {
+                ret.reject(new Error());
+            }, false);
 
             // We need to attach the onload event first for IE
             img.src = assetManager.root + '/' + name;
