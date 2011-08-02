@@ -167,8 +167,6 @@ define('RuleSet', [ 'Util/util', 'mapObject', 'Util/History' ], function (util, 
             } else {
                 return 1;
             }
-
-            return Math.sqrt(x);
         },
 
         getObjectApproachProgress: function (object, time) {

@@ -20,7 +20,7 @@ DEBUG = true;
                     return Q;
                 });
 
-                require([ '../index' ]);
+                require([ './index' ]);
             });
         };
         script.src = 'vendor/require.js';
