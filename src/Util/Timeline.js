@@ -84,8 +84,7 @@ define('Util/Timeline', [ 'Util/PubSub' ], function (PubSub) {
         }
     };
 
-    function Timeline(audio) {
-        this.audio = audio;
+    function Timeline() {
         this.cueLists = { };
         this.events = { };
         this.isUpdating = false;
@@ -100,10 +99,6 @@ define('Util/Timeline', [ 'Util/PubSub' ], function (PubSub) {
     }
 
     Timeline.prototype = {
-        getCurrentTime: function () {
-            return Math.round(this.audio.currentTime * 1000);
-        },
-
         getCueList: function (key) {
             validateKey(key);
 
