@@ -1,4 +1,4 @@
-define('Game', [ 'q', 'MapState', 'Util/PubSub', 'Soundboard', 'Util/Timeline', 'Util/gPubSub', 'Util/History', 'agentInfo' ], function (Q, MapState, PubSub, Soundboard, Timeline, gPubSub, History, agentInfo) {
+define('Game', [ 'q', 'MapState', 'Util/PubSub', 'Soundboard', 'Util/Timeline', 'Util/gPubSub', 'Util/History', 'agentInfo', 'Util/audioTimer' ], function (Q, MapState, PubSub, Soundboard, Timeline, gPubSub, History, agentInfo, audioTimer) {
     function Game() {
         var currentState = null;
         var skin = null;
@@ -78,9 +78,11 @@ define('Game', [ 'q', 'MapState', 'Util/PubSub', 'Soundboard', 'Util/Timeline', 
                 var accuracyHistory = new History();
                 var comboHistory = new History();
 
+                var currentTime = audioTimer.auto(audio);
+
                 setState({
                     render: function (renderer) {
-                        var time = timeline.getCurrentTime();
+                        var time = currentTime();
 
                         renderer.renderStoryboard(mapInfo.storyboard, mapAssetManager, time);
                         renderer.renderMap({
@@ -93,7 +95,7 @@ define('Game', [ 'q', 'MapState', 'Util/PubSub', 'Soundboard', 'Util/Timeline', 
                         audio.play();
 
                         boundEvents.push(mousePubSub.subscribe(function (e) {
-                            var time = timeline.getCurrentTime();
+                            var time = currentTime();
 
                             if (trackMouse) {
                                 mouseHistory.add(time, e);
@@ -139,7 +141,7 @@ define('Game', [ 'q', 'MapState', 'Util/PubSub', 'Soundboard', 'Util/Timeline', 
                         }));
 
                         gPubSub.subscribe(function () {
-                            var time = timeline.getCurrentTime();
+                            var time = currentTime();
 
                             mapState.processSlides(time, mouseHistory);
                             mapState.processMisses(time);
@@ -153,7 +155,7 @@ define('Game', [ 'q', 'MapState', 'Util/PubSub', 'Soundboard', 'Util/Timeline', 
                         });
                     },
                     debugInfo: function () {
-                        var time = timeline.getCurrentTime();
+                        var time = currentTime();
 
                         return {
                             'current map time (ms)': time,
