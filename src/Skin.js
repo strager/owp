@@ -37,7 +37,15 @@ define('Skin', [ 'Util/util' ], function (util) {
                     'sliderpoint30',
                     'sliderpoint10',
                     'reversearrow',
-                    'sliderb0'
+                    'sliderb0',
+
+                    'default-comma',
+                    'default-dot',
+
+                    'score-comma',
+                    'score-dot',
+                    'score-percent',
+                    'score-x'
                 ],
                 'sound': [
                     'normal-hitclap.wav',

@@ -596,17 +596,17 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
 
         var draw = drawers(gl, buffers, programs);
 
-        function getDigits(number) {
-            return ('' + number).split('');
+        function getChars(string) {
+            return ('' + string).split('');
         }
 
-        function getNumberTextures(set, number) {
-            return getDigits(number).map(function (digit) {
-                return set[digit];
+        function getStringTextures(font, string) {
+            return getChars(string).map(function (c) {
+                return font[c];
             });
         }
 
-        function renderNumber(textures, options) {
+        function renderCharacters(textures, options) {
             var offset = 0;
 
             var scale = options.scale || 1;
@@ -635,7 +635,9 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
         }
 
         function renderScore() {
-            renderNumber(getNumberTextures(textures.scoreDigits, scoreHistory.getDataAtTime(time) || 0).reverse(), {
+            var score = scoreHistory.getDataAtTime(time) || 0;
+
+            renderCharacters(getStringTextures(textures.scoreDigits, score).reverse(), {
                 x: 550,
                 y: 20,
                 scale: .7,
@@ -644,10 +646,13 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
         }
 
         function renderCombo() {
-            renderNumber(getNumberTextures(textures.digits, comboHistory.getDataAtTime(time) || 0), {
+            var combo = comboHistory.getDataAtTime(time) || 0;
+
+            renderCharacters(getStringTextures(textures.scoreDigits, combo + 'x'), {
                 x: 20,
                 y: 450,
-                scale: .4
+                scale: .7,
+                offsetScale: 0.75
             });
         }
 
@@ -934,43 +939,40 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
                 return;
             }
 
-            var hitCircleGraphic = skin.assetManager.get('hitcircle', 'image-set');
-            var hitCircleOverlayGraphic = skin.assetManager.get('hitcircleoverlay', 'image-set');
-            var approachCircleGraphic = skin.assetManager.get('approachcircle', 'image-set');
-            var sliderBallGraphic = skin.assetManager.get('sliderb0', 'image-set');
-            var cursorGraphic = skin.assetManager.get('cursor', 'image-set');
-            var cursorTrailGraphic = skin.assetManager.get('cursortrail', 'image-set');
-            var sliderTickGraphic = skin.assetManager.get('sliderscorepoint', 'image-set');
-            var repeatArrowGraphic = skin.assetManager.get('reversearrow', 'image-set');
-
-            textures.hitCircle = makeTexture(hitCircleGraphic[0]);
-            textures.hitCircleOverlay = makeTexture(hitCircleOverlayGraphic[0]);
-            textures.approachCircle = makeTexture(approachCircleGraphic[0]);
-            textures.sliderBall = makeTexture(sliderBallGraphic[0]);
-            textures.cursor = makeTexture(cursorGraphic[0]);
-            textures.cursorTrail = makeTexture(cursorTrailGraphic[0]);
-            textures.sliderTick = makeTexture(sliderTickGraphic[0]);
-            textures.repeatArrow = makeTexture(repeatArrowGraphic[0]);
-
-            // FIXME Possible XSS?
-            canvas.style.cursor = 'url("' + cursorGraphic[0].src + '") ' + Math.floor(cursorGraphic[0].width / 2) + ' ' + Math.floor(cursorGraphic[0].height / 2) + ', none';
-
-            var i;
-            var graphic;
-
-            textures.digits = [ ];
-
-            for (i = 0; i < 10; ++i) {
-                graphic = skin.assetManager.get('default-' + i, 'image-set');
-                textures.digits[i] = makeTexture(graphic[0]);
+            function makeSkinTexture(name) {
+                return makeTexture(skin.assetManager.get(name, 'image-set')[0]);
             }
 
+            textures.hitCircle = makeSkinTexture('hitcircle');
+            textures.hitCircleOverlay = makeSkinTexture('hitcircleoverlay');
+            textures.approachCircle = makeSkinTexture('approachcircle');
+            textures.sliderBall = makeSkinTexture('sliderb0');
+            textures.cursor = makeSkinTexture('cursor');
+            textures.cursorTrail = makeSkinTexture('cursortrail');
+            textures.sliderTick = makeSkinTexture('sliderscorepoint');
+            textures.repeatArrow = makeSkinTexture('reversearrow');
+
+            // FIXME Possible XSS?
+            var cursorImage = skin.assetManager.get('cursor', 'image-set')[0];
+            canvas.style.cursor = 'url("' + cursorImage.src + '") ' + Math.floor(cursorImage.width / 2) + ' ' + Math.floor(cursorImage.height / 2) + ', none';
+
+            var i;
+
+            textures.digits = [ ];
             textures.scoreDigits = [ ];
 
             for (i = 0; i < 10; ++i) {
-                graphic = skin.assetManager.get('score-' + i, 'image-set');
-                textures.scoreDigits[i] = makeTexture(graphic[0]);
+                textures.digits[i] = makeSkinTexture('default-' + i);
+                textures.scoreDigits[i] = makeSkinTexture('score-' + i);
             }
+
+            textures.digits[','] = makeSkinTexture('default-comma');
+            textures.digits['.'] = makeSkinTexture('default-dot');
+
+            textures.scoreDigits[','] = makeSkinTexture('score-comma');
+            textures.scoreDigits['.'] = makeSkinTexture('score-dot');
+            textures.scoreDigits['%'] = makeSkinTexture('score-percent');
+            textures.scoreDigits['x'] = makeSkinTexture('score-x');
 
             var hitMarkerImageNames = [
                 'hit300',
@@ -984,8 +986,7 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
             textures.hitMarkers = [ ];
 
             hitMarkerImageNames.forEach(function (imageName) {
-                var graphic = skin.assetManager.get(imageName, 'image-set');
-                textures.hitMarkers[imageName] = makeTexture(graphic[0]);
+                textures.hitMarkers[imageName] = makeSkinTexture(imageName);
             });
 
             gl.bindTexture(gl.TEXTURE_2D, null);
