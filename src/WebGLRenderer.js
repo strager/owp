@@ -55,19 +55,35 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
 
     function renderer(v) {
         // Les constants
-        var buffers = v.buffers;
-        var caches = v.caches;
-        var gl = v.context;
-        var misc = v.misc;
-        var programs = v.programs;
-        var textures = v.textures;
-        var viewport = v.viewport;
+        var buffers, caches, misc, programs, textures;
+        var gl, viewport;
+
+        function consts(c) {
+            buffers = c.buffers;
+            caches = c.caches;
+            gl = c.context;
+            misc = c.misc;
+            programs = c.programs;
+            textures = c.textures;
+            viewport = c.viewport;
+        }
 
         // Les variables
         var mapState, ruleSet, skin;
         var mouseHistory;
         var scoreHistory, comboHistory, accuracyHistory;
         var time;
+
+        function vars(v) {
+            accuracyHistory = v.accuracyHistory;
+            comboHistory = v.comboHistory;
+            mapState = v.mapState;
+            mouseHistory = v.mouseHistory;
+            ruleSet = v.ruleSet;
+            scoreHistory = v.scoreHistory;
+            skin = v.skin;
+            time = v.time;
+        }
 
         var inProgram = false;
 
@@ -681,19 +697,9 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
         }
         // Storyboard rendering }}}
 
-        function vars(v) {
-            accuracyHistory = v.accuracyHistory;
-            comboHistory = v.comboHistory;
-            mapState = v.mapState;
-            mouseHistory = v.mouseHistory;
-            ruleSet = v.ruleSet;
-            scoreHistory = v.scoreHistory;
-            skin = v.skin;
-            time = v.time;
-        }
-
         return {
             vars: vars,
+            consts: consts,
             renderMap: renderMap,
             renderHud: renderHud,
             renderStoryboard: renderStoryboard
@@ -1053,9 +1059,8 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
             storyboardInitd = true;
         }
 
+        var r = renderer();
         var viewport = { };
-
-        init();
 
         function resize(width, height) {
             canvas.width = width;
@@ -1069,17 +1074,19 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
                 width: Math.min(width, rect.width),
                 height: Math.min(height, rect.height)
             };
+
+            r.consts({
+                buffers: buffers,
+                caches: caches,
+                context: context,
+                misc: misc,
+                programs: programs,
+                textures: textures,
+                viewport: viewport
+            });
         }
 
-        var r = renderer({
-            buffers: buffers,
-            caches: caches,
-            context: context,
-            misc: misc,
-            programs: programs,
-            textures: textures,
-            viewport: viewport
-        });
+        init();
 
         return {
             element: canvas,
