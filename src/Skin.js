@@ -68,6 +68,7 @@ define('Skin', [ 'Util/util' ], function (util) {
 
             for (i = 0; i < 10; ++i) {
                 files['image-set'].push('default-' + i);
+                files['image-set'].push('score-' + i);
             }
 
             return this.assetManager.preload(files);

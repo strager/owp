@@ -578,6 +578,74 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
         // (See cursor + trail rendering code in file history)
     }
 
+    function renderHud(vars) {
+        var ruleSet = vars.ruleSet;
+        var scoreHistory = vars.scoreHistory;
+        var accuracyHistory = vars.accuracyHistory;
+        var comboHistory = vars.comboHistory;
+        var skin = vars.skin;
+        var time = vars.time;
+        var gl = vars.context;
+        var buffers = vars.buffers;
+        var programs = vars.programs;
+        var textures = vars.textures;
+        var misc = vars.misc;
+        var caches = vars.caches;
+        var mouseHistory = vars.mouseHistory;
+        var viewport = vars.viewport;
+
+        var draw = drawers(gl, buffers, programs);
+
+        function getDigits(number) {
+            return ('' + number).split('');
+        }
+
+        function getNumberTextures(set, number) {
+            return getDigits(number).map(function (digit) {
+                return set[digit];
+            });
+        }
+
+        function renderNumber(textures, options) {
+            var offset = 0;
+
+            var scale = options.scale || 1;
+            var scales = options.scales || [ ];
+
+            var spacing = options.spacing || 0;
+            var spacings = options.spacings || [ ];
+
+            var offsetScale = options.offsetScale || 1;
+
+            draw.sprite(function (draw) {
+                gl.uniform4f(programs.sprite.uni.color, 255, 255, 255, 255);
+                gl.uniform2f(programs.sprite.uni.position, options.x || 0, options.y || 0);
+
+                textures.forEach(function (texture, i) {
+                    var thisScale = (scales[i] || 1) * scale;
+
+                    gl.uniform1f(programs.sprite.uni.scale, thisScale);
+                    gl.uniform2f(programs.sprite.uni.offset, offsetScale * offset, 0);
+
+                    draw(texture);
+
+                    offset += scale * texture.image.width + spacing + (spacings[i] || 0);
+                });
+            });
+        }
+
+        function renderScore() {
+            renderNumber(getNumberTextures(textures.scoreDigits, scoreHistory.getDataAtTime(time) || 0).reverse(), {
+                x: 550,
+                y: 20,
+                scale: .7,
+                offsetScale: -0.75
+            });
+        }
+
+        renderScore();
+    }
+
     var spriteVertexShader, spriteFragmentShader;
     var objectTargetVertexShader, objectTargetFragmentShader;
     var curveVertexShader, curveFragmentShader;
@@ -888,6 +956,13 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
                 textures.digits[i] = makeTexture(graphic[0]);
             }
 
+            textures.scoreDigits = [ ];
+
+            for (i = 0; i < 10; ++i) {
+                graphic = skin.assetManager.get('score-' + i, 'image-set');
+                textures.scoreDigits[i] = makeTexture(graphic[0]);
+            }
+
             var hitMarkerImageNames = [
                 'hit300',
                 'hit100',
@@ -975,6 +1050,26 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
                     mapState: state.mapState,
                     skin: state.skin,
                     mouseHistory: state.mouseHistory,
+                    time: time,
+                    context: context,
+                    buffers: buffers,
+                    programs: programs,
+                    textures: textures,
+                    misc: misc,
+                    caches: caches,
+                    viewport: viewport
+                });
+            },
+
+            renderHud: function (state, time) {
+                initSkin(state.skin, state.ruleSet);
+
+                renderHud({
+                    skin: state.skin,
+                    ruleSet: state.ruleSet,
+                    scoreHistory: state.scoreHistory,
+                    accuracyHistory: state.accuracyHistory,
+                    comboHistory: state.comboHistory,
                     time: time,
                     context: context,
                     buffers: buffers,
