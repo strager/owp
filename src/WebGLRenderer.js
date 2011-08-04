@@ -656,8 +656,20 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
             });
         }
 
+        function renderAccuracy() {
+            var accuracy = ((accuracyHistory.getDataAtTime(time) || 0) * 100).toFixed(2);
+
+            renderCharacters(getStringTextures(textures.scoreDigits, accuracy + '%').reverse(), {
+                x: 560,
+                y: 45,
+                scale: .5,
+                offsetScale: -0.75
+            });
+        }
+
         renderScore();
         renderCombo();
+        renderAccuracy();
     }
 
     var spriteVertexShader, spriteFragmentShader;
