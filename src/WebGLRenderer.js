@@ -643,7 +643,16 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
             });
         }
 
+        function renderCombo() {
+            renderNumber(getNumberTextures(textures.digits, comboHistory.getDataAtTime(time) || 0), {
+                x: 20,
+                y: 450,
+                scale: .4
+            });
+        }
+
         renderScore();
+        renderCombo();
     }
 
     var spriteVertexShader, spriteFragmentShader;
