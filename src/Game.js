@@ -90,6 +90,13 @@ define('Game', [ 'q', 'MapState', 'Util/PubSub', 'Soundboard', 'Util/Timeline', 
                             skin: skin.valueOf(),
                             mouseHistory: mouseHistory
                         }, time);
+                        renderer.renderHud({
+                            skin: skin.valueOf(),
+                            ruleSet: mapState.ruleSet,
+                            scoreHistory: scoreHistory,
+                            accuracyHistory: accuracyHistory,
+                            comboHistory: comboHistory
+                        }, time);
                     },
                     enter: function () {
                         audio.play();

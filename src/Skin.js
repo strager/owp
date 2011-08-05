@@ -37,7 +37,15 @@ define('Skin', [ 'Util/util' ], function (util) {
                     'sliderpoint30',
                     'sliderpoint10',
                     'reversearrow',
-                    'sliderb0'
+                    'sliderb0',
+
+                    'default-comma',
+                    'default-dot',
+
+                    'score-comma',
+                    'score-dot',
+                    'score-percent',
+                    'score-x'
                 ],
                 'sound': [
                     'normal-hitclap.wav',
@@ -68,6 +76,7 @@ define('Skin', [ 'Util/util' ], function (util) {
 
             for (i = 0; i < 10; ++i) {
                 files['image-set'].push('default-' + i);
+                files['image-set'].push('score-' + i);
             }
 
             return this.assetManager.preload(files);
