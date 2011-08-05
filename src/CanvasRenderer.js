@@ -645,6 +645,10 @@ define('CanvasRenderer', [ 'mapObject', 'Util/Cache', 'canvasShaders', 'MapState
                 }
 
                 // TODO Real storyboard stuff
+            },
+
+            renderHud: function () {
+                // TODO
             }
         };
     }
