@@ -492,7 +492,13 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
                 }
 
                 renderHitCircleBackground(object.x, object.y, color);
-                renderComboNumber(object.comboIndex + 1, object.x, object.y);
+
+                if (!object.hitMarker) {
+                    // Show combo number only if the slider hasn't yet been hit
+                    // TODO Fade out nicely
+                    renderComboNumber(object.comboIndex + 1, object.x, object.y);
+                }
+
                 renderHitCircleOverlay(object.x, object.y);
 
                 // Next end (repeat arrow)
