@@ -28,7 +28,7 @@ define('mapObject', [ ], function () {
 
     SliderTick.prototype.type = 'SliderTick';
 
-    function SliderEnd(time, slider, repeatIndex, isFinal) {
+    function SliderEnd(time, slider, repeatIndex, isFinal, hitSounds) {
         this.time = time;
         this.slider = slider;
         this.repeatIndex = repeatIndex;
@@ -41,8 +41,7 @@ define('mapObject', [ ], function () {
         this.x = position[0];
         this.y = position[1];
 
-        // TODO Newer .osu versions can customize slider end hitsounds
-        this.hitSounds = [ 'hitnormal' ];
+        this.hitSounds = hitSounds;
     }
 
     SliderEnd.prototype.type = 'SliderEnd';

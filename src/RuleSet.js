@@ -506,7 +506,8 @@ define('RuleSet', [ 'Util/util', 'mapObject', 'Util/History' ], function (util, 
                     startTime + i * repeatDuration,
                     slider,
                     i,
-                    i === slider.repeats
+                    i === slider.repeats,
+                    slider.endHitSounds[i] || slider.hitSounds
                 ));
             }
 
