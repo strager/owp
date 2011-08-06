@@ -522,7 +522,9 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
                     renderSliderBall(object);
                 }
 
-                renderApproachProgress(object);
+                if (visibility === 'appearing') {
+                    renderApproachProgress(object);
+                }
             });
         }
 
