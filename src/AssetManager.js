@@ -17,6 +17,13 @@ define('AssetManager', [ 'MapInfo', 'mapFile', 'assetConfig', 'Util/Map', 'Util/
         });
     }
 
+    var audioLoadCounter = 0;
+
+    function randomGlobal() {
+        ++audioLoadCounter;
+        return 'owp_global__do_not_touch__bug_workaround_' + audioLoadCounter;
+    }
+
     function AssetManager(root) {
         this.root = root;
         this.cache = new Cache();
@@ -73,21 +80,6 @@ define('AssetManager', [ 'MapInfo', 'mapFile', 'assetConfig', 'Util/Map', 'Util/
             setAudioSourceType(vorbisTrack);
             vorbisTrack.onerror = fail;
 
-            // Work around Chrome bug (present in <= 15, at time of writing)
-            // where Chrome will decide it doesn't /need/ to download all these
-            // pesky audio files.
-            var loadLoopInterval = setInterval(function () {
-                if (Q.isResolved(audio)) {
-                    // Despite what the name implies, isResolved returns true
-                    // for rejected promises as well (and that's just what we
-                    // need).
-                    clearInterval(loadLoopInterval);
-                    return;
-                }
-
-                audio.load();
-            }, 2000);
-
             audio.addEventListener('canplaythrough', function () {
                 ret.resolve(audio);
             }, false);
@@ -101,7 +93,17 @@ define('AssetManager', [ 'MapInfo', 'mapFile', 'assetConfig', 'Util/Map', 'Util/
 
             audio.load();
 
-            return ret.promise;
+            // Work around Webkit bug (present in Chrome <= 15, Safari <= 5, at
+            // time of writing) where the browser will decide it doesn't /need/
+            // to download all these pesky audio files.
+            var globalName = randomGlobal();
+            window[globalName] = audio;
+            function cleanup(x) {
+                delete window[globalName];
+                return x;
+            }
+
+            return ret.promise.then(cleanup, cleanup);
         },
 
         sound: function (assetManager, name) {
