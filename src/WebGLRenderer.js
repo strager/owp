@@ -402,20 +402,26 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
             });
         }
 
-        function renderUnit(callback) {
+        function renderUnit(options, callback) {
+            var alpha = typeof options.alpha === 'undefined' ? 1 : options.alpha;
+
+            // Optimize the common case of alpha === 1, where there's no point in rendering to an FBO
+            if (alpha >= 1) {
+                callback();
+                return;
+            }
+
             gl.bindFramebuffer(gl.FRAMEBUFFER, misc.objectTarget.framebuffer);
             gl.clearColor(0, 0, 0, 0);
             gl.clear(gl.COLOR_BUFFER_BIT);
 
             gl.viewport(0, 0, viewport.width, viewport.height);
-            var options = callback();
+            callback();
             gl.viewport(viewport.x, viewport.y, viewport.width, viewport.height);
 
             gl.bindFramebuffer(gl.FRAMEBUFFER, null);
 
             objectTarget(function (draw) {
-                var alpha = typeof options.alpha === 'undefined' ? 1 : options.alpha;
-
                 gl.uniform2f(programs.objectTarget.uni.view, viewport.width, viewport.height);
                 gl.uniform2f(programs.objectTarget.uni.size, misc.objectTarget.width, misc.objectTarget.height);
                 gl.uniform1f(programs.objectTarget.uni.alpha, alpha);
@@ -429,7 +435,9 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
         }
 
         function renderSliderObject(object) {
-            renderUnit(function () {
+            var alpha = ruleSet.getObjectOpacity(object, time)
+
+            renderUnit({ alpha: alpha }, function () {
                 var key = [ object, mapState ];
 
                 var c = caches.sliderTrack.get(key, function () {
@@ -509,10 +517,6 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
                 }
 
                 renderApproachProgress(object);
-
-                return {
-                    alpha: ruleSet.getObjectOpacity(object, time)
-                };
             });
         }
 
@@ -543,15 +547,13 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
         }
 
         function renderHitCircleObject(object) {
-            renderUnit(function () {
+            var alpha = ruleSet.getObjectOpacity(object, time)
+
+            renderUnit({ alpha: alpha }, function () {
                 renderHitCircleBackground(object.x, object.y, object.combo.color);
                 renderComboNumber(object.comboIndex + 1, object.x, object.y);
                 renderHitCircleOverlay(object.x, object.y);
                 renderApproachProgress(object);
-
-                return {
-                    alpha: ruleSet.getObjectOpacity(object, time)
-                };
             });
         }
 
