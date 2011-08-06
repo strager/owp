@@ -73,6 +73,21 @@ define('AssetManager', [ 'MapInfo', 'mapFile', 'assetConfig', 'Util/Map', 'Util/
             setAudioSourceType(vorbisTrack);
             vorbisTrack.onerror = fail;
 
+            // Work around Chrome bug (present in <= 15, at time of writing)
+            // where Chrome will decide it doesn't /need/ to download all these
+            // pesky audio files.
+            var loadLoopInterval = setInterval(function () {
+                if (Q.isResolved(audio)) {
+                    // Despite what the name implies, isResolved returns true
+                    // for rejected promises as well (and that's just what we
+                    // need).
+                    clearInterval(loadLoopInterval);
+                    return;
+                }
+
+                audio.load();
+            }, 2000);
+
             audio.addEventListener('canplaythrough', function () {
                 ret.resolve(audio);
             }, false);
