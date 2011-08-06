@@ -142,17 +142,11 @@ define('mapFile', [ 'RuleSet', 'Map', 'Combo', 'MapInfo', 'mapObject', 'Storyboa
         case 1:
             // Hit circle
             object = new mapObject.HitCircle();
-
             break;
 
         case 2:
             // Slider
             object = new mapObject.Slider();
-
-            object.length = parseInt(list[7], 10);
-            object.repeats = parseInt(list[6], 10);
-            object.curve = readCurve(list[5], x, y, object.length);
-
             break;
 
         // TODO Spinner support
@@ -168,6 +162,21 @@ define('mapFile', [ 'RuleSet', 'Map', 'Combo', 'MapInfo', 'mapObject', 'Storyboa
         object.newCombo = !!(flags1 & 4);
 
         object.hitSounds = readHitSounds(parseInt(list[4], 10));
+
+        mapObject.match(object, {
+            Slider: function (object) {
+                var length = parseInt(list[7], 10);
+                object.length = length;
+                object.repeats = parseInt(list[6], 10);
+                object.curve = readCurve(list[5], x, y, length);
+
+                var extraHitSounds = list[8] ? list[8].split('|').map(function (hitSoundNumber) {
+                    return readHitSounds(parseInt(hitSoundNumber, 10));
+                }) : [ ];
+                object.endHitSounds = [ object.hitSounds ].concat(extraHitSounds);
+            },
+            _: false
+        });
 
         return object;
     }
