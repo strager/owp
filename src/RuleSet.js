@@ -308,7 +308,7 @@ define('RuleSet', [ 'Util/util', 'mapObject', 'Util/History' ], function (util, 
 
                 return 0;   // TODO Return "shouldn't be hit" or throw or something
             },
-            Slider: 30
+            Slider: 0
             // TODO Move SliderTick, SliderEnd from
             // MapState#hitSlide to here
         }),
