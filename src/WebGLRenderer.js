@@ -53,6 +53,18 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
         return wrapped;
     }
 
+    function View(mat) {
+        this.mat = mat;
+    }
+
+    View.prototype.playfieldToView = function (x, y) {
+        return [ x - this.mat[0], y - this.mat[1] ];
+    };
+
+    View.map = new View([ 64, 56 ]);
+    View.storyboard = new View([ 0, 0 ]);
+    View.hud = new View([ 0, 0 ]);
+
     function renderer(v) {
         // Les constants
         var buffers, caches, misc, programs, textures;
@@ -85,9 +97,24 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
             time = v.time;
         }
 
-        var inProgram = false;
+        // Views {{{
+        var currentView;
+
+        function view(v, callback) {
+            var oldView = currentView;
+            currentView = v;
+            callback();
+            currentView = oldView;
+        }
+
+        function setViewUniform(uniform) {
+            gl.uniform2fv(uniform, currentView.mat);
+        }
+        // Views }}}
 
         // Shader programs {{{
+        var inProgram = false;
+
         function program(prog, init, uninit, callback) {
             if (inProgram) {
                 throw new Error('Already in program');
@@ -126,7 +153,7 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
             }
 
             program(programs.sprite, init, uninit, function () {
-                gl.uniform2f(programs.sprite.uni.playfield, 640, 480);
+                setViewUniform(programs.sprite.uni.view);
 
                 callback(function draw(texture) {
                     if (typeof texture !== 'undefined') {
@@ -186,7 +213,7 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
             }
 
             program(programs.curve, init, uninit, function () {
-                gl.uniform2f(programs.curve.uni.playfield, 640, 480);
+                setViewUniform(programs.curve.uni.view);
 
                 callback(function draw(vertexCount) {
                     gl.drawArrays(gl.TRIANGLE_STRIP, 0, vertexCount);
@@ -249,7 +276,9 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
                 });
             });
         }
+        // Rendering helpers }}}
 
+        // Map rendering {{{
         function createSliderTrack(points, radius) {
             var data = [ ];
 
@@ -293,9 +322,7 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
                 buffer: buffer
             };
         }
-        // Rendering helpers }}}
 
-        // Map rendering {{{
         function renderApproachProgress(object) {
             var color = object.combo.color;
 
@@ -389,7 +416,7 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
             objectTarget(function (draw) {
                 var alpha = typeof options.alpha === 'undefined' ? 1 : options.alpha;
 
-                gl.uniform2f(programs.objectTarget.uni.playfield, viewport.width, viewport.height);
+                gl.uniform2f(programs.objectTarget.uni.view, viewport.width, viewport.height);
                 gl.uniform2f(programs.objectTarget.uni.size, misc.objectTarget.width, misc.objectTarget.height);
                 gl.uniform1f(programs.objectTarget.uni.alpha, alpha);
 
@@ -601,10 +628,12 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
         }
 
         function renderMap() {
-            getObjectsToRender().forEach(function (object) {
-                renderObject(object);
+            view(View.map, function () {
+                getObjectsToRender().forEach(function (object) {
+                    renderObject(object);
 
-                gPubSub.publish('tick');
+                    gPubSub.publish('tick');
+                });
             });
 
             // TODO Render cursor in another render step
@@ -621,7 +650,7 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
             score = score.slice(-digitCount);
 
             renderCharacters(getStringTextures(textures.scoreDigits, score), {
-                x: 570,
+                x: 640,
                 y: 20,
                 scale: .7,
                 align: 'right',
@@ -633,8 +662,8 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
             var combo = comboHistory.getDataAtTime(time) || 0;
 
             renderCharacters(getStringTextures(textures.scoreDigits, combo + 'x'), {
-                x: 20,
-                y: 450,
+                x: 0,
+                y: 460,
                 scale: .7,
                 align: 'left',
                 spacing: skin.scoreFontSpacing
@@ -647,7 +676,7 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
             accuracy = accuracy.toFixed(2);
 
             renderCharacters(getStringTextures(textures.scoreDigits, accuracy + '%'), {
-                x: 570,
+                x: 640,
                 y: 45,
                 scale: .4,
                 align: 'right',
@@ -656,9 +685,11 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
         }
 
         function renderHud() {
-            renderScore();
-            renderCombo();
-            renderAccuracy();
+            view(View.hud, function () {
+                renderScore();
+                renderCombo();
+                renderAccuracy();
+            });
         }
         // HUD rendering }}}
 
@@ -691,9 +722,11 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
         }
 
         function renderStoryboard() {
-            renderBackground();
+            view(View.storyboard, function () {
+                renderBackground();
 
-            // TODO Real storyboard stuff
+                // TODO Real storyboard stuff
+            });
         }
         // Storyboard rendering }}}
 
@@ -718,7 +751,7 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
             'attribute vec2 aVertexCoord;',
             'attribute vec2 aTextureCoord;',
 
-            'uniform vec2 uPlayfield;',
+            'uniform vec2 uView;',
             'uniform vec2 uSize;',
             'uniform vec2 uPosition;',
             'uniform vec2 uOffset;',
@@ -727,14 +760,14 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
             'varying vec2 vTextureCoord;',
 
             'mat4 projection = mat4(',
-                '2.0 / uPlayfield.x, 0.0, 0.0, -1.0,',
-                '0.0, -2.0 / uPlayfield.y, 0.0, 1.0,',
+                '2.0 / 640.0, 0.0, 0.0, -1.0,',
+                '0.0, -2.0 / 480.0, 0.0, 1.0,',
                 '0.0, 0.0,-2.0,-0.0,',
                 '0.0, 0.0, 0.0, 1.0',
             ');',
 
             'void main(void) {',
-                'gl_Position = (vec4(aVertexCoord / 2.0, 0.0, 1.0) * vec4(uSize * uScale, 1.0, 1.0) + vec4(uPosition + uOffset, 0.0, 0.0)) * projection;',
+                'gl_Position = (vec4(aVertexCoord / 2.0, 0.0, 1.0) * vec4(uSize * uScale, 1.0, 1.0) + vec4(uView + uPosition + uOffset, 0.0, 0.0)) * projection;',
                 'vTextureCoord = aTextureCoord;',
             '}'
         ].join('\n');
@@ -756,12 +789,13 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
 
             'varying vec2 vTextureCoord;',
 
-            'uniform vec2 uPlayfield;',
+            // TODO Rename uView to something else
+            'uniform vec2 uView;',
             'uniform vec2 uSize;',
 
             'mat4 projection = mat4(',
-                '2.0 / uPlayfield.x, 0.0, 0.0, -1.0,',
-                '0.0, 2.0 / uPlayfield.y, 0.0, -1.0,',
+                '2.0 / uView.x, 0.0, 0.0, -1.0,',
+                '0.0, 2.0 / uView.y, 0.0, -1.0,',
                 '0.0, 0.0,-2.0,-0.0,',
                 '0.0, 0.0, 0.0, 1.0',
             ');',
@@ -789,19 +823,19 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
             'attribute vec2 aVertexCoord;',
             'attribute vec2 aTextureCoord;',
 
-            'uniform vec2 uPlayfield;',
+            'uniform vec2 uView;',
 
             'varying vec2 vTextureCoord;',
 
             'mat4 projection = mat4(',
-                '2.0 / uPlayfield.x, 0.0, 0.0, -1.0,',
-                '0.0, -2.0 / uPlayfield.y, 0.0, 1.0,',
+                '2.0 / 640.0, 0.0, 0.0, -1.0,',
+                '0.0, -2.0 / 480.0, 0.0, 1.0,',
                 '0.0, 0.0,-2.0,-0.0,',
                 '0.0, 0.0, 0.0, 1.0',
             ');',
 
             'void main(void) {',
-                'gl_Position = vec4(aVertexCoord, 0.0, 1.0) * projection;',
+                'gl_Position = (vec4(aVertexCoord, 0.0, 1.0) + vec4(uView, 0.0, 0.0)) * projection;',
                 'vTextureCoord = aTextureCoord;',
             '}'
         ].join('\n');
@@ -906,7 +940,7 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
             };
             programs.sprite.uni = {
                 sampler: gl.getUniformLocation(programs.sprite, 'uSampler'),
-                playfield: gl.getUniformLocation(programs.sprite, 'uPlayfield'),
+                view: gl.getUniformLocation(programs.sprite, 'uView'),
                 size: gl.getUniformLocation(programs.sprite, 'uSize'),
                 position: gl.getUniformLocation(programs.sprite, 'uPosition'),
                 offset: gl.getUniformLocation(programs.sprite, 'uOffset'),
@@ -921,7 +955,7 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
             };
             programs.objectTarget.uni = {
                 sampler: gl.getUniformLocation(programs.objectTarget, 'uSampler'),
-                playfield: gl.getUniformLocation(programs.objectTarget, 'uPlayfield'),
+                view: gl.getUniformLocation(programs.objectTarget, 'uView'),
                 size: gl.getUniformLocation(programs.objectTarget, 'uSize'),
                 alpha: gl.getUniformLocation(programs.objectTarget, 'uAlpha')
             };
@@ -932,7 +966,7 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
                 textureCoord: gl.getAttribLocation(programs.sprite, 'aTextureCoord')
             };
             programs.curve.uni = {
-                playfield: gl.getUniformLocation(programs.curve, 'uPlayfield'),
+                view: gl.getUniformLocation(programs.curve, 'uView'),
                 color: gl.getUniformLocation(programs.curve, 'uColor')
             };
 
@@ -1094,9 +1128,13 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
             resize: resize,
 
             mouseToGame: function (x, y) {
+                var playfieldX = (x - viewport.x) / viewport.width * 640;
+                var playfieldY = (y - viewport.y) / viewport.height * 480;
+                var mapCoords = View.map.playfieldToView(playfieldX, playfieldY);
+
                 return {
-                    x: (x - viewport.x) / viewport.width * 640,
-                    y: (y - viewport.y) / viewport.height * 480
+                    x: mapCoords[0],
+                    y: mapCoords[1]
                 };
             },
 
