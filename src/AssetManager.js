@@ -66,6 +66,7 @@ define('AssetManager', [ 'MapInfo', 'mapFile', 'assetConfig', 'Util/Map', 'Util/
 
             function fail(event) {
                 if (audio.networkState === audio.NETWORK_NO_SOURCE) {
+                    cleanup();
                     ret.reject(new Error('NETWORK_NO_SOURCE'));
                 }
             }
@@ -81,10 +82,12 @@ define('AssetManager', [ 'MapInfo', 'mapFile', 'assetConfig', 'Util/Map', 'Util/
             vorbisTrack.onerror = fail;
 
             audio.addEventListener('canplaythrough', function () {
+                cleanup();
                 ret.resolve(audio);
             }, false);
 
             audio.addEventListener('error', function (event) {
+                cleanup();
                 ret.reject(new Error());
             }, false);
 
@@ -98,16 +101,74 @@ define('AssetManager', [ 'MapInfo', 'mapFile', 'assetConfig', 'Util/Map', 'Util/
             // to download all these pesky audio files.
             var globalName = randomGlobal();
             window[globalName] = audio;
-            function cleanup(x) {
+            function cleanup() {
                 delete window[globalName];
-                return x;
             }
 
-            return ret.promise.then(cleanup, cleanup);
+            // Note that we can't do ret.promise.then(..., ...) to execute
+            // cleanup() because of some weird Firefox quirk I can't be
+            // bothered to investigate.
+            return ret.promise;
         },
 
         sound: function (assetManager, name) {
             return AssetManager.typeHandlers.audio(assetManager, name);
+        },
+
+        video: function (assetManager, name) {
+            // We just throw our hands up and say "we loaded null" if we can't
+            // load the video, because it's not really a fatal condition.  We
+            // should probably handle this condition somewhere else, though...
+
+            var ret = Q.defer();
+
+            var video = document.createElement('video');
+            video.autobuffer = true;
+            video.preload = 'auto';
+
+            function fail(event) {
+                if (video.networkState === video.NETWORK_NO_SOURCE) {
+                    cleanup();
+                    ret.resolve(null);
+                }
+            }
+
+            var originalTrack = document.createElement('source');
+            originalTrack.src = assetManager.root + '/' + name;
+            originalTrack.onerror = fail;
+
+            var webmTrack = document.createElement('source');
+            webmTrack.src = assetManager.root + '/' + name + '.webm';
+            webmTrack.onerror = fail;
+
+            var theoraTrack = document.createElement('source');
+            theoraTrack.src = assetManager.root + '/' + name + '.ogv';
+            theoraTrack.onerror = fail;
+
+            video.addEventListener('canplay', function () {
+                cleanup();
+                ret.resolve(video);
+            }, false);
+
+            video.addEventListener('error', function (event) {
+                cleanup();
+                ret.resolve(null);
+            }, false);
+
+            video.appendChild(originalTrack);
+            video.appendChild(webmTrack);
+            video.appendChild(theoraTrack);
+
+            video.load();
+
+            // Workaround for Webkit; see audio for details
+            var globalName = randomGlobal();
+            window[globalName] = video;
+            function cleanup() {
+                delete window[globalName];
+            }
+
+            return ret.promise;
         },
 
         map: function (assetManager, name) {
