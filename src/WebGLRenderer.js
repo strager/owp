@@ -84,6 +84,7 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
         var mapState, ruleSet, skin;
         var mouseHistory;
         var scoreHistory, comboHistory, accuracyHistory;
+        var videoElement;
         var time;
 
         function vars(v) {
@@ -95,6 +96,7 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
             scoreHistory = v.scoreHistory;
             skin = v.skin;
             time = v.time;
+            videoElement = v.videoElement;
         }
 
         // Views {{{
@@ -732,6 +734,14 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
         }
 
         function renderStoryboard() {
+            if (videoElement) {
+                videoElement.play();
+                // This crashes Chrome...
+                // TODO Account for offsets, speed changes, etc.
+                // videoElement.currentTime = time * 1000;
+                return; // No BG/SB
+            }
+
             view(View.storyboard, function () {
                 renderBackground();
 
@@ -881,16 +891,17 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
         canvas.height = 480;
 
         var context;
+        var contextOptions = { alpha: true };
 
         try {
-            context = canvas.getContext('webgl');
+            context = canvas.getContext('webgl', contextOptions);
 
             if (!context) {
                 throw new Error();
             }
         } catch (e) {
             try {
-                context = canvas.getContext('experimental-webgl');
+                context = canvas.getContext('experimental-webgl', contextOptions);
 
                 if (!context) {
                     throw new Error();
@@ -899,6 +910,11 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
                 throw new Error('WebGL not supported');
             }
         }
+
+        var container = document.createElement('div');
+        var videoElement = null;
+        canvas.style.position = 'absolute';
+        container.appendChild(canvas);
 
         var gl = context;
 
@@ -1100,6 +1116,18 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
                 textures.background = makeTexture(backgroundGraphic);
             }
 
+            var video = storyboard.videos[0];
+            if (video) {
+                var v = assetManager.get(video.fileName, 'video');
+                if (v) {
+                    videoElement = v;
+                    videoElement.style.position = 'absolute';
+                    videoElement.volume = 0;
+                    videoElement.pause();
+                    container.insertBefore(videoElement, canvas);
+                }
+            }
+
             storyboardInitd = true;
         }
 
@@ -1110,6 +1138,9 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
             canvas.width = width;
             canvas.height = height;
 
+            container.style.width  = width + 'px';
+            container.style.height = height + 'px';
+
             var rect = util.fitRectangle(width, height, 640, 480);
 
             viewport = {
@@ -1118,6 +1149,10 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
                 width: Math.min(width, rect.width),
                 height: Math.min(height, rect.height)
             };
+
+            if (videoElement) {
+                // TODO Resize video element
+            }
 
             r.consts({
                 buffers: buffers,
@@ -1133,7 +1168,7 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
         init();
 
         return {
-            element: canvas,
+            element: container,
 
             resize: resize,
 
@@ -1149,6 +1184,7 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
             },
 
             beginRender: function () {
+                gl.clearColor(0, 0, 0, 0);
                 gl.clear(gl.COLOR_BUFFER_BIT);
 
                 gl.viewport(
@@ -1193,6 +1229,7 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
                 initStoryboard(storyboard, assetManager);
 
                 r.vars({
+                    videoElement: videoElement,
                     storyboard: storyboard,
                     time: time
                 });

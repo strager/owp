@@ -240,8 +240,8 @@ define('mapFile', [ 'RuleSet', 'Map', 'Combo', 'MapInfo', 'mapObject', 'Storyboa
         for (i = 0; i < data.length; ++i) {
             line = data[i];
 
-            switch (parseInt(line[0], 10)) {
-            case 0:
+            switch (line[0]) {
+            case '0':
                 storyboard.backgrounds.push({
                     time: parseInt(line[1], 10),
                     fileName: line[2].replace(/^"([^"]*)"$/, '$1')
@@ -251,11 +251,15 @@ define('mapFile', [ 'RuleSet', 'Map', 'Combo', 'MapInfo', 'mapObject', 'Storyboa
 
                 // TODO Support more storyboard command types
 
-            default:
-                // Ignore
+            case 'Video':
+                storyboard.videos.push({
+                    time: parseInt(line[1], 10),
+                    fileName: line[2].replace(/^"([^"]*)"$/, '$1')
+                });
+
                 break;
 
-            case NaN:
+            default:
                 // Ignore
                 break;
             }

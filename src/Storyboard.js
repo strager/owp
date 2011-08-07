@@ -2,6 +2,7 @@ define('Storyboard', [ ], function () {
     function Storyboard() {
         this.sounds = [ ];
         this.backgrounds = [ ];
+        this.videos = [ ];
         this.images = [ ];
     }
 
@@ -24,6 +25,10 @@ define('Storyboard', [ ], function () {
             var files = {
                 'image': this.backgrounds.map(function (background) {
                     return background.fileName;
+                }),
+
+                'video': this.videos.map(function (video) {
+                    return video.fileName;
                 })
             };
 
