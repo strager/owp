@@ -198,7 +198,7 @@ require([ 'WebGLRenderer', 'CanvasRenderer', 'AssetManager', 'q', 'Game', 'Util/
                 });
 
                 mouseStateChanged();
-                return false;
+                e.preventDefault();
             }, false);
 
             pa.addEventListener('mouseup', function (e) {
@@ -215,11 +215,11 @@ require([ 'WebGLRenderer', 'CanvasRenderer', 'AssetManager', 'q', 'Game', 'Util/
                 });
 
                 mouseStateChanged();
-                return false;
+                e.preventDefault();
             }, false);
 
             pa.addEventListener('contextmenu', function (e) {
-                return false;
+                e.preventDefault();
             }, false);
 
             pa.addEventListener('mousemove', function (e) {
@@ -241,6 +241,7 @@ require([ 'WebGLRenderer', 'CanvasRenderer', 'AssetManager', 'q', 'Game', 'Util/
             }
 
             mouseStateChanged();
+            e.preventDefault();
         }, false);
 
         document.addEventListener('keyup', function (e) {
@@ -255,6 +256,7 @@ require([ 'WebGLRenderer', 'CanvasRenderer', 'AssetManager', 'q', 'Game', 'Util/
             }
 
             mouseStateChanged();
+            e.preventDefault();
         }, false);
 
         var fullScreenButton = document.createElement('button');
