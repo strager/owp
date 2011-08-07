@@ -24,6 +24,7 @@ require([ 'WebGLRenderer', 'CanvasRenderer', 'AssetManager', 'q', 'Game', 'Util/
 
     if (DEBUG) {
         agentInfo.crashHandler.subscribe(function (crashInfo) {
+            console.error && console.error(crashInfo.exception);
             throw crashInfo.exception;
         });
     } else {
