@@ -182,7 +182,7 @@ define('MapState', [ 'mapObject', 'Util/Timeline', 'Util/Map', 'Util/PubSub' ], 
                             return;
                         }
 
-                        if (hittable.hitMarker.score !== 0) {
+                        if (hittable.hitMarker.isHit) {
                             ++hits;
                         }
 
