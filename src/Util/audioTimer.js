@@ -42,9 +42,11 @@ define('Util/audioTimer', [ ], function () {
             audio.addEventListener(eventName, update, false);
         });
 
+        update();
+
         return function () {
             if (isPaused) {
-                return audioCurrentTime() + rtcStartTime;
+                return audioCurrentTime();
             }
 
             return Date.now() - rtcStartTime;
