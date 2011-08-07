@@ -131,7 +131,7 @@ require([ 'WebGLRenderer', 'CanvasRenderer', 'AssetManager', 'q', 'Game', 'Util/
 
     function go(io) {
         game = new Game();
-        game.setSkin(skinAssetManager);
+        game.loadSkin(skinAssetManager);
         game.startMap(mapAssetManager, 'map');
 
         renderLoop(function () {

@@ -1,4 +1,4 @@
-define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache', 'Util/util' ], function (MapState, mapObject, gPubSub, Cache, util) {
+define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache', 'Util/util', 'loading' ], function (MapState, mapObject, gPubSub, Cache, util, loadingImageSrc) {
     function reportGLError(gl, error) {
         // Find the error name
         var key;
@@ -210,6 +210,7 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
             }
 
             function uninit() {
+                gl.disableVertexAttribArray(programs.curve.attr.textureCoord);
                 gl.disableVertexAttribArray(programs.curve.attr.vertexCoord);
                 gl.bindBuffer(gl.ARRAY_BUFFER, null);
             }
@@ -219,6 +220,36 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
 
                 callback(function draw(vertexCount) {
                     gl.drawArrays(gl.TRIANGLE_STRIP, 0, vertexCount);
+                });
+            });
+        }
+
+        function loading(callback) {
+            function init() {
+                // Same as sprite
+                var vertexOffset = 0;
+                var uvOffset = 2 * 3 * 2 * 4; // Skip faces (2x3 pairs, x2 floats, x4 bytes)
+
+                gl.bindBuffer(gl.ARRAY_BUFFER, buffers.sprite);
+                gl.vertexAttribPointer(programs.loading.attr.vertexCoord, 2, gl.FLOAT, false, 0, vertexOffset);
+                gl.vertexAttribPointer(programs.loading.attr.textureCoord, 2, gl.FLOAT, false, 0, uvOffset);
+                gl.enableVertexAttribArray(programs.loading.attr.vertexCoord);
+                gl.enableVertexAttribArray(programs.loading.attr.textureCoord);
+            }
+
+            function uninit() {
+                gl.disableVertexAttribArray(programs.loading.attr.textureCoord);
+                gl.disableVertexAttribArray(programs.loading.attr.vertexCoord);
+                gl.bindBuffer(gl.ARRAY_BUFFER, null);
+            }
+
+            program(programs.loading, init, uninit, function () {
+                callback(function draw(texture) {
+                    gl.activeTexture(gl.TEXTURE0);
+                    gl.bindTexture(gl.TEXTURE_2D, texture);
+                    gl.uniform1i(programs.loading.uni.sampler, 0);
+
+                    gl.drawArrays(gl.TRIANGLES, 0, 6);
                 });
             });
         }
@@ -750,12 +781,41 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
         }
         // Storyboard rendering }}}
 
+        // Loading rendering {{{
+        function renderLoading() {
+            gl.clearColor(0, 0, 0, 1);
+            gl.clear(gl.COLOR_BUFFER_BIT);
+
+            if (!textures.loading) {
+                return;
+            }
+
+            loading(function (draw) {
+                var size = 0.6;
+                var texture = textures.loading;
+                var rect = util.fitRectangle(size, size, texture.image.width, texture.image.height);
+
+                var angle = time / 35000;
+                angle = angle - Math.floor(angle);
+                angle = angle * Math.PI * 4;
+                angle = angle - Math.floor(angle);
+
+                gl.uniform1f(programs.loading.uni.time, angle);
+                gl.uniform2f(programs.loading.uni.size, rect.width, rect.height);
+                gl.uniform2f(programs.loading.uni.position, rect.x / size, rect.y / size);
+
+                draw(texture);
+            });
+        }
+        // Loading rendering }}}
+
         return {
             vars: vars,
             consts: consts,
             renderMap: renderMap,
             renderHud: renderHud,
-            renderStoryboard: renderStoryboard
+            renderStoryboard: renderStoryboard,
+            renderLoading: renderLoading
         };
     }
 
@@ -763,6 +823,7 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
     var spriteVertexShader, spriteFragmentShader;
     var objectTargetVertexShader, objectTargetFragmentShader;
     var curveVertexShader, curveFragmentShader;
+    var loadingVertexShader, loadingFragmentShader;
 
     (function () {
         /*jshint white: false */
@@ -882,6 +943,45 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
                 'gl_FragColor = getSliderColor(vTextureCoord.t, vec4(uColor) / 255.0);',
             '}'
         ].join('\n');
+
+        loadingVertexShader = [
+            'attribute vec2 aVertexCoord;',
+            'attribute vec2 aTextureCoord;',
+
+            'uniform vec2 uPosition;',
+            'uniform vec2 uSize;',
+
+            'varying vec2 vTextureCoord;',
+
+            'mat4 projection = mat4(',
+                '2.0 / 2.0, 0.0, 0.0,  0.0,',
+                '0.0, -2.0 / 2.0, 0.0, 0.0,',
+                '0.0, 0.0,-2.0,-0.0,',
+                '0.0, 0.0, 0.0, 1.0',
+            ');',
+
+            'void main(void) {',
+                'gl_Position = vec4(aVertexCoord * uSize + uPosition, 0.0, 1.0) * projection;',
+                'vTextureCoord = aTextureCoord;',
+            '}'
+        ].join('\n');
+
+        loadingFragmentShader = [
+            'varying vec2 vTextureCoord;',
+
+            'uniform sampler2D uSampler;',
+            'uniform float uTime;',
+
+            'vec4 colorFade(vec2 coord) {',
+                'float progress = sin(uTime) * 4.0 - 1.0;',
+                'float intensity = 1.0 - clamp(abs(coord.s - progress) * 1.5, 0.0, 1.0);',
+                'return vec4(intensity, intensity, intensity, 1.0);',
+            '}',
+
+            'void main(void) {',
+                'gl_FragColor = texture2D(uSampler, vTextureCoord.st) * colorFade(vTextureCoord.st);',
+            '}'
+        ].join('\n');
     }());
     // Shaders }}}
 
@@ -989,11 +1089,23 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
             programs.curve = createProgram(gl, curveVertexShader, curveFragmentShader);
             programs.curve.attr = {
                 vertexCoord: gl.getAttribLocation(programs.curve, 'aVertexCoord'),
-                textureCoord: gl.getAttribLocation(programs.sprite, 'aTextureCoord')
+                textureCoord: gl.getAttribLocation(programs.curve, 'aTextureCoord')
             };
             programs.curve.uni = {
                 view: gl.getUniformLocation(programs.curve, 'uView'),
                 color: gl.getUniformLocation(programs.curve, 'uColor')
+            };
+
+            programs.loading = createProgram(gl, loadingVertexShader, loadingFragmentShader);
+            programs.loading.attr = {
+                vertexCoord: gl.getAttribLocation(programs.loading, 'aVertexCoord'),
+                textureCoord: gl.getAttribLocation(programs.loading, 'aTextureCoord')
+            };
+            programs.loading.uni = {
+                sampler: gl.getUniformLocation(programs.loading, 'uSampler'),
+                position: gl.getUniformLocation(programs.loading, 'uPosition'),
+                size: gl.getUniformLocation(programs.loading, 'uSize'),
+                time: gl.getUniformLocation(programs.loading, 'uTime')
             };
 
             gl.enable(gl.BLEND);
@@ -1131,6 +1243,22 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
             storyboardInitd = true;
         }
 
+        var loadingInitd = false;
+
+        function initLoading() {
+            if (loadingInitd) {
+                return;
+            }
+
+            var loadingTexture = new Image();
+            loadingTexture.onload = function () {
+                textures.loading = makeTexture(loadingTexture);
+            };
+            loadingTexture.src = loadingImageSrc;
+
+            loadingInitd = true;
+        }
+
         var r = renderer();
         var viewport = { };
 
@@ -1235,6 +1363,19 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
                 });
 
                 r.renderStoryboard();
+            },
+
+            renderLoading: function (time) {
+                initLoading();
+
+                r.vars({
+                    time: time
+                });
+
+                r.renderLoading();
+            },
+
+            renderReadyToPlay: function () {
             }
         };
     }
