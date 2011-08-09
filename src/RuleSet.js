@@ -173,7 +173,7 @@ define('RuleSet', [ 'Util/util', 'mapObject', 'Util/History' ], function (util, 
             var startAppearTime = this.getObjectStartAppearTime(object);
             var startTime       = this.getObjectStartTime(object);
             var endTime         = this.getObjectEndTime(object);
-            var approachEndTime = endTime + 100;
+            var approachEndTime = endTime + 40;
 
             if (time < startAppearTime) {
                 return 0;
