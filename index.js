@@ -260,30 +260,12 @@ require([ 'WebGLRenderer', 'CanvasRenderer', 'AssetManager', 'q', 'Game', 'Util/
             e.preventDefault();
         }, false);
 
-        var fullScreenButton = document.createElement('button');
-        fullScreenButton.textContent = 'Full Screen';
-        fullScreenButton.onclick = function () {
-            // TODO Use (webkit|moz)RequestFullScreenWithKeys
-            // HACK HACK hack =[
-            var e = io.playAreas[0];
-            e.className = 'full-screen';
-
-            function resize() {
-                renderer.resize(document.width, document.height);
-            }
-
-            resize();
-            window.onresize = resize;
-        };
-
         var playfield = document.getElementById('playfield');
         playfield.innerHTML = '';
 
         io.playAreas.forEach(function (playArea) {
             playfield.appendChild(playArea);
         });
-
-        playfield.appendChild(fullScreenButton);
     }
 
     function getPaintCount() {
