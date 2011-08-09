@@ -526,7 +526,7 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
 
                 renderHitCircleBackground(object.x, object.y, color);
 
-                if (!object.hitMarker) {
+                if (!object.hitMarker || object.hitMarker.time >= time) {
                     // Show combo number only if the slider hasn't yet been hit
                     // TODO Fade out nicely
                     renderComboNumber(object.comboIndex + 1, object.x, object.y);
