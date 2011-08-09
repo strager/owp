@@ -15,6 +15,7 @@ OUT="$ROOT/owp.min.js"
     echo
     echo ';window.onload = function () {';
     echo 'var derequire_module__q = Q;'
+    echo 'var derequire_module__loading = "data:image/png;base64,'$(base64 "$ROOT/src/loading.png" | tr -d '\n')'";'
     echo 'var DEBUG = false;'
     node "$DIR/derequire.js" "$ROOT/index.js" "$ROOT/src/"
     echo

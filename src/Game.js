@@ -17,7 +17,7 @@ define('Game', [ 'q', 'MapState', 'Util/PubSub', 'Soundboard', 'Util/Timeline', 
             }
         }
 
-        function setSkin(skinAssetManager) {
+        function loadSkin(skinAssetManager) {
             skin = Q.ref(skinAssetManager.load('skin', 'skin'))
                 .then(function (skin_) {
                     return Q.ref(skin_.preload())
@@ -160,6 +160,7 @@ define('Game', [ 'q', 'MapState', 'Util/PubSub', 'Soundboard', 'Util/Timeline', 
                         boundEvents.forEach(function (be) {
                             be.unsubscribe();
                         });
+                        boundEvents = [ ];
                     },
                     debugInfo: function () {
                         var time = currentTime();
@@ -202,7 +203,45 @@ define('Game', [ 'q', 'MapState', 'Util/PubSub', 'Soundboard', 'Util/Timeline', 
                 Q.ref(skin)
             ]);
 
-            return Q.ref(load).then(play, agentInfo.crash);
+            function readyToPlay() {
+                setState({
+                    render: function (renderer) {
+                        var time = 0;
+
+                        renderer.renderStoryboard(mapInfo.storyboard, mapAssetManager, time);
+                        renderer.renderReadyToPlay(skin.valueOf(), time);
+                    },
+                    enter: function () {
+                        boundEvents.push(mousePubSub.subscribe(function (e) {
+                            if (e.left || e.right) {
+                                play();
+                            }
+                        }));
+                    },
+                    leave: function () {
+                        boundEvents.forEach(function (be) {
+                            be.unsubscribe();
+                        });
+                        boundEvents = [ ];
+                    }
+                });
+            }
+
+            function loading() {
+                setState({
+                    render: function (renderer) {
+                        renderer.renderLoading(Date.now());
+                    },
+                    enter: function () {
+                    },
+                    leave: function () {
+                    }
+                });
+            }
+
+            loading();
+
+            return Q.when(load, readyToPlay, agentInfo.crash);
         }
 
         function debugInfo() {
@@ -214,7 +253,7 @@ define('Game', [ 'q', 'MapState', 'Util/PubSub', 'Soundboard', 'Util/Timeline', 
         return {
             startMap: startMap,
             render: render,
-            setSkin: setSkin,
+            loadSkin: loadSkin,
             mouse: function (e) {
                 mousePubSub.publishSync(e);
             },

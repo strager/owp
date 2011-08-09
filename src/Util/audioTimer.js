@@ -33,7 +33,7 @@ define('Util/audioTimer', [ ], function () {
 
         var eventNames = [
             // Happy events
-            'timeupdate', 'play', 'pause', 'ratechange', 'seeked', 'ended',
+            'play', 'pause', 'ratechange', 'seeked', 'ended',
             // Sad events
             'stalled', 'suspend', 'abort', 'error', 'emptied'
         ];
@@ -42,9 +42,11 @@ define('Util/audioTimer', [ ], function () {
             audio.addEventListener(eventName, update, false);
         });
 
+        update();
+
         return function () {
             if (isPaused) {
-                return audioCurrentTime() + rtcStartTime;
+                return audioCurrentTime();
             }
 
             return Date.now() - rtcStartTime;

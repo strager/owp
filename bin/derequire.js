@@ -69,4 +69,4 @@ function derequire(mainFilename, baseUrl, output, blacklist) {
     output.write('}());\n');
 }
 
-derequire(process.argv[2], process.argv[3], process.stdout, [ 'q' ]);
+derequire(process.argv[2], process.argv[3], process.stdout, [ 'q', 'loading' ]);
