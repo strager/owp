@@ -33,7 +33,7 @@ define('Util/audioTimer', [ ], function () {
 
         var eventNames = [
             // Happy events
-            'timeupdate', 'play', 'pause', 'ratechange', 'seeked', 'ended',
+            'play', 'pause', 'ratechange', 'seeked', 'ended',
             // Sad events
             'stalled', 'suspend', 'abort', 'error', 'emptied'
         ];
