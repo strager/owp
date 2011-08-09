@@ -203,16 +203,13 @@ define('Game', [ 'q', 'MapState', 'Util/PubSub', 'Soundboard', 'Util/Timeline', 
                 Q.ref(skin)
             ]);
 
-            function loading() {
+            function readyToPlay() {
                 setState({
                     render: function (renderer) {
-                        if (Q.isFulfilled(load)) {
-                            // TODO
-                            //renderer.renderReadyToPlay();
-                            renderer.renderLoading(Date.now());
-                        } else {
-                            renderer.renderLoading(Date.now());
-                        }
+                        var time = 0;
+
+                        renderer.renderStoryboard(mapInfo.storyboard, mapAssetManager, time);
+                        renderer.renderReadyToPlay(skin.valueOf(), time);
                     },
                     enter: function () {
                         boundEvents.push(mousePubSub.subscribe(function (e) {
@@ -230,9 +227,21 @@ define('Game', [ 'q', 'MapState', 'Util/PubSub', 'Soundboard', 'Util/Timeline', 
                 });
             }
 
+            function loading() {
+                setState({
+                    render: function (renderer) {
+                        renderer.renderLoading(Date.now());
+                    },
+                    enter: function () {
+                    },
+                    leave: function () {
+                    }
+                });
+            }
+
             loading();
 
-            return Q.when(load, null, agentInfo.crash);
+            return Q.when(load, readyToPlay, agentInfo.crash);
         }
 
         function debugInfo() {

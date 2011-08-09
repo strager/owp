@@ -45,7 +45,9 @@ define('Skin', [ 'Util/util' ], function (util) {
                     'score-comma',
                     'score-dot',
                     'score-percent',
-                    'score-x'
+                    'score-x',
+
+                    'ready-to-play'
                 ],
                 'sound': [
                     'normal-hitclap.wav',

@@ -765,6 +765,9 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
         }
 
         function renderStoryboard() {
+            // Video rendering is more trouble than its worth right now.
+            // Sorry.  =[
+            /*
             if (videoElement) {
                 videoElement.play();
                 // This crashes Chrome...
@@ -772,6 +775,7 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
                 // videoElement.currentTime = time * 1000;
                 return; // No BG/SB
             }
+            */
 
             view(View.storyboard, function () {
                 renderBackground();
@@ -809,13 +813,31 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
         }
         // Loading rendering }}}
 
+        // Ready-to-play rendering {{{
+        function renderReadyToPlay() {
+            view(View.storyboard, function () {
+                sprite(function (draw) {
+                    var texture = textures.readyToPlay;
+
+                    gl.uniform4f(programs.sprite.uni.color, 255, 255, 255, 255);
+                    gl.uniform2f(programs.sprite.uni.position, 320, 240);
+                    gl.uniform1f(programs.sprite.uni.scale, 1);
+                    gl.uniform2f(programs.sprite.uni.offset, 0, 0);
+
+                    draw(texture);
+                });
+            });
+        }
+        // Ready-to-play rendering }}}
+
         return {
             vars: vars,
             consts: consts,
             renderMap: renderMap,
             renderHud: renderHud,
             renderStoryboard: renderStoryboard,
-            renderLoading: renderLoading
+            renderLoading: renderLoading,
+            renderReadyToPlay: renderReadyToPlay
         };
     }
 
@@ -1259,6 +1281,16 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
             loadingInitd = true;
         }
 
+        var readyToPlayInitd = false;
+
+        function initReadyToPlay(skin) {
+            if (readyToPlayInitd) {
+                return;
+            }
+
+            textures.readyToPlay = makeTexture(skin.assetManager.get('ready-to-play', 'image-set')[0]);
+        }
+
         var r = renderer();
         var viewport = { };
 
@@ -1375,7 +1407,15 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
                 r.renderLoading();
             },
 
-            renderReadyToPlay: function () {
+            renderReadyToPlay: function (skin, time) {
+                initReadyToPlay(skin);
+
+                r.vars({
+                    skin: skin,
+                    time: time
+                });
+
+                r.renderReadyToPlay();
             }
         };
     }
