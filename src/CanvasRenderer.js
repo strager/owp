@@ -1,4 +1,4 @@
-define('CanvasRenderer', [ 'mapObject', 'Util/Cache', 'canvasShaders', 'MapState', 'Util/gPubSub', 'Util/util', 'View' ], function (mapObject, Cache, shaders, MapState, gPubSub, util, View) {
+define('CanvasRenderer', [ 'mapObject', 'Util/Cache', 'canvasShaders', 'MapState', 'Util/gPubSub', 'Util/util', 'View', 'loading' ], function (mapObject, Cache, shaders, MapState, gPubSub, util, View, loadingImageSrc) {
     function DOMAllocator(container) {
         this.container = container;
 
@@ -143,13 +143,83 @@ define('CanvasRenderer', [ 'mapObject', 'Util/Cache', 'canvasShaders', 'MapState
             return ('' + string).split('');
         }
 
+        var stringCharLut = (function () {
+            var lut = [ ];
+            var i;
+
+            for (i = 0; i < 10; ++i) {
+                lut[i] = i;
+            }
+
+            lut[','] = 'comma';
+            lut['.'] = 'dot';
+            lut['%'] = 'percent';
+            lut['x'] = 'x';
+
+            return lut;
+        }());
+
         function getStringImages(prefix, assetManager, string) {
             return getCharacters(string).map(function (c) {
-                return assetManager.get(prefix + c, 'image-set')[0];
+                return assetManager.get(prefix + stringCharLut[c], 'image-set')[0];
             });
         }
 
-        function renderCharacters(images, context, options) {
+        function renderCharactersImages(images, context, options) {
+            var offset = 0;
+
+            var scale = options.scale || 1;
+            var spacing = options.spacing || 0;
+
+            var totalWidth = images.reduce(function (acc, image) {
+                return acc + image.width;
+            }, 0);
+
+            totalWidth += spacing * (images.length - 1);
+
+            switch (options.align) {
+            default:
+            case 'left':
+                offset = 0;
+                break;
+            case 'center':
+                offset = -totalWidth / 2;
+                break;
+            case 'right':
+                offset = -totalWidth;
+                break;
+            }
+
+            var ox = options.x || 0;
+            var oy = options.y || 0;
+
+            images.forEach(function (image, i) {
+                var el = dom.get([ context, i ], function () {
+                    var el = document.createElement('img');
+                    el.style.position = 'absolute';
+                    return el;
+                });
+
+                var width = image.width;
+                var x = (offset + width / 2) * scale + ox;
+                var y = oy;
+                var scaledWidth = image.width * scale;
+                var scaledHeight = image.height * scale;
+
+                el.src = image.src;
+
+                el.style.left = (x + -scaledWidth / 2) + 'px';
+                el.style.top = (y + -scaledHeight / 2) + 'px';
+                el.style.width = scaledWidth + 'px';
+                el.style.height = scaledHeight + 'px';
+
+                setZ(el);
+
+                offset += width + spacing;
+            });
+        }
+
+        function renderCharactersCanvas(images, context, options) {
             var offset = 0;
 
             var scale = options.scale || 1;
@@ -183,7 +253,7 @@ define('CanvasRenderer', [ 'mapObject', 'Util/Cache', 'canvasShaders', 'MapState
 
                 context.translate(x, y);
                 context.scale(scale, scale);
-                context.drawImage(image, offset, -image.height / 2);
+                context.drawImage(image, -image.width / 2, -image.height / 2);
 
                 context.restore();
 
@@ -197,7 +267,7 @@ define('CanvasRenderer', [ 'mapObject', 'Util/Cache', 'canvasShaders', 'MapState
             var images = getStringImages('default-', skin.assetManager, number);
             var scale = Math.pow(images.length, -1 / 4) * 0.9;
 
-            return renderCharacters(images, context, {
+            return renderCharactersCanvas(images, context, {
                 x: x,
                 y: y,
                 scale: scale,
@@ -586,8 +656,54 @@ define('CanvasRenderer', [ 'mapObject', 'Util/Cache', 'canvasShaders', 'MapState
         // Map rendering }}}
 
         // HUD rendering {{{
+        function renderScore() {
+            var digitCount = 7;
+            var zeros = new Array(digitCount + 1).join('0');
+            var score = scoreHistory.getDataAtTime(time) || 0;
+            score = zeros + score;
+            score = score.slice(-digitCount);
+
+            renderCharactersImages(getStringImages('score-', skin.assetManager, score), 'score', {
+                x: 640,
+                y: 20,
+                scale: .7,
+                align: 'right',
+                spacing: skin.scoreFontSpacing
+            });
+        }
+
+        function renderCombo() {
+            var combo = comboHistory.getDataAtTime(time) || 0;
+
+            renderCharactersImages(getStringImages('score-', skin.assetManager, combo + 'x'), 'combo', {
+                x: 0,
+                y: 460,
+                scale: .7,
+                align: 'left',
+                spacing: skin.scoreFontSpacing
+            });
+        }
+
+        function renderAccuracy() {
+            var accuracy = accuracyHistory.getDataAtTime(time) || 0;
+            accuracy *= 100;
+            accuracy = accuracy.toFixed(2);
+
+            renderCharactersImages(getStringImages('score-', skin.assetManager, accuracy + '%'), 'accuracy', {
+                x: 640,
+                y: 45,
+                scale: .4,
+                align: 'right',
+                spacing: skin.scoreFontSpacing
+            });
+        }
+
         function renderHud() {
-            // TODO
+            view(View.hud, function () {
+                renderScore();
+                renderCombo();
+                renderAccuracy();
+            });
         }
         // HUD rendering }}}
 
@@ -622,13 +738,59 @@ define('CanvasRenderer', [ 'mapObject', 'Util/Cache', 'canvasShaders', 'MapState
 
         // Loading rendering {{{
         function renderLoading() {
-            // TODO
+            var el = dom.get('loading', function () {
+                var sWidth = 640;
+                var sHeight = 480;
+
+                var img = document.createElement('img');
+                img.style.display = 'none';
+
+                img.onload = function () {
+                    var width = img.width;
+                    var height = img.height;
+
+                    var size = 0.6;
+                    var scale = util.fitRectangleScale(sWidth * size, sHeight * size, width, height);
+
+                    img.style.display = 'block';
+                    img.style.position = 'absolute';
+                    img.style.left = ((sWidth - width * scale) / 2) + 'px';
+                    img.style.top = ((sHeight - height * scale) / 2) + 'px';
+                    img.style.width = (width * scale) + 'px';
+                    img.style.height = (height * scale) + 'px';
+                };
+
+                img.src = loadingImageSrc;
+
+                var container = document.createElement('div');
+                container.style.position = 'absolute';
+                container.style.left = '0px';
+                container.style.top = '0px';
+                container.style.width = sWidth + 'px';
+                container.style.height = sHeight + 'px';
+                container.style.background = '#000000';
+
+                container.appendChild(img);
+
+                return container;
+            });
+
+            setZ(el);
         }
         // Loading rendering }}}
 
         // Ready-to-play rendering {{{
         function renderReadyToPlay() {
-            // TODO
+            var el = dom.get('ready-to-play', function () {
+                var el = cloneAbsolute(skin.assetManager.get('ready-to-play', 'image-set')[0]);
+                el.style.left = '0px';
+                el.style.top = '0px';
+                el.style.width = '640px';
+                el.style.height = '480px';
+                return el;
+            });
+
+            setZ(el);
         }
         // Ready-to-play rendering }}}
 
