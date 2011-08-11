@@ -811,16 +811,10 @@ define('CanvasRenderer', [ 'mapObject', 'Util/Cache', 'canvasShaders', 'MapState
         front.style.position = 'relative';
         var frontDom = new DOMAllocator(front);
 
-        var back = document.createElement('div');
-        back.style.display = 'block';
-        back.style.position = 'relative';
-        var backDom = new DOMAllocator(back);
-
         var container = document.createElement('div');
         container.style.display = 'block';
         container.style.position = 'relative';
         container.appendChild(front);
-        container.appendChild(back);
 
         var caches = {
             // [ 'graphic-name', skin, shader, shaderData ] => graphic
@@ -870,27 +864,11 @@ define('CanvasRenderer', [ 'mapObject', 'Util/Cache', 'canvasShaders', 'MapState
             skinInitd = true;
         }
 
-        function swap() {
-            // No XOR swap here.  =[
-            var tmp = front;
-            front = back;
-            back = tmp;
-
-            tmp = frontDom;
-            frontDom = backDom;
-            backDom = tmp;
-
-            front.style.visibility = 'visible';
-            back.style.visibility = 'hidden';
-
-            r.consts({
-                caches: caches,
-                dom: backDom,
-                viewport: viewport
-            });
-        }
-
-        swap();
+        r.consts({
+            caches: caches,
+            dom: frontDom,
+            viewport: viewport
+        });
 
         return {
             element: container,
@@ -909,12 +887,11 @@ define('CanvasRenderer', [ 'mapObject', 'Util/Cache', 'canvasShaders', 'MapState
             },
 
             beginRender: function () {
-                backDom.begin();
+                frontDom.begin();
             },
 
             endRender: function () {
-                backDom.end();
-                swap();
+                frontDom.end();
             },
 
             renderMap: function (state, time) {
