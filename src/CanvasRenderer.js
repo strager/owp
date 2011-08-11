@@ -617,7 +617,9 @@ define('CanvasRenderer', [ 'mapObject', 'Util/Cache', 'canvasShaders', 'MapState
                 renderSliderBall(object);
             }
 
-            renderApproachProgress(object, alpha);
+            if (visibility === 'appearing') {
+                renderApproachProgress(object, alpha);
+            }
         }
 
         function renderObject(object) {
