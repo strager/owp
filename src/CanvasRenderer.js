@@ -428,11 +428,13 @@ define('CanvasRenderer', [ 'mapObject', 'Util/Cache', 'canvasShaders', 'MapState
             var height = getCoord(graphic.height * scale);
             var x = getCoord(object.hitObject.x - width / 2);
             var y = getCoord(object.hitObject.y - height / 2);
+            var alpha = ruleSet.getObjectOpacity(object, time);
 
             el.style.left = x + 'px';
             el.style.top = y + 'px';
             el.style.width = width + 'px';
             el.style.height = height + 'px';
+            el.style.opacity = alpha;
 
             setZ(el);
         }
@@ -635,7 +637,7 @@ define('CanvasRenderer', [ 'mapObject', 'Util/Cache', 'canvasShaders', 'MapState
 
             // Hit markers
             objects = objects.concat(
-                mapState.timeline.getAllInTimeRange(time - 2000, time, MapState.HIT_MARKER_CREATION)
+                mapState.timeline.getAllInTimeRange(time - 4000, time, MapState.HIT_MARKER_CREATION)
             );
 
             return ruleSet.getObjectsByZ(objects);
