@@ -138,7 +138,15 @@ define('AssetManager', [ 'MapInfo', 'mapFile', 'assetConfig', 'Util/Map', 'Util/
             return xhr(assetManager.root + '/' + name)
                 .then(function (xhr) {
                     var collection = JSON.parse(xhr.responseText);
-                    return Q.all(collection.sheets.map(loadSheet));
+
+                    // We map this to many promises to split the work into
+                    // several event loop turns.  Otherwise, the browser may
+                    // freeze for a second.
+                    var promises = collection.sheets.map(function (sheetDefinition) {
+                        return Q.ref(sheetDefinition).then(loadSheet);
+                    });
+
+                    return Q.all(promises);
                 })
                 .then(function (sheetFileLists) {
                     // Flatten the 2D array
