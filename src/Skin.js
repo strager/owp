@@ -81,7 +81,7 @@ define('Skin', [ 'Util/util' ], function (util) {
                 files['image-set'].push('score-' + i);
             }
 
-            return this.assetManager.preload(files);
+            return this.assetManager.archivedPreload('skin.owpa', files);
         }
     };
 
