@@ -1,4 +1,4 @@
-define('CanvasRenderer', [ 'mapObject', 'Util/Cache', 'canvasShaders', 'MapState', 'Util/gPubSub', 'Util/util' ], function (mapObject, Cache, shaders, MapState, gPubSub, util) {
+define('CanvasRenderer', [ 'mapObject', 'Util/Cache', 'canvasShaders', 'MapState', 'Util/gPubSub', 'Util/util', 'View', 'loading' ], function (mapObject, Cache, shaders, MapState, gPubSub, util, View, loadingImageSrc) {
     function DOMAllocator(container) {
         this.container = container;
 
@@ -14,10 +14,17 @@ define('CanvasRenderer', [ 'mapObject', 'Util/Cache', 'canvasShaders', 'MapState
         end: function () {
             this.nodeCache.collect(function (key, value) {
                 if (value && this.touched.indexOf(value) < 0) {
-                    this.container.removeChild(value);
+                    value.parentNode.removeChild(value);
                     return false;
                 }
             }, this);
+        },
+
+        contained: function (container, callback) {
+            var oldContainer = this.container;
+            this.container = container;
+            callback();
+            this.container = oldContainer;
         },
 
         get: function (key, creator) {
@@ -50,15 +57,60 @@ define('CanvasRenderer', [ 'mapObject', 'Util/Cache', 'canvasShaders', 'MapState
         return newElement;
     }
 
-    function renderMap(vars) {
-        var mapState = vars.mapState;
-        var ruleSet = mapState.ruleSet;
-        var skin = vars.skin;
-        var time = vars.time;
-        var caches = vars.caches;
-        var dom = vars.dom;
-        var mouseHistory = vars.mouseHistory;
+    function renderer(v) {
+        // Les constants
+        var dom, caches;
+        var viewport;
 
+        function consts(c) {
+            dom = c.dom;
+            caches = c.caches;
+            viewport = c.viewport;
+        }
+
+        // Les variables
+        var mapState, ruleSet, skin;
+        var mouseHistory;
+        var scoreHistory, comboHistory, accuracyHistory;
+        var storyboard;
+        var assetManager;
+        var time;
+
+        function vars(v) {
+            accuracyHistory = v.accuracyHistory;
+            comboHistory = v.comboHistory;
+            mapState = v.mapState;
+            mouseHistory = v.mouseHistory;
+            ruleSet = v.ruleSet;
+            scoreHistory = v.scoreHistory;
+            skin = v.skin;
+            time = v.time;
+            storyboard = v.storyboard;
+            assetManager = v.assetManager;
+        }
+
+        // Views {{{
+        var currentView;
+
+        function view(v, callback) {
+            var oldView = currentView;
+            currentView = v;
+
+            var container = dom.get(v, function () {
+                var div = document.createElement('div');
+                div.style.position = 'absolute';
+                return div;
+            });
+            container.style.left = v.mat[0] + 'px';
+            container.style.top = v.mat[1] + 'px';
+
+            dom.contained(container, callback);
+
+            currentView = oldView;
+        }
+        // Views }}}
+
+        // Rendering helpers {{{
         var z = 0;
 
         function setZ(node) {
@@ -87,31 +139,37 @@ define('CanvasRenderer', [ 'mapObject', 'Util/Cache', 'canvasShaders', 'MapState
             return Math.floor(x);
         }
 
-        function getNumberImages(number) {
-            var digits = '' + number;
-
-            var images = [ ];
-
-            var i, digit, graphic;
-            var frame = 0;
-
-            digits.split('').forEach(function (digit) {
-                graphic = skin.assetManager.get('default-' + digit, 'image-set');
-
-                images.push(graphic[frame]);
-            });
-
-            return images;
+        function getCharacters(string) {
+            return ('' + string).split('');
         }
 
-        function renderComboNumber(number, x, y, c) {
-            var images = getNumberImages(number);
-            var spacing = skin.hitCircleFontSpacing;
+        var stringCharLut = (function () {
+            var lut = [ ];
+            var i;
 
-            if (images.length === 0) {
-                // No images?  Don't render anything.
-                return;
+            for (i = 0; i < 10; ++i) {
+                lut[i] = i;
             }
+
+            lut[','] = 'comma';
+            lut['.'] = 'dot';
+            lut['%'] = 'percent';
+            lut['x'] = 'x';
+
+            return lut;
+        }());
+
+        function getStringImages(prefix, assetManager, string) {
+            return getCharacters(string).map(function (c) {
+                return assetManager.get(prefix + stringCharLut[c], 'image-set')[0];
+            });
+        }
+
+        function renderCharactersImages(images, context, options) {
+            var offset = 0;
+
+            var scale = options.scale || 1;
+            var spacing = options.spacing || 0;
 
             var totalWidth = images.reduce(function (acc, image) {
                 return acc + image.width;
@@ -119,19 +177,102 @@ define('CanvasRenderer', [ 'mapObject', 'Util/Cache', 'canvasShaders', 'MapState
 
             totalWidth += spacing * (images.length - 1);
 
-            var scale = Math.pow(images.length, -1 / 4) * 0.9;
-            var offset = -totalWidth / 2;
+            switch (options.align) {
+            default:
+            case 'left':
+                offset = 0;
+                break;
+            case 'center':
+                offset = -totalWidth / 2;
+                break;
+            case 'right':
+                offset = -totalWidth;
+                break;
+            }
+
+            var ox = options.x || 0;
+            var oy = options.y || 0;
+
+            images.forEach(function (image, i) {
+                var el = dom.get([ context, i ], function () {
+                    var el = document.createElement('img');
+                    el.style.position = 'absolute';
+                    return el;
+                });
+
+                var width = image.width;
+                var x = (offset + width / 2) * scale + ox;
+                var y = oy;
+                var scaledWidth = image.width * scale;
+                var scaledHeight = image.height * scale;
+
+                el.src = image.src;
+
+                el.style.left = (x + -scaledWidth / 2) + 'px';
+                el.style.top = (y + -scaledHeight / 2) + 'px';
+                el.style.width = scaledWidth + 'px';
+                el.style.height = scaledHeight + 'px';
+
+                setZ(el);
+
+                offset += width + spacing;
+            });
+        }
+
+        function renderCharactersCanvas(images, context, options) {
+            var offset = 0;
+
+            var scale = options.scale || 1;
+            var spacing = options.spacing || 0;
+
+            var totalWidth = images.reduce(function (acc, image) {
+                return acc + image.width;
+            }, 0);
+
+            totalWidth += spacing * (images.length - 1);
+
+            switch (options.align) {
+            default:
+            case 'left':
+                offset = 0;
+                break;
+            case 'center':
+                offset = -totalWidth / 2;
+                break;
+            case 'right':
+                offset = -totalWidth;
+                break;
+            }
 
             images.forEach(function (image) {
-                c.save();
-                c.translate(x, y);
+                var width = image.width;
+                var x = (offset + width / 2) * scale;
+                var y = 0;
 
-                c.scale(scale, scale);
-                c.drawImage(image, offset, -image.height / 2);
+                context.save();
 
-                c.restore();
+                context.translate(x, y);
+                context.scale(scale, scale);
+                context.drawImage(image, -image.width / 2, -image.height / 2);
 
-                offset += image.width + spacing;
+                context.restore();
+
+                offset += width + spacing;
+            });
+        }
+        // Rendering helpers }}}
+
+        // Map rendering {{{
+        function renderComboNumber(number, x, y, context) {
+            var images = getStringImages('default-', skin.assetManager, number);
+            var scale = Math.pow(images.length, -1 / 4) * 0.9;
+
+            return renderCharactersCanvas(images, context, {
+                x: x,
+                y: y,
+                scale: scale,
+                spacing: skin.hitCircleFontSpacing,
+                align: 'center'
             });
         }
 
@@ -287,11 +428,13 @@ define('CanvasRenderer', [ 'mapObject', 'Util/Cache', 'canvasShaders', 'MapState
             var height = getCoord(graphic.height * scale);
             var x = getCoord(object.hitObject.x - width / 2);
             var y = getCoord(object.hitObject.y - height / 2);
+            var alpha = ruleSet.getObjectOpacity(object, time);
 
             el.style.left = x + 'px';
             el.style.top = y + 'px';
             el.style.width = width + 'px';
             el.style.height = height + 'px';
+            el.style.opacity = alpha;
 
             setZ(el);
         }
@@ -474,7 +617,9 @@ define('CanvasRenderer', [ 'mapObject', 'Util/Cache', 'canvasShaders', 'MapState
                 renderSliderBall(object);
             }
 
-            renderApproachProgress(object, alpha);
+            if (visibility === 'appearing') {
+                renderApproachProgress(object, alpha);
+            }
         }
 
         function renderObject(object) {
@@ -494,40 +639,186 @@ define('CanvasRenderer', [ 'mapObject', 'Util/Cache', 'canvasShaders', 'MapState
 
             // Hit markers
             objects = objects.concat(
-                mapState.timeline.getAllInTimeRange(time - 2000, time, MapState.HIT_MARKER_CREATION)
+                mapState.timeline.getAllInTimeRange(time - 4000, time, MapState.HIT_MARKER_CREATION)
             );
 
             return ruleSet.getObjectsByZ(objects);
         }
 
-        getObjectsToRender().forEach(function (object) {
-            renderObject(object);
+        function renderMap() {
+            view(View.map, function () {
+                getObjectsToRender().forEach(function (object) {
+                    renderObject(object);
 
-            gPubSub.publish('tick');
-        });
+                    gPubSub.publish('tick');
+                });
+            });
 
-        // TODO Render cursor in another render step
-        // (See cursor + trail rendering code in file history)
+            // TODO Render cursor in another render step
+            // (See cursor + trail rendering code in file history)
+        }
+        // Map rendering }}}
+
+        // HUD rendering {{{
+        function renderScore() {
+            var digitCount = 7;
+            var zeros = new Array(digitCount + 1).join('0');
+            var score = scoreHistory.getDataAtTime(time) || 0;
+            score = zeros + score;
+            score = score.slice(-digitCount);
+
+            renderCharactersImages(getStringImages('score-', skin.assetManager, score), 'score', {
+                x: 640,
+                y: 20,
+                scale: .7,
+                align: 'right',
+                spacing: skin.scoreFontSpacing
+            });
+        }
+
+        function renderCombo() {
+            var combo = comboHistory.getDataAtTime(time) || 0;
+
+            renderCharactersImages(getStringImages('score-', skin.assetManager, combo + 'x'), 'combo', {
+                x: 0,
+                y: 460,
+                scale: .7,
+                align: 'left',
+                spacing: skin.scoreFontSpacing
+            });
+        }
+
+        function renderAccuracy() {
+            var accuracy = accuracyHistory.getDataAtTime(time) || 0;
+            accuracy *= 100;
+            accuracy = accuracy.toFixed(2);
+
+            renderCharactersImages(getStringImages('score-', skin.assetManager, accuracy + '%'), 'accuracy', {
+                x: 640,
+                y: 45,
+                scale: .4,
+                align: 'right',
+                spacing: skin.scoreFontSpacing
+            });
+        }
+
+        function renderHud() {
+            view(View.hud, function () {
+                renderScore();
+                renderCombo();
+                renderAccuracy();
+            });
+        }
+        // HUD rendering }}}
+
+        // Storyboard rendering {{{
+        function renderBackground() {
+            var background = storyboard.getBackground(time);
+
+            if (!background) {
+                return;
+            }
+
+            var backgroundGraphic = assetManager.get(background.fileName, 'image');
+
+            var el = dom.get(backgroundGraphic, function () {
+                return cloneAbsolute(backgroundGraphic);
+            });
+
+            el.style.x = viewport.x + 'px';
+            el.style.y = viewport.y + 'px';
+            el.style.width = viewport.width + 'px';
+            el.style.height = viewport.height + 'px';
+        }
+
+        function renderStoryboard() {
+            view(View.storyboard, function () {
+                renderBackground();
+
+                // TODO Real storyboard stuff
+            });
+        }
+        // Storyboard rendering }}}
+
+        // Loading rendering {{{
+        function renderLoading() {
+            var el = dom.get('loading', function () {
+                var sWidth = 640;
+                var sHeight = 480;
+
+                var img = document.createElement('img');
+                img.style.display = 'none';
+
+                img.onload = function () {
+                    var width = img.width;
+                    var height = img.height;
+
+                    var size = 0.6;
+                    var scale = util.fitRectangleScale(sWidth * size, sHeight * size, width, height);
+
+                    img.style.display = 'block';
+                    img.style.position = 'absolute';
+                    img.style.left = ((sWidth - width * scale) / 2) + 'px';
+                    img.style.top = ((sHeight - height * scale) / 2) + 'px';
+                    img.style.width = (width * scale) + 'px';
+                    img.style.height = (height * scale) + 'px';
+                };
+
+                img.src = loadingImageSrc;
+
+                var container = document.createElement('div');
+                container.style.position = 'absolute';
+                container.style.left = '0px';
+                container.style.top = '0px';
+                container.style.width = sWidth + 'px';
+                container.style.height = sHeight + 'px';
+                container.style.background = '#000000';
+
+                container.appendChild(img);
+
+                return container;
+            });
+
+            setZ(el);
+        }
+        // Loading rendering }}}
+
+        // Ready-to-play rendering {{{
+        function renderReadyToPlay() {
+            var el = dom.get('ready-to-play', function () {
+                var el = cloneAbsolute(skin.assetManager.get('ready-to-play', 'image-set')[0]);
+                el.style.left = '0px';
+                el.style.top = '0px';
+                el.style.width = '640px';
+                el.style.height = '480px';
+                return el;
+            });
+
+            setZ(el);
+        }
+        // Ready-to-play rendering }}}
+
+        return {
+            vars: vars,
+            consts: consts,
+            renderMap: renderMap,
+            renderHud: renderHud,
+            renderStoryboard: renderStoryboard,
+            renderLoading: renderLoading,
+            renderReadyToPlay: renderReadyToPlay
+        };
     }
 
     function CanvasRenderer() {
-        // TODO Double-buffering
-
         var front = document.createElement('div');
         front.style.display = 'block';
         front.style.position = 'relative';
         var frontDom = new DOMAllocator(front);
 
-        var back = document.createElement('div');
-        back.style.display = 'block';
-        back.style.position = 'relative';
-        var backDom = new DOMAllocator(back);
-
         var container = document.createElement('div');
         container.style.display = 'block';
         container.style.position = 'relative';
         container.appendChild(front);
-        container.appendChild(back);
 
         var caches = {
             // [ 'graphic-name', skin, shader, shaderData ] => graphic
@@ -543,6 +834,7 @@ define('CanvasRenderer', [ 'mapObject', 'Util/Cache', 'canvasShaders', 'MapState
             scaledImages: new Cache()
         };
 
+        var r = renderer();
         var viewport = { };
 
         function resize(width, height) {
@@ -576,21 +868,11 @@ define('CanvasRenderer', [ 'mapObject', 'Util/Cache', 'canvasShaders', 'MapState
             skinInitd = true;
         }
 
-        function swap() {
-            // No XOR swap here.  =[
-            var tmp = front;
-            front = back;
-            back = tmp;
-
-            tmp = frontDom;
-            frontDom = backDom;
-            backDom = tmp;
-
-            front.style.visibility = 'visible';
-            back.style.visibility = 'hidden';
-        }
-
-        swap();
+        r.consts({
+            caches: caches,
+            dom: frontDom,
+            viewport: viewport
+        });
 
         return {
             element: container,
@@ -598,57 +880,78 @@ define('CanvasRenderer', [ 'mapObject', 'Util/Cache', 'canvasShaders', 'MapState
             resize: resize,
 
             mouseToGame: function (x, y) {
+                var playfieldX = (x - viewport.x) / viewport.width * 640;
+                var playfieldY = (y - viewport.y) / viewport.height * 480;
+                var mapCoords = View.map.playfieldToView(playfieldX, playfieldY);
+
                 return {
-                    x: (x - viewport.x) / viewport.width * 640,
-                    y: (y - viewport.y) / viewport.height * 480
+                    x: mapCoords[0],
+                    y: mapCoords[1]
                 };
             },
 
             beginRender: function () {
-                backDom.begin();
+                frontDom.begin();
             },
 
             endRender: function () {
-                backDom.end();
-                swap();
+                frontDom.end();
             },
 
             renderMap: function (state, time) {
-                initSkin(state.skin);
+                initSkin(state.skin, state.mapState.ruleSet);
 
-                renderMap({
+                r.vars({
                     mapState: state.mapState,
+                    ruleSet: state.mapState.ruleSet,
                     skin: state.skin,
                     mouseHistory: state.mouseHistory,
-                    time: time,
-                    caches: caches,
-                    dom: backDom
+                    time: time
                 });
+
+                r.renderMap();
+            },
+
+            renderHud: function (state, time) {
+                initSkin(state.skin, state.ruleSet);
+
+                r.vars({
+                    skin: state.skin,
+                    ruleSet: state.ruleSet,
+                    scoreHistory: state.scoreHistory,
+                    accuracyHistory: state.accuracyHistory,
+                    comboHistory: state.comboHistory,
+                    time: time
+                });
+
+                r.renderHud();
             },
 
             renderStoryboard: function (storyboard, assetManager, time) {
-                // Background
-                var background = storyboard.getBackground(time);
-                var backgroundGraphic;
+                r.vars({
+                    assetManager: assetManager,
+                    storyboard: storyboard,
+                    time: time
+                });
 
-                if (background) {
-                    backgroundGraphic = assetManager.get(background.fileName, 'image');
-
-                    var el = backDom.get(backgroundGraphic, function () {
-                        return cloneAbsolute(backgroundGraphic);
-                    });
-
-                    el.style.x = viewport.x + 'px';
-                    el.style.y = viewport.y + 'px';
-                    el.style.width = viewport.width + 'px';
-                    el.style.height = viewport.height + 'px';
-                }
-
-                // TODO Real storyboard stuff
+                r.renderStoryboard();
             },
 
-            renderHud: function () {
-                // TODO
+            renderLoading: function (time) {
+                r.vars({
+                    time: time
+                });
+
+                r.renderLoading();
+            },
+
+            renderReadyToPlay: function (skin, time) {
+                r.vars({
+                    skin: skin,
+                    time: time
+                });
+
+                r.renderReadyToPlay();
             }
         };
     }

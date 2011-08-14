@@ -1,4 +1,4 @@
-define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache', 'Util/util', 'loading' ], function (MapState, mapObject, gPubSub, Cache, util, loadingImageSrc) {
+define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache', 'Util/util', 'loading', 'View' ], function (MapState, mapObject, gPubSub, Cache, util, loadingImageSrc, View) {
     function reportGLError(gl, error) {
         // Find the error name
         var key;
@@ -53,19 +53,7 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
         return wrapped;
     }
 
-    function View(mat) {
-        this.mat = mat;
-    }
-
-    View.prototype.playfieldToView = function (x, y) {
-        return [ x - this.mat[0], y - this.mat[1] ];
-    };
-
-    View.map = new View([ 64, 56 ]);
-    View.storyboard = new View([ 0, 0 ]);
-    View.hud = new View([ 0, 0 ]);
-
-    function renderer(v) {
+    function renderer() {
         // Les constants
         var buffers, caches, misc, programs, textures;
         var gl, viewport;
