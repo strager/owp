@@ -1,4 +1,4 @@
-define('Game', [ 'q', 'MapState', 'Util/PubSub', 'Soundboard', 'Util/Timeline', 'Util/gPubSub', 'Util/History', 'agentInfo', 'Util/audioTimer' ], function (Q, MapState, PubSub, Soundboard, Timeline, gPubSub, History, agentInfo, audioTimer) {
+define('Game', [ 'q', 'MapState', 'AssetManager', 'Util/PubSub', 'Soundboard', 'Util/Timeline', 'Util/gPubSub', 'Util/History', 'agentInfo', 'Util/audioTimer' ], function (Q, MapState, AssetManager, PubSub, Soundboard, Timeline, gPubSub, History, agentInfo, audioTimer) {
     function Game() {
         var currentState = null;
         var skin = null;
@@ -17,7 +17,9 @@ define('Game', [ 'q', 'MapState', 'Util/PubSub', 'Soundboard', 'Util/Timeline', 
             }
         }
 
-        function loadSkin(skinAssetManager) {
+        function loadSkin(skinRoot) {
+            var skinAssetManager = new AssetManager(skinRoot);
+
             skin = Q.ref(skinAssetManager.load('skin', 'skin'))
                 .then(function (skin_) {
                     return Q.ref(skin_.preload())
@@ -30,7 +32,7 @@ define('Game', [ 'q', 'MapState', 'Util/PubSub', 'Soundboard', 'Util/Timeline', 
 
             // Let callers know when the skin is loaded,
             // but don't let them know about the skin
-            return Q.when(skin, function () { });
+            return Q.when(skin, function () { }, agentInfo.crash);
         }
 
         function setState(state) {
@@ -45,7 +47,13 @@ define('Game', [ 'q', 'MapState', 'Util/PubSub', 'Soundboard', 'Util/Timeline', 
             }
         }
 
-        function startMap(mapAssetManager, mapName) {
+        function startMap(mapRoot, mapName) {
+            if (!skin) {
+                throw new Error('Must set a skin before starting a map');
+            }
+
+            var mapAssetManager = new AssetManager(mapRoot);
+
             var mapInfo, mapState, audio;
             var timeline = null;
             var boundEvents = [ ];
@@ -173,10 +181,6 @@ define('Game', [ 'q', 'MapState', 'Util/PubSub', 'Soundboard', 'Util/Timeline', 
                         };
                     }
                 });
-            }
-
-            if (!skin) {
-                throw new Error('Must set a skin before starting a map');
             }
 
             // TODO Refactor this mess
