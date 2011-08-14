@@ -69,7 +69,8 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
         }
 
         // Les variables
-        var mapState, ruleSet, skin;
+        var ruleSet, skin;
+        var objects;
         var mouseHistory;
         var scoreHistory, comboHistory, accuracyHistory;
         var videoElement;
@@ -78,8 +79,8 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
         function vars(v) {
             accuracyHistory = v.accuracyHistory;
             comboHistory = v.comboHistory;
-            mapState = v.mapState;
             mouseHistory = v.mouseHistory;
+            objects = v.objects
             ruleSet = v.ruleSet;
             scoreHistory = v.scoreHistory;
             skin = v.skin;
@@ -459,7 +460,7 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
             var alpha = ruleSet.getObjectOpacity(object, time)
 
             renderUnit({ alpha: alpha }, function () {
-                var key = [ object, mapState ];
+                var key = [ object, ruleSet, skin ];
 
                 var c = caches.sliderTrack.get(key, function () {
                     var points = object.curve.points;
@@ -648,9 +649,9 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
 
         function renderMap() {
             view(View.map, function () {
-                var objects = ruleSet.getObjectsByZ(mapState.getVisibleObjects(time));
+                var sortedObjects = ruleSet.getObjectsByZ(objects);
 
-                objects.forEach(function (object) {
+                sortedObjects.forEach(function (object) {
                     renderObject(object);
 
                     gPubSub.publish('tick');
@@ -1028,7 +1029,7 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
         var misc = { };
 
         var caches = {
-            // [ sliderObject, mapState, skin ] => curveId
+            // [ sliderObject, ruleSet, skin ] => curveId
             sliderTrack: new Cache()
         };
 
@@ -1337,11 +1338,11 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
             },
 
             renderMap: function (state, time) {
-                initSkin(state.skin, state.mapState.ruleSet);
+                initSkin(state.skin, state.ruleSet);
 
                 r.vars({
-                    mapState: state.mapState,
-                    ruleSet: state.mapState.ruleSet,
+                    objects: state.objects,
+                    ruleSet: state.ruleSet,
                     skin: state.skin,
                     mouseHistory: state.mouseHistory,
                     time: time

@@ -69,7 +69,8 @@ define('CanvasRenderer', [ 'mapObject', 'Util/Cache', 'canvasShaders', 'MapState
         }
 
         // Les variables
-        var mapState, ruleSet, skin;
+        var ruleSet, skin;
+        var objects;
         var mouseHistory;
         var scoreHistory, comboHistory, accuracyHistory;
         var storyboard;
@@ -78,15 +79,15 @@ define('CanvasRenderer', [ 'mapObject', 'Util/Cache', 'canvasShaders', 'MapState
 
         function vars(v) {
             accuracyHistory = v.accuracyHistory;
+            assetManager = v.assetManager;
             comboHistory = v.comboHistory;
-            mapState = v.mapState;
             mouseHistory = v.mouseHistory;
+            objects = v.objects;
             ruleSet = v.ruleSet;
             scoreHistory = v.scoreHistory;
             skin = v.skin;
-            time = v.time;
             storyboard = v.storyboard;
-            assetManager = v.assetManager;
+            time = v.time;
         }
 
         // Views {{{
@@ -635,9 +636,9 @@ define('CanvasRenderer', [ 'mapObject', 'Util/Cache', 'canvasShaders', 'MapState
 
         function renderMap() {
             view(View.map, function () {
-                var objects = ruleSet.getObjectsByZ(mapState.getVisibleObjects(time));
+                var sortedObjects = ruleSet.getObjectsByZ(objects);
 
-                objects.forEach(function (object) {
+                sortedObjects.forEach(function (object) {
                     renderObject(object);
 
                     gPubSub.publish('tick');
@@ -817,8 +818,9 @@ define('CanvasRenderer', [ 'mapObject', 'Util/Cache', 'canvasShaders', 'MapState
             // [ graphic, canvasWidth, canvasHeight ] => graphic
             background: new Cache(),
 
-            // [ sliderObject, mapState, skin ] => { image, pointCount }
-            sliderTrack: new Cache(),
+            // [ sliderObject, ruleSet, skin ] => { image, pointCount }
+            // TODO Cache + snake
+            //sliderTrack: new Cache(),
 
             // [ graphic, scale ] => graphic
             scaledImages: new Cache()
@@ -889,11 +891,11 @@ define('CanvasRenderer', [ 'mapObject', 'Util/Cache', 'canvasShaders', 'MapState
             },
 
             renderMap: function (state, time) {
-                initSkin(state.skin, state.mapState.ruleSet);
+                initSkin(state.skin, state.ruleSet);
 
                 r.vars({
-                    mapState: state.mapState,
-                    ruleSet: state.mapState.ruleSet,
+                    objects: state.objects,
+                    ruleSet: state.ruleSet,
                     skin: state.skin,
                     mouseHistory: state.mouseHistory,
                     time: time

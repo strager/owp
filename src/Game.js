@@ -94,7 +94,8 @@ define('Game', [ 'q', 'MapState', 'AssetManager', 'Util/PubSub', 'Soundboard', '
 
                         renderer.renderStoryboard(mapInfo.storyboard, mapAssetManager, time);
                         renderer.renderMap({
-                            mapState: mapState,
+                            ruleSet: mapState.ruleSet,
+                            objects: mapState.getVisibleObjects(time),
                             skin: skin.valueOf(),
                             mouseHistory: mouseHistory
                         }, time);
