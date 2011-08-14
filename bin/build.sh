@@ -17,6 +17,7 @@ OUT="$ROOT/owp.min.js"
     echo 'var derequire_module__q = Q;'
     echo 'var derequire_module__loading = "data:image/png;base64,'$(base64 "$ROOT/src/loading.png" | tr -d '\n')'";'
     echo 'var DEBUG = false;'
+    echo "var VERSION = '$(git rev-parse HEAD)';"
     node "$DIR/derequire.js" "$ROOT/index.js" "$ROOT/src/"
     echo
     echo '};'
