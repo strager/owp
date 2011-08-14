@@ -55,7 +55,10 @@ define('MapState', [ 'mapObject', 'Util/Timeline', 'Util/Map', 'Util/PubSub' ], 
 
     MapState.prototype = {
         getVisibleObjects: function (time) {
-            return this.timeline.getAllAtTime(time, MapState.HIT_OBJECT_VISIBILITY);
+            var hitObjects = this.timeline.getAllAtTime(time, MapState.HIT_OBJECT_VISIBILITY);
+            var hitMarkers = this.timeline.getAllInTimeRange(time - 4000, time, MapState.HIT_MARKER_CREATION);
+
+            return hitObjects.concat(hitMarkers);
         },
 
         getHittableObjects: function (time) {

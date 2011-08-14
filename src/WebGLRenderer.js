@@ -646,21 +646,11 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
             });
         }
 
-        function getObjectsToRender() {
-            // Visible objects
-            var objects = mapState.getVisibleObjects(time);
-
-            // Hit markers
-            objects = objects.concat(
-                mapState.timeline.getAllInTimeRange(time - 4000, time, MapState.HIT_MARKER_CREATION)
-            );
-
-            return ruleSet.getObjectsByZ(objects);
-        }
-
         function renderMap() {
             view(View.map, function () {
-                getObjectsToRender().forEach(function (object) {
+                var objects = ruleSet.getObjectsByZ(mapState.getVisibleObjects(time));
+
+                objects.forEach(function (object) {
                     renderObject(object);
 
                     gPubSub.publish('tick');
