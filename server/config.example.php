@@ -2,6 +2,11 @@
 
 error_reporting(E_ALL | E_NOTICE);
 
+$dbUsername = 'username';
+$dbPassword = 'password';
+$dbDatabase = 'database';
+$dbHostname = 'localhost';
+
 $mapsRoot = '/./';
 $skinsRoot = '/./';
 
