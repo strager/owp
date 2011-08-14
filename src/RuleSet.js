@@ -44,12 +44,17 @@ define('RuleSet', [ 'Util/util', 'mapObject', 'Util/History' ], function (util, 
             }
         },
 
-        getAppearTime: function () {
-            return this.threePartLerp(1800, 1200, 450, this.approachRate);
-        },
+        getAppearTime: mapObject.matcher({
+            HitMarker: function () {
+                return 0;
+            },
+            _: function () {
+                return this.threePartLerp(1800, 1200, 450, this.approachRate);
+            }
+        }),
 
         getObjectStartAppearTime: function (object) {
-            return this.getObjectStartTime(object) - this.getAppearTime();
+            return this.getObjectStartTime(object) - this.getAppearTime(object);
         },
 
         getObjectEndAppearTime: function (object) {

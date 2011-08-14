@@ -1,4 +1,4 @@
-define('Game', [ 'q', 'MapState', 'AssetManager', 'Util/PubSub', 'Soundboard', 'Util/Timeline', 'Util/gPubSub', 'Util/History', 'agentInfo', 'Util/audioTimer' ], function (Q, MapState, AssetManager, PubSub, Soundboard, Timeline, gPubSub, History, agentInfo, audioTimer) {
+define('Game', [ 'q', 'MapState', 'AssetManager', 'Util/PubSub', 'Soundboard', 'Util/Timeline', 'Util/gPubSub', 'Util/History', 'agentInfo', 'Util/audioTimer', 'RuleSet', 'mapObject', 'Combo', 'TimingPoint' ], function (Q, MapState, AssetManager, PubSub, Soundboard, Timeline, gPubSub, History, agentInfo, audioTimer, RuleSet, mapObject, Combo, TimingPoint) {
     function Game() {
         var currentState = null;
         var skin = null;
@@ -55,7 +55,7 @@ define('Game', [ 'q', 'MapState', 'AssetManager', 'Util/PubSub', 'Soundboard', '
             var mapAssetManager = new AssetManager(mapRoot);
 
             var mapInfo, mapState, audio;
-            var timeline = null;
+            var timeline = new Timeline();
             var boundEvents = [ ];
 
             function play() {
@@ -201,8 +201,6 @@ define('Game', [ 'q', 'MapState', 'AssetManager', 'Util/PubSub', 'Soundboard', '
                         audio.controls = 'controls';
                         document.body.appendChild(audio);
 
-                        timeline = new Timeline(audio);
-
                         mapState = MapState.fromMapInfo(mapInfo, timeline);
                     }),
                 Q.ref(skin)
@@ -236,10 +234,6 @@ define('Game', [ 'q', 'MapState', 'AssetManager', 'Util/PubSub', 'Soundboard', '
                 setState({
                     render: function (renderer) {
                         renderer.renderLoading(Date.now());
-                    },
-                    enter: function () {
-                    },
-                    leave: function () {
                     }
                 });
             }
@@ -247,6 +241,127 @@ define('Game', [ 'q', 'MapState', 'AssetManager', 'Util/PubSub', 'Soundboard', '
             loading();
 
             return Q.when(load, readyToPlay, agentInfo.crash);
+        }
+
+        function tutorial() {
+            if (!skin) {
+                throw new Error('Must set a skin before starting a map');
+            }
+
+            var ruleSet = new RuleSet();
+            ruleSet.circleSize = 3;
+
+            ruleSet.uninheritedTimingPointHistory.add(0, new TimingPoint({
+                time: 0,
+                bpm: 120,
+                isInherited: false,
+                hitSoundVolume: 1,
+                sampleSet: 'normal'
+            }));
+
+            function screen0() {
+                var startTime;
+                var duration = 10000;
+                var timeline = new Timeline();
+                var boundEvents = [ ];
+                var soundboard = new Soundboard(skin.valueOf().assetManager);
+
+                function currentTime() {
+                    var time = Date.now() - startTime;
+
+                    while (time > duration) {
+                        time -= duration;
+                    }
+
+                    return time;
+                }
+
+                var hitObjects = [
+                    new mapObject.HitCircle(2000, 40, 40),
+                    new mapObject.HitCircle(4000, 40, 40),
+                    new mapObject.HitCircle(6000, 40, 40),
+                    new mapObject.HitCircle(8000, 40, 40)
+                ];
+
+                var combo = new Combo();
+                hitObjects.forEach(function (object, i) {
+                    object.hitSounds = [ 'hitnormal' ];
+                    object.comboIndex = i;
+                    object.combo = combo;
+                });
+
+                function hitMarker(object, time, isHit) {
+                    var hitMarker = new mapObject.HitMarker(object, time, ruleSet.getHitScore(object, time), isHit);
+                    timeline.add('HitMarker', hitMarker, hitMarker.time);
+                    return hitMarker;
+                }
+
+                var hitMarkers = [
+                    hitMarker(hitObjects[0], 2000, true),
+                    hitMarker(hitObjects[1], 4100, true),
+                    hitMarker(hitObjects[2], 6150, true),
+                    hitMarker(hitObjects[3], ruleSet.getObjectLatestHitTime(hitObjects[3]) + 1, false),
+                ];
+
+                var objects = hitObjects.concat(hitMarkers);
+
+                setState({
+                    render: function (renderer) {
+                        var time = currentTime();
+
+                        renderer.renderMap({
+                            ruleSet: ruleSet,
+                            objects: objects,
+                            skin: skin.valueOf(),
+                            mouseHistory: null
+                        }, time);
+                    },
+                    enter: function () {
+                        startTime = Date.now();
+
+                        boundEvents.push(timeline.subscribe('HitMarker', function (hitMarker) {
+                            var hitSounds = ruleSet.getHitSoundNames(hitMarker);
+
+                            // Note that osu! uses the hit marker time itself,
+                            // where we use the more mapper-friendly hit object
+                            // time.  FIXME Maybe this detail should be moved
+                            // to RuleSet (i.e. pass in a HitMarker)?
+                            var volume = ruleSet.getHitSoundVolume(hitMarker.hitObject.time);
+
+                            hitSounds.forEach(function (soundName) {
+                                soundboard.playSound(soundName, {
+                                    // Scale volume to how many hit sounds are
+                                    // being played
+                                    volume: volume / hitSounds.length
+                                });
+                            });
+                        }));
+
+                        gPubSub.subscribe(function () {
+                            var time = currentTime();
+                            timeline.update(time);
+                        });
+                    },
+                    leave: function () {
+                        boundEvents.forEach(function (be) {
+                            be.unsubscribe();
+                        });
+                        boundEvents = [ ];
+                    }
+                });
+            }
+
+            function loading() {
+                setState({
+                    render: function (renderer) {
+                        renderer.renderLoading(Date.now());
+                    }
+                });
+            }
+
+            loading();
+
+            Q.when(skin, screen0, agentInfo.crash);
         }
 
         function debugInfo() {
@@ -257,6 +372,7 @@ define('Game', [ 'q', 'MapState', 'AssetManager', 'Util/PubSub', 'Soundboard', '
 
         return {
             startMap: startMap,
+            tutorial: tutorial,
             render: render,
             loadSkin: loadSkin,
             mouse: function (e) {
