@@ -140,7 +140,7 @@ require([ 'WebGLRenderer', 'CanvasRenderer', 'AssetManager', 'q', 'Game', 'Util/
             });
 
             renderFps.addTick();
-        });
+        }, io.playAreas[0]);
 
         infLoop(function () {
             gPubSub.publish('tick');
