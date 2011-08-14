@@ -1,4 +1,5 @@
 DEBUG = true;
+VERSION = 'debug-build';
 
 // =D?
 

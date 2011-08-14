@@ -1277,6 +1277,8 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
             }
 
             textures.readyToPlay = makeTexture(skin.assetManager.get('ready-to-play', 'image-set')[0]);
+
+            readyToPlayInitd = true;
         }
 
         var r = renderer();

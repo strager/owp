@@ -34,7 +34,7 @@ define('agentInfo', [ 'Util/PubSub', 'Util/util' ], function (PubSub, util) {
 
         crashTimer = setTimeout(function () {
             agentInfo.crashReportHandler.publishSync({
-                version: 'xxx',  // TODO (obviously~)
+                version: VERSION,
                 crashes: crashes
             });
         }, crashTimeout);

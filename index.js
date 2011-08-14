@@ -140,7 +140,7 @@ require([ 'WebGLRenderer', 'CanvasRenderer', 'AssetManager', 'q', 'Game', 'Util/
             });
 
             renderFps.addTick();
-        });
+        }, io.playAreas[0]);
 
         infLoop(function () {
             gPubSub.publish('tick');
@@ -234,30 +234,32 @@ require([ 'WebGLRenderer', 'CanvasRenderer', 'AssetManager', 'q', 'Game', 'Util/
             switch (e.which) {
             case 90: // LMB
                 isLeftDown = true;
+                e.preventDefault();
                 break;
 
             case 88: // RMB
                 isRightDown = true;
+                e.preventDefault();
                 break;
             }
 
             mouseStateChanged();
-            e.preventDefault();
         }, false);
 
         document.addEventListener('keyup', function (e) {
             switch (e.which) {
             case 90: // LMB
                 isLeftDown = false;
+                e.preventDefault();
                 break;
 
             case 88: // RMB
                 isRightDown = false;
+                e.preventDefault();
                 break;
             }
 
             mouseStateChanged();
-            e.preventDefault();
         }, false);
 
         var playfield = document.getElementById('playfield');
