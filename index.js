@@ -109,8 +109,8 @@ require([ 'WebGLRenderer', 'CanvasRenderer', 'AssetManager', 'q', 'Game', 'Util/
 
     function renderLoop(callback) {
         requestAnimFrame(function () {
-            callback();
             renderLoop(callback);
+            callback();
         }, document.body); // should prolly use the canvas here...
     }
 
