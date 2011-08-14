@@ -121,11 +121,15 @@ define('AssetManager', [ 'MapInfo', 'mapFile', 'assetConfig', 'Util/Map', 'Util/
                             imageDefinition.src[3]
                         );
 
+                        // Convert to <img>; needed for CanvasRenderer (sadly...)
+                        var image = document.createElement('img');
+                        image.src = canvas.toDataURL();
+
                         var assetName = imageDefinition.file.replace(/\.png$/, ''); // HACK
 
                         // Le hack to inject a loaded asset into an AssetManager
                         assetManager.cache.get([ assetName, 'image-set' ], function () {
-                            return [ canvas ];
+                            return [ image ];
                         });
                     });
 
