@@ -20,6 +20,7 @@ define('Skin', [ 'Util/util' ], function (util) {
 
     Skin.prototype = {
         preload: function () {
+            // Try to keep this in sync with bin/skin.php
             var files = {
                 'image-set': [
                     'hitcircle',
@@ -39,9 +40,29 @@ define('Skin', [ 'Util/util' ], function (util) {
                     'reversearrow',
                     'sliderb0',
 
+                    'default-0',
+                    'default-1',
+                    'default-2',
+                    'default-3',
+                    'default-4',
+                    'default-5',
+                    'default-6',
+                    'default-7',
+                    'default-8',
+                    'default-9',
                     'default-comma',
                     'default-dot',
 
+                    'score-0',
+                    'score-1',
+                    'score-2',
+                    'score-3',
+                    'score-4',
+                    'score-5',
+                    'score-6',
+                    'score-7',
+                    'score-8',
+                    'score-9',
                     'score-comma',
                     'score-dot',
                     'score-percent',
@@ -74,14 +95,7 @@ define('Skin', [ 'Util/util' ], function (util) {
                 ]
             };
 
-            var i;
-
-            for (i = 0; i < 10; ++i) {
-                files['image-set'].push('default-' + i);
-                files['image-set'].push('score-' + i);
-            }
-
-            return this.assetManager.preload(files);
+            return this.assetManager.archivedPreload('skin.owpa', files);
         }
     };
 

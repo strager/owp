@@ -24,6 +24,33 @@ define('AssetManager', [ 'MapInfo', 'mapFile', 'assetConfig', 'Util/Map', 'Util/
         return 'owp_global__do_not_touch__bug_workaround_' + audioLoadCounter;
     }
 
+    var goodResponseCodes = [ 200, 204, 206, 301, 302, 303, 304, 307 ];
+
+    function xhr(url) {
+        var ret = Q.defer();
+
+        var xhr = new XMLHttpRequest();
+        xhr.onerror = function () {
+            // FIXME is this needed?
+            ret.reject(new Error());
+        };
+        xhr.onreadystatechange = function () {
+            if (xhr.readyState === 4) { // Done loading
+                if (goodResponseCodes.indexOf(xhr.status) >= 0) {
+                    // OK
+                    ret.resolve(xhr);
+                } else {
+                    ret.reject(new Error(xhr.status));
+                }
+            }
+        };
+
+        xhr.open('GET', url, true);
+        xhr.send(null);
+
+        return ret.promise;
+    }
+
     function AssetManager(root) {
         this.root = root;
         this.cache = new Cache();
@@ -55,6 +82,82 @@ define('AssetManager', [ 'MapInfo', 'mapFile', 'assetConfig', 'Util/Map', 'Util/
             img.src = assetManager.root + '/' + name;
 
             return ret.promise;
+        },
+
+        'archive': function (assetManager, name) {
+            var ret = Q.defer();
+
+            function loadSheet(sheetDefinition) {
+                var assetName = sheetDefinition.file.replace(/\.png$/, ''); // HACK
+
+                return Q.when(assetManager.load(assetName, 'image-set'), function (sheetImage) {
+                    sheetImage = sheetImage[0]; // HACK
+
+                    sheetDefinition.images.forEach(function (imageDefinition) {
+                        var width = imageDefinition.dest[2];
+                        var height = imageDefinition.dest[3];
+
+                        var canvas = document.createElement('canvas');
+                        canvas.width = width;
+                        canvas.height = height;
+
+                        var context = canvas.getContext('2d');
+                        context.globalCompositeOperation = 'copy';
+                        context.fillStyle = 'transparent';
+                        context.clearRect(0, 0, width, height);
+                        context.fillRect(0, 0, width, height);
+
+                        context.drawImage(
+                            sheetImage,
+
+                            imageDefinition.src[0],
+                            imageDefinition.src[1],
+                            imageDefinition.src[2],
+                            imageDefinition.src[3],
+
+                            imageDefinition.dest[0],
+                            imageDefinition.dest[1],
+                            imageDefinition.src[2],
+                            imageDefinition.src[3]
+                        );
+
+                        // Convert to <img>; needed for CanvasRenderer (sadly...)
+                        var image = document.createElement('img');
+                        image.src = canvas.toDataURL();
+
+                        var assetName = imageDefinition.file.replace(/\.png$/, ''); // HACK
+
+                        // Le hack to inject a loaded asset into an AssetManager
+                        assetManager.cache.get([ assetName, 'image-set' ], function () {
+                            return [ image ];
+                        });
+                    });
+
+                    return sheetDefinition.images.map(function (imageDefinition) {
+                        return imageDefinition.file;
+                    });
+                });
+            }
+
+            return xhr(assetManager.root + '/' + name)
+                .then(function (xhr) {
+                    var collection = JSON.parse(xhr.responseText);
+
+                    // We map this to many promises to split the work into
+                    // several event loop turns.  Otherwise, the browser may
+                    // freeze for a second.
+                    var promises = collection.sheets.map(function (sheetDefinition) {
+                        return Q.ref(sheetDefinition).then(loadSheet);
+                    });
+
+                    return Q.all(promises);
+                })
+                .then(function (sheetFileLists) {
+                    // Flatten the 2D array
+                    return sheetFileLists.reduce(function (acc, array) {
+                        return acc.concat(array);
+                    }, [ ]);
+                });
         },
 
         audio: function (assetManager, name) {
@@ -181,25 +284,10 @@ define('AssetManager', [ 'MapInfo', 'mapFile', 'assetConfig', 'Util/Map', 'Util/
         },
 
         'asset-config': function (assetManager, name) {
-            var ret = Q.defer();
-
-            var xhr = new XMLHttpRequest();
-            xhr.onerror = function () {
-                ret.reject(new Error());
-            };
-            xhr.onreadystatechange = function () {
-                if (xhr.readyState === 4) {
-                    // Done loading
-                    var config = assetConfig.parseString(xhr.responseText);
-
-                    ret.resolve(config);
-                }
-            };
-
-            xhr.open('GET', assetManager.root + '/' + name, true);
-            xhr.send(null);
-
-            return ret.promise;
+            return xhr(assetManager.root + '/' + name)
+                .then(function (xhr) {
+                    return assetConfig.parseString(xhr.responseText);
+                });
         },
 
         skin: function (assetManager, name, loaded) {
@@ -257,6 +345,18 @@ define('AssetManager', [ 'MapInfo', 'mapFile', 'assetConfig', 'Util/Map', 'Util/
             });
 
             return Q.all(assets);
+        },
+
+        archivedPreload: function (archive, obj) {
+            var self = this;
+
+            function cont() {
+                return self.preload(obj);
+            }
+
+            // Errors are ignored; presumably, we don't need assets we can't
+            // include outside the archive
+            return Q.when(self.load(archive, 'archive'), cont, cont);
         }
     };
 
