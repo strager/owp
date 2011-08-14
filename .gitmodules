@@ -4,3 +4,6 @@
 [submodule "vendor/packo-sprite"]
 	path = vendor/packo-sprite
 	url = https://github.com/strager/packo-sprite.git
+[submodule "vendor/unrequirejs"]
+	path = vendor/unrequirejs
+	url = git://github.com/sibblingz/unrequirejs.git
