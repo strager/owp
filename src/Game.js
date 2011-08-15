@@ -264,6 +264,7 @@ define('Game', [ 'q', 'MapState', 'AssetManager', 'Util/PubSub', 'Soundboard', '
 
             var audio, currentTime;
             var boundEvents = [ ];
+            var soundboard;
 
             var combos = [
                 new Combo([ 255, 255, 128 ]),
@@ -278,15 +279,16 @@ define('Game', [ 'q', 'MapState', 'AssetManager', 'Util/PubSub', 'Soundboard', '
 
             var measureCount = 64;
 
-            function screen0() {
-                var soundboard = new Soundboard(skin.valueOf().assetManager);
+            var scene0, scene1, scene2;
+
+            function initScene0() {
                 var timeline = new Timeline();
                 var mapState = new MapState(ruleSet, [ ], timeline);
 
                 for (var i = 0; i < measureCount; ++i) {
                     var curCombo = combos[i % combos.length];
-                    var x = 60;
-                    var y = 80;
+                    var x = 256;
+                    var y = 192;
 
                     // 300
                     var hitObject = new mapObject.HitCircle(beat(i * 16), x, y);
@@ -333,60 +335,63 @@ define('Game', [ 'q', 'MapState', 'AssetManager', 'Util/PubSub', 'Soundboard', '
                     mapState.applyHitMarker(hitMarker);
                 }
 
-                setState({
-                    render: function (renderer) {
-                        var time = currentTime();
-
-                        renderer.renderMap({
-                            ruleSet: ruleSet,
-                            objects: mapState.getVisibleObjects(time),
-                            skin: skin.valueOf(),
-                            mouseHistory: null
-                        }, time);
-                    },
-                    enter: function () {
-                        audio.play();
-
-                        boundEvents.push(timeline.subscribe(MapState.HIT_MARKER_CREATION, function (hitMarker) {
-                            var hitSounds = ruleSet.getHitSoundNames(hitMarker);
-
-                            // Note that osu! uses the hit marker time itself,
-                            // where we use the more mapper-friendly hit object
-                            // time.  FIXME Maybe this detail should be moved
-                            // to RuleSet (i.e. pass in a HitMarker)?
-                            var volume = ruleSet.getHitSoundVolume(hitMarker.hitObject.time);
-
-                            hitSounds.forEach(function (soundName) {
-                                soundboard.playSound(soundName, {
-                                    // Scale volume to how many hit sounds are
-                                    // being played
-                                    volume: volume / hitSounds.length
-                                });
-                            });
-                        }));
-
-                        gPubSub.subscribe(function () {
+                return function () {
+                    setState({
+                        render: function (renderer) {
                             var time = currentTime();
-                            timeline.update(time);
-                        });
 
-                        boundEvents.push(mousePubSub.subscribe(function (e) {
-                            if (e.left || e.right) {
-                                screen1();
-                            }
-                        }));
-                    },
-                    leave: function () {
-                        boundEvents.forEach(function (be) {
-                            be.unsubscribe();
-                        });
-                        boundEvents = [ ];
-                    }
-                });
+                            renderer.renderMap({
+                                ruleSet: ruleSet,
+                                objects: mapState.getVisibleObjects(time),
+                                skin: skin.valueOf(),
+                                mouseHistory: null
+                            }, time);
+                        },
+                        enter: function () {
+                            audio.play();
+
+                            boundEvents.push(timeline.subscribe(MapState.HIT_MARKER_CREATION, function (hitMarker) {
+                                var hitSounds = ruleSet.getHitSoundNames(hitMarker);
+
+                                // Note that osu! uses the hit marker time itself,
+                                // where we use the more mapper-friendly hit object
+                                // time.  FIXME Maybe this detail should be moved
+                                // to RuleSet (i.e. pass in a HitMarker)?
+                                var volume = ruleSet.getHitSoundVolume(hitMarker.hitObject.time);
+
+                                hitSounds.forEach(function (soundName) {
+                                    soundboard.playSound(soundName, {
+                                        // Scale volume to how many hit sounds are
+                                        // being played
+                                        volume: volume / hitSounds.length
+                                    });
+                                });
+                            }));
+
+                            boundEvents.push(gPubSub.subscribe(function () {
+                                var time = currentTime();
+                                timeline.update(time);
+                            }));
+
+                            boundEvents.push(mousePubSub.subscribe(function (e) {
+                                if (e.left || e.right) {
+                                    scene1();
+                                }
+                            }));
+
+                            timeline.lastUpdateTime = currentTime();
+                        },
+                        leave: function () {
+                            boundEvents.forEach(function (be) {
+                                be.unsubscribe();
+                            });
+                            boundEvents = [ ];
+                        }
+                    });
+                };
             }
 
-            function screen1() {
-                var soundboard = new Soundboard(skin.valueOf().assetManager);
+            function initScene1() {
                 var timeline = new Timeline();
                 var mapState = new MapState(ruleSet, [ ], timeline);
                 var mouseHistory = new History();
@@ -432,61 +437,64 @@ define('Game', [ 'q', 'MapState', 'AssetManager', 'Util/PubSub', 'Soundboard', '
                     lastY = y;
                 }
 
-                setState({
-                    render: function (renderer) {
-                        var time = currentTime();
-
-                        renderer.renderMap({
-                            ruleSet: ruleSet,
-                            objects: mapState.getVisibleObjects(time),
-                            skin: skin.valueOf(),
-                            mouseHistory: null
-                        }, time);
-                        renderer.renderCursor(skin.valueOf(), mouseHistory, time);
-                    },
-                    enter: function () {
-                        audio.play();
-
-                        boundEvents.push(timeline.subscribe(MapState.HIT_MARKER_CREATION, function (hitMarker) {
-                            var hitSounds = ruleSet.getHitSoundNames(hitMarker);
-
-                            // Note that osu! uses the hit marker time itself,
-                            // where we use the more mapper-friendly hit object
-                            // time.  FIXME Maybe this detail should be moved
-                            // to RuleSet (i.e. pass in a HitMarker)?
-                            var volume = ruleSet.getHitSoundVolume(hitMarker.hitObject.time);
-
-                            hitSounds.forEach(function (soundName) {
-                                soundboard.playSound(soundName, {
-                                    // Scale volume to how many hit sounds are
-                                    // being played
-                                    volume: volume / hitSounds.length
-                                });
-                            });
-                        }));
-
-                        gPubSub.subscribe(function () {
+                return function () {
+                    setState({
+                        render: function (renderer) {
                             var time = currentTime();
-                            timeline.update(time);
-                        });
 
-                        boundEvents.push(mousePubSub.subscribe(function (e) {
-                            if (e.left || e.right) {
-                                screen2();
-                            }
-                        }));
-                    },
-                    leave: function () {
-                        boundEvents.forEach(function (be) {
-                            be.unsubscribe();
-                        });
-                        boundEvents = [ ];
-                    }
-                });
+                            renderer.renderMap({
+                                ruleSet: ruleSet,
+                                objects: mapState.getVisibleObjects(time),
+                                skin: skin.valueOf(),
+                                mouseHistory: null
+                            }, time);
+                            renderer.renderCursor(skin.valueOf(), mouseHistory, time);
+                        },
+                        enter: function () {
+                            audio.play();
+
+                            boundEvents.push(timeline.subscribe(MapState.HIT_MARKER_CREATION, function (hitMarker) {
+                                var hitSounds = ruleSet.getHitSoundNames(hitMarker);
+
+                                // Note that osu! uses the hit marker time itself,
+                                // where we use the more mapper-friendly hit object
+                                // time.  FIXME Maybe this detail should be moved
+                                // to RuleSet (i.e. pass in a HitMarker)?
+                                var volume = ruleSet.getHitSoundVolume(hitMarker.hitObject.time);
+
+                                hitSounds.forEach(function (soundName) {
+                                    soundboard.playSound(soundName, {
+                                        // Scale volume to how many hit sounds are
+                                        // being played
+                                        volume: volume / hitSounds.length
+                                    });
+                                });
+                            }));
+
+                            boundEvents.push(gPubSub.subscribe(function () {
+                                var time = currentTime();
+                                timeline.update(time);
+                            }));
+
+                            boundEvents.push(mousePubSub.subscribe(function (e) {
+                                if (e.left || e.right) {
+                                    scene2();
+                                }
+                            }));
+
+                            timeline.lastUpdateTime = currentTime();
+                        },
+                        leave: function () {
+                            boundEvents.forEach(function (be) {
+                                be.unsubscribe();
+                            });
+                            boundEvents = [ ];
+                        }
+                    });
+                };
             }
 
-            function screen2() {
-                var soundboard = new Soundboard(skin.valueOf().assetManager);
+            function initScene2() {
                 var timeline = new Timeline();
                 var mapState = new MapState(ruleSet, [ ], timeline);
                 var mouseHistory = new History();
@@ -561,55 +569,59 @@ define('Game', [ 'q', 'MapState', 'AssetManager', 'Util/PubSub', 'Soundboard', '
                     lastY = ey;
                 }
 
-                setState({
-                    render: function (renderer) {
-                        var time = currentTime();
-
-                        renderer.renderMap({
-                            ruleSet: ruleSet,
-                            objects: mapState.getVisibleObjects(time),
-                            skin: skin.valueOf(),
-                            mouseHistory: null
-                        }, time);
-                        renderer.renderCursor(skin.valueOf(), mouseHistory, time);
-                    },
-                    enter: function () {
-                        audio.play();
-
-                        boundEvents.push(timeline.subscribe(MapState.HIT_MARKER_CREATION, function (hitMarker) {
-                            var hitSounds = ruleSet.getHitSoundNames(hitMarker);
-
-                            // Note that osu! uses the hit marker time itself,
-                            // where we use the more mapper-friendly hit object
-                            // time.  FIXME Maybe this detail should be moved
-                            // to RuleSet (i.e. pass in a HitMarker)?
-                            var volume = ruleSet.getHitSoundVolume(hitMarker.hitObject.time);
-
-                            hitSounds.forEach(function (soundName) {
-                                soundboard.playSound(soundName, {
-                                    // Scale volume to how many hit sounds are
-                                    // being played
-                                    volume: volume / hitSounds.length
-                                });
-                            });
-                        }));
-
-                        gPubSub.subscribe(function () {
+                return function () {
+                    setState({
+                        render: function (renderer) {
                             var time = currentTime();
 
-                            mapState.processSlides(time, mouseHistory);
-                            mapState.processMisses(time);
+                            renderer.renderMap({
+                                ruleSet: ruleSet,
+                                objects: mapState.getVisibleObjects(time),
+                                skin: skin.valueOf(),
+                                mouseHistory: null
+                            }, time);
+                            renderer.renderCursor(skin.valueOf(), mouseHistory, time);
+                        },
+                        enter: function () {
+                            audio.play();
 
-                            timeline.update(time);
-                        });
-                    },
-                    leave: function () {
-                        boundEvents.forEach(function (be) {
-                            be.unsubscribe();
-                        });
-                        boundEvents = [ ];
-                    }
-                });
+                            boundEvents.push(timeline.subscribe(MapState.HIT_MARKER_CREATION, function (hitMarker) {
+                                var hitSounds = ruleSet.getHitSoundNames(hitMarker);
+
+                                // Note that osu! uses the hit marker time itself,
+                                // where we use the more mapper-friendly hit object
+                                // time.  FIXME Maybe this detail should be moved
+                                // to RuleSet (i.e. pass in a HitMarker)?
+                                var volume = ruleSet.getHitSoundVolume(hitMarker.hitObject.time);
+
+                                hitSounds.forEach(function (soundName) {
+                                    soundboard.playSound(soundName, {
+                                        // Scale volume to how many hit sounds are
+                                        // being played
+                                        volume: volume / hitSounds.length
+                                    });
+                                });
+                            }));
+
+                            boundEvents.push(gPubSub.subscribe(function () {
+                                var time = currentTime();
+
+                                mapState.processSlides(time, mouseHistory);
+                                mapState.processMisses(time);
+
+                                timeline.update(time);
+                            }));
+
+                            timeline.lastUpdateTime = currentTime();
+                        },
+                        leave: function () {
+                            boundEvents.forEach(function (be) {
+                                be.unsubscribe();
+                            });
+                            boundEvents = [ ];
+                        }
+                    });
+                };
             }
 
             function loading() {
@@ -622,16 +634,36 @@ define('Game', [ 'q', 'MapState', 'AssetManager', 'Util/PubSub', 'Soundboard', '
 
             loading();
 
+            function later(fn) {
+                var ret = Q.defer();
+
+                Q.enqueue(function () {
+                    ret.resolve(fn());
+                });
+
+                return ret.promise;
+            }
+
             var load = Q.all([
                 Q.ref(new AssetManager('.').load('Jeez Louise Lou Ease Le Ooz.mp3', 'audio'))
                     .then(function (audio_) {
                         audio = audio_;
                         currentTime = audioTimer.auto(audio);
                     }),
-                skin
+                skin.then(function (skin) {
+                    soundboard = new Soundboard(skin.assetManager);
+                }),
+                Q.all([ later(initScene0), later(initScene1), later(initScene2) ])
+                    .then(function (scenes) {
+                        scene0 = scenes[0];
+                        scene1 = scenes[1];
+                        scene2 = scenes[2];
+                    })
             ]);
 
-            Q.when(load, screen0).then(null, agentInfo.crash);
+            Q.when(load, function () {
+                scene0();
+            }).then(null, agentInfo.crash);
         }
 
         function debugInfo() {
