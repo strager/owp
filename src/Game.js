@@ -248,62 +248,87 @@ define('Game', [ 'q', 'MapState', 'AssetManager', 'Util/PubSub', 'Soundboard', '
                 throw new Error('Must set a skin before starting a map');
             }
 
-            var ruleSet = new RuleSet();
-            ruleSet.circleSize = 3;
-
-            ruleSet.uninheritedTimingPointHistory.add(0, new TimingPoint({
-                time: 0,
-                bpm: 120,
+            var timing = new TimingPoint({
+                time: 2040,
+                bpm: 121,
                 isInherited: false,
                 hitSoundVolume: 1,
                 sampleSet: 'normal'
-            }));
+            });
+
+            var ruleSet = new RuleSet();
+            ruleSet.circleSize = 3;
+            ruleSet.uninheritedTimingPointHistory.add(timing.time, timing);
+
+            var audio;
 
             function screen0() {
-                var startTime;
-                var duration = 10000;
                 var timeline = new Timeline();
                 var boundEvents = [ ];
                 var soundboard = new Soundboard(skin.valueOf().assetManager);
 
-                function currentTime() {
-                    var time = Date.now() - startTime;
+                var mapState = new MapState(ruleSet, [ ], timeline);
 
-                    while (time > duration) {
-                        time -= duration;
-                    }
-
-                    return time;
+                function beat(n) {
+                    return n / (timing.bpm / 60) * 1000 + timing.time;
                 }
 
-                var hitObjects = [
-                    new mapObject.HitCircle(2000, 40, 40),
-                    new mapObject.HitCircle(4000, 40, 40),
-                    new mapObject.HitCircle(6000, 40, 40),
-                    new mapObject.HitCircle(8000, 40, 40)
+                var combos = [
+                    new Combo([ 255, 255, 128 ]),
+                    new Combo([ 255, 128, 255 ]),
+                    new Combo([ 128, 255, 255 ])
+                    new Combo([ 192, 192, 192 ])
                 ];
 
-                var combo = new Combo();
-                hitObjects.forEach(function (object, i) {
-                    object.hitSounds = [ 'hitnormal' ];
-                    object.comboIndex = i;
-                    object.combo = combo;
-                });
+                for (var i = 0; i < 20; ++i) {
+                    var curCombo = combos[i % combos.length];
 
-                function hitMarker(object, time, isHit) {
-                    var hitMarker = new mapObject.HitMarker(object, time, ruleSet.getHitScore(object, time), isHit);
-                    timeline.add('HitMarker', hitMarker, hitMarker.time);
-                    return hitMarker;
+                    // 300
+                    var hitObject = new mapObject.HitCircle(beat(i * 16), 40, 40);
+                    hitObject.hitSounds = [ 'hitnormal' ];
+                    hitObject.comboIndex = 0;
+                    hitObject.combo = curCombo;
+                    mapState.addHitObject(hitObject);
+
+                    var hitTime = hitObject.time;
+                    var hitMarker = new mapObject.HitMarker(hitObject, hitTime, ruleSet.getHitScore(hitObject, hitTime), true);
+                    mapState.applyHitMarker(hitMarker);
+
+                    // 100
+                    var hitObject = new mapObject.HitCircle(beat(i * 16 + 4), 40, 40);
+                    hitObject.hitSounds = [ 'hitnormal' ];
+                    hitObject.comboIndex = 1;
+                    hitObject.combo = curCombo;
+                    mapState.addHitObject(hitObject);
+
+                    var hitTime = hitObject.time + 80;
+                    var hitMarker = new mapObject.HitMarker(hitObject, hitTime, ruleSet.getHitScore(hitObject, hitTime), true);
+                    mapState.applyHitMarker(hitMarker);
+
+                    // 50
+                    var hitObject = new mapObject.HitCircle(beat(i * 16 + 8), 40, 40);
+                    hitObject.hitSounds = [ 'hitnormal' ];
+                    hitObject.comboIndex = 2;
+                    hitObject.combo = curCombo;
+                    mapState.addHitObject(hitObject);
+
+                    var hitTime = hitObject.time - 150;
+                    var hitMarker = new mapObject.HitMarker(hitObject, hitTime, ruleSet.getHitScore(hitObject, hitTime), true);
+                    mapState.applyHitMarker(hitMarker);
+
+                    // X
+                    var hitObject = new mapObject.HitCircle(beat(i * 16 + 12), 40, 40);
+                    hitObject.hitSounds = [ 'hitnormal' ];
+                    hitObject.comboIndex = 3;
+                    hitObject.combo = curCombo;
+                    mapState.addHitObject(hitObject);
+
+                    var hitTime = ruleSet.getObjectLatestHitTime(hitObject) + 1;
+                    var hitMarker = new mapObject.HitMarker(hitObject, hitTime, ruleSet.getHitScore(hitObject, hitTime), false);
+                    mapState.applyHitMarker(hitMarker);
                 }
 
-                var hitMarkers = [
-                    hitMarker(hitObjects[0], 2000, true),
-                    hitMarker(hitObjects[1], 4100, true),
-                    hitMarker(hitObjects[2], 6150, true),
-                    hitMarker(hitObjects[3], ruleSet.getObjectLatestHitTime(hitObjects[3]) + 1, false),
-                ];
-
-                var objects = hitObjects.concat(hitMarkers);
+                var currentTime = audioTimer.auto(audio);
 
                 setState({
                     render: function (renderer) {
@@ -311,15 +336,15 @@ define('Game', [ 'q', 'MapState', 'AssetManager', 'Util/PubSub', 'Soundboard', '
 
                         renderer.renderMap({
                             ruleSet: ruleSet,
-                            objects: objects,
+                            objects: mapState.getVisibleObjects(time),
                             skin: skin.valueOf(),
                             mouseHistory: null
                         }, time);
                     },
                     enter: function () {
-                        startTime = Date.now();
+                        audio.play();
 
-                        boundEvents.push(timeline.subscribe('HitMarker', function (hitMarker) {
+                        boundEvents.push(timeline.subscribe(MapState.HIT_MARKER_CREATION, function (hitMarker) {
                             var hitSounds = ruleSet.getHitSoundNames(hitMarker);
 
                             // Note that osu! uses the hit marker time itself,
@@ -361,7 +386,15 @@ define('Game', [ 'q', 'MapState', 'AssetManager', 'Util/PubSub', 'Soundboard', '
 
             loading();
 
-            Q.when(skin, screen0, agentInfo.crash);
+            var load = Q.all([
+                Q.ref(new AssetManager('.').load('Jeez Louise Lou Ease Le Ooz.mp3', 'audio'))
+                    .then(function (audio_) {
+                        audio = audio_;
+                    }),
+                skin
+            ]);
+
+            Q.when(load, screen0).then(null, agentInfo.crash);
         }
 
         function debugInfo() {
