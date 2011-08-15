@@ -4,6 +4,8 @@ define('RuleSet', [ 'Util/util', 'mapObject', 'Util/History' ], function (util, 
         this.overallDifficulty = 5;
         this.hpDrain = 5;
         this.circleSize = 5;
+        this.sliderMultiplier = 1;
+        this.sliderTickRate = 1;
         this.uninheritedTimingPointHistory = new History();
         this.inheritedTimingPointHistory = new History();
     }
