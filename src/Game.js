@@ -376,7 +376,6 @@ define('Game', [ 'q', 'MapState', 'AssetManager', 'Util/PubSub', 'Soundboard', '
                         }));
                     },
                     leave: function () {
-                        debugger;
                         boundEvents.forEach(function (be) {
                             be.unsubscribe();
                         });
