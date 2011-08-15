@@ -11,5 +11,9 @@ document.write('<script>(' + function () {
         aliases: {
             'q': '../vendor/q/q'
         }
-    }, [ '../index' ]);
+    }, [ '../index' ], function () {
+        // Load a debug map
+        game.loadSkin('.');
+        game.startMap('assets', 'map');
+    });
 } + '())</script>');

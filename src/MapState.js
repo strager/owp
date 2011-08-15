@@ -2,46 +2,12 @@ define('MapState', [ 'mapObject', 'Util/Timeline', 'Util/Map', 'Util/PubSub' ], 
     function MapState(ruleSet, objects, timeline) {
         this.ruleSet = ruleSet;
         this.timeline = timeline;
-
         this.events = new PubSub();
 
-        var hittableObjects = [ ];
+        this.objects = [ ];
+        this.unhitObjects = [ ];
 
-        objects.forEach(function (hitObject) {
-            var appearTime = ruleSet.getObjectStartAppearTime(hitObject);
-            var disappearTime = ruleSet.getObjectEndDisappearTime(hitObject);
-
-            timeline.add(MapState.HIT_OBJECT_VISIBILITY, hitObject, appearTime, disappearTime);
-
-            mapObject.match(hitObject, {
-                Slider: function (slider) {
-                    var ticks = ruleSet.getSliderTicks(hitObject);
-                    hittableObjects = hittableObjects.concat(ticks);
-                    slider.ticks = ticks; // Temporary (I hope)
-
-                    var ends = ruleSet.getSliderEnds(hitObject);
-                    hittableObjects = hittableObjects.concat(ends);
-                    slider.ends = ends; // Temporary (I hope)
-
-                    var earliestHitTime = ruleSet.getObjectEarliestHitTime(hitObject);
-                    var latestHitTime = ruleSet.getObjectLatestHitTime(hitObject);
-                    timeline.add(MapState.HIT_OBJECT_HITABLE, hitObject, earliestHitTime, latestHitTime);
-                    hittableObjects.push(slider);
-                },
-                HitCircle: function (hitCircle) {
-                    var earliestHitTime = ruleSet.getObjectEarliestHitTime(hitObject);
-                    var latestHitTime = ruleSet.getObjectLatestHitTime(hitObject);
-                    timeline.add(MapState.HIT_OBJECT_HITABLE, hitObject, earliestHitTime, latestHitTime);
-                    hittableObjects.push(hitCircle);
-                }
-            });
-        });
-
-        this.unhitObjects = hittableObjects.map(function (hitObject) {
-            return [ hitObject, ruleSet.getObjectLatestHitTime(hitObject) ];
-        }).sort(function (a, b) {
-            return a[1] < b[1] ? -1 : 1;
-        });
+        objects.forEach(this.addHitObject, this);
     }
 
     MapState.HIT_OBJECT_VISIBILITY = 'hit object visibility';
@@ -54,8 +20,48 @@ define('MapState', [ 'mapObject', 'Util/Timeline', 'Util/Map', 'Util/PubSub' ], 
     };
 
     MapState.prototype = {
+        addHitObject: function (hitObject) {
+            var appearTime = this.ruleSet.getObjectStartAppearTime(hitObject);
+            var disappearTime = this.ruleSet.getObjectEndDisappearTime(hitObject);
+            this.timeline.add(MapState.HIT_OBJECT_VISIBILITY, hitObject, appearTime, disappearTime);
+
+            this.objects.push(hitObject);
+
+            mapObject.match(hitObject, {
+                Slider: function (slider) {
+                    var ticks = this.ruleSet.getSliderTicks(hitObject);
+                    ticks.forEach(this.addHittableObject, this);
+                    slider.ticks = ticks; // Temporary (I hope)
+
+                    var ends = this.ruleSet.getSliderEnds(hitObject);
+                    ends.forEach(this.addHittableObject, this);
+                    slider.ends = ends; // Temporary (I hope)
+
+                    this.addHittableObject(slider);
+                },
+                HitCircle: function (hitCircle) {
+                    this.addHittableObject(hitCircle);
+                }
+            }, this);
+
+            var earliestHitTime = this.ruleSet.getObjectEarliestHitTime(hitObject);
+            var latestHitTime = this.ruleSet.getObjectLatestHitTime(hitObject);
+            this.timeline.add(MapState.HIT_OBJECT_HITABLE, hitObject, earliestHitTime, latestHitTime);
+        },
+
+        addHittableObject: function (hitObject) {
+            // TODO Proper insertion sort (History?)
+            this.unhitObjects.push([ hitObject, this.ruleSet.getObjectLatestHitTime(hitObject) ]);
+            this.unhitObjects = this.unhitObjects.sort(function (a, b) {
+                return a[1] < b[1] ? -1 : 1;
+            });
+        },
+
         getVisibleObjects: function (time) {
-            return this.timeline.getAllAtTime(time, MapState.HIT_OBJECT_VISIBILITY);
+            var hitObjects = this.timeline.getAllAtTime(time, MapState.HIT_OBJECT_VISIBILITY);
+            var hitMarkers = this.timeline.getAllInTimeRange(time - 4000, time, MapState.HIT_MARKER_CREATION);
+
+            return hitObjects.concat(hitMarkers);
         },
 
         getHittableObjects: function (time) {

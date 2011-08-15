@@ -1,4 +1,4 @@
-require([ 'WebGLRenderer', 'CanvasRenderer', 'AssetManager', 'q', 'Game', 'Util/FramerateCounter', 'Util/gPubSub', 'agentInfo' ], function (WebGLRenderer, CanvasRenderer, AssetManager, Q, Game, FramerateCounter, gPubSub, agentInfo) {
+define('index', [ 'WebGLRenderer', 'CanvasRenderer', 'AssetManager', 'q', 'Game', 'Util/FramerateCounter', 'Util/gPubSub', 'agentInfo' ], function (WebGLRenderer, CanvasRenderer, AssetManager, Q, Game, FramerateCounter, gPubSub, agentInfo) {
     var oldOnError = window.onerror;
 
     if (!DEBUG) {
@@ -46,7 +46,7 @@ require([ 'WebGLRenderer', 'CanvasRenderer', 'AssetManager', 'q', 'Game', 'Util/
     agentInfo.location = window.location.toString();
 
     // shim layer with setTimeout fallback
-    var requestAnimFrame = (function(){
+    var requestAnimFrame = (function () {
         function requestAnimationFrame(callback, element) {
             window.setTimeout(callback, 1000 / 60);
         }
@@ -58,36 +58,6 @@ require([ 'WebGLRenderer', 'CanvasRenderer', 'AssetManager', 'q', 'Game', 'Util/
             || window.msRequestAnimationFrame
             || requestAnimationFrame;
     }());
-
-    var mapAssetManager = new AssetManager('assets');
-    var skinAssetManager = new AssetManager('.');
-
-    function init() {
-        var renderers = [ ];
-        var playAreas = [ ];
-
-        function addRenderer(renderer, name) {
-            renderers.push(renderer);
-            playAreas.push(renderer.element);
-
-            agentInfo.renderer = name;
-        }
-
-        try {
-            addRenderer(new WebGLRenderer(), 'WebGL');
-        } catch (e) {
-            try {
-                addRenderer(new CanvasRenderer(), 'DOM + Canvas');
-            } catch (e) {
-                throw new Error('Browser not supported');
-            }
-        }
-
-        return {
-            renderers: renderers,
-            playAreas: playAreas
-        };
-    }
 
     function loop(callback, interval) {
         function innerLoop() {
@@ -124,234 +94,214 @@ require([ 'WebGLRenderer', 'CanvasRenderer', 'AssetManager', 'q', 'Game', 'Util/
         }, 0);
     }
 
+    var renderer, playArea;
+
+    function setRenderer(ren, name) {
+        renderer = ren;
+        playArea = ren.element;
+
+        agentInfo.renderer = name;
+    }
+
+    try {
+        setRenderer(new WebGLRenderer(), 'WebGL');
+    } catch (e) {
+        try {
+            setRenderer(new CanvasRenderer(), 'DOM + Canvas');
+        } catch (e) {
+            throw new Error('Browser not supported');
+        }
+    }
+
     var renderFps = new FramerateCounter();
     var gameUpdateFps = new FramerateCounter();
 
-    var game;
+    var game = new Game();
 
-    function go(io) {
-        game = new Game();
-        game.loadSkin(skinAssetManager);
-        game.startMap(mapAssetManager, 'map');
+    renderLoop(function () {
+        game.render(renderer);
 
-        renderLoop(function () {
-            io.renderers.forEach(function (renderer) {
-                game.render(renderer);
-            });
+        renderFps.addTick();
+    }, playArea);
 
-            renderFps.addTick();
-        }, io.playAreas[0]);
+    infLoop(function () {
+        gPubSub.publish('tick');
 
-        infLoop(function () {
-            gPubSub.publish('tick');
+        gameUpdateFps.addTick();
+    });
 
-            gameUpdateFps.addTick();
+    var mouseX, mouseY;
+    var isLeftDown = false;
+    var isRightDown = false;
+
+    function mouseStateChanged() {
+        var pos = renderer.mouseToGame(mouseX, mouseY);
+
+        game.mouse({
+            x: pos.x,
+            y: pos.y,
+            left: isLeftDown,
+            right: isRightDown
         });
+    }
 
-        var mouseX, mouseY;
-        var isLeftDown = false;
-        var isRightDown = false;
+    function button(event, callbacks) {
+        var button;
 
-        // HACK
-        var renderer = io.renderers[0];
-
-        function mouseStateChanged() {
-            var pos = renderer.mouseToGame(mouseX, mouseY);
-
-            game.mouse({
-                x: pos.x,
-                y: pos.y,
-                left: isLeftDown,
-                right: isRightDown
-            });
+        // Taken from jQuery
+        if (!event.which && typeof event.button !== undefined) {
+            button = event.button & 1 ? 1 : (event.button & 2 ? 3 : (event.button & 4 ? 2 : 0));
+        } else {
+            button = event.which;
         }
 
-        function button(event, callbacks) {
-            var button;
+        var names = [ /* */, 'left', 'middle', 'right' ];
+        var name = names[button];
 
-            // Taken from jQuery
-            if (!event.which && typeof event.button !== undefined) {
-                button = event.button & 1 ? 1 : (event.button & 2 ? 3 : (event.button & 4 ? 2 : 0));
-            } else {
-                button = event.which;
-            }
-
-            var names = [ /* */, 'left', 'middle', 'right' ];
-            var name = names[button];
-
-            if (name && callbacks[name]) {
-                callbacks[name]();
-            }
+        if (name && callbacks[name]) {
+            callbacks[name]();
         }
+    }
 
-        io.playAreas.forEach(function (pa, i) {
-            pa.addEventListener('mousedown', function (e) {
-                mouseX = e.pageX - this.offsetLeft;
-                mouseY = e.pageY - this.offsetTop;
+    playArea.addEventListener('mousedown', function (e) {
+        mouseX = e.pageX - this.offsetLeft;
+        mouseY = e.pageY - this.offsetTop;
 
-                button(e, {
-                    left: function () {
-                        isLeftDown = true;
-                    },
-                    right: function () {
-                        isRightDown = true;
-                    }
-                });
-
-                mouseStateChanged();
-                e.preventDefault();
-            }, false);
-
-            pa.addEventListener('mouseup', function (e) {
-                mouseX = e.pageX - this.offsetLeft;
-                mouseY = e.pageY - this.offsetTop;
-
-                button(e, {
-                    left: function () {
-                        isLeftDown = false;
-                    },
-                    right: function () {
-                        isRightDown = false;
-                    }
-                });
-
-                mouseStateChanged();
-                e.preventDefault();
-            }, false);
-
-            pa.addEventListener('contextmenu', function (e) {
-                e.preventDefault();
-            }, false);
-
-            pa.addEventListener('mousemove', function (e) {
-                mouseX = e.pageX - this.offsetLeft;
-                mouseY = e.pageY - this.offsetTop;
-                mouseStateChanged();
-            }, false);
-        });
-
-        document.addEventListener('keydown', function (e) {
-            switch (e.which) {
-            case 90: // LMB
+        button(e, {
+            left: function () {
                 isLeftDown = true;
-                e.preventDefault();
-                break;
-
-            case 88: // RMB
+            },
+            right: function () {
                 isRightDown = true;
-                e.preventDefault();
-                break;
             }
-
-            mouseStateChanged();
-        }, false);
-
-        document.addEventListener('keyup', function (e) {
-            switch (e.which) {
-            case 90: // LMB
-                isLeftDown = false;
-                e.preventDefault();
-                break;
-
-            case 88: // RMB
-                isRightDown = false;
-                e.preventDefault();
-                break;
-            }
-
-            mouseStateChanged();
-        }, false);
-
-        var playfield = document.getElementById('playfield');
-        playfield.innerHTML = '';
-
-        io.playAreas.forEach(function (playArea) {
-            playfield.appendChild(playArea);
         });
-    }
 
-    function getPaintCount() {
-        return window.mozPaintCount || 0;
-    }
+        mouseStateChanged();
+        e.preventDefault();
+    }, false);
 
-    var lastPaintCount = 0;
-    var paintFps = new FramerateCounter();
+    playArea.addEventListener('mouseup', function (e) {
+        mouseX = e.pageX - this.offsetLeft;
+        mouseY = e.pageY - this.offsetTop;
 
-    function debugInfo() {
-        var currentPaintCount = getPaintCount();
-        paintFps.addTicks(currentPaintCount - lastPaintCount);
-        lastPaintCount = currentPaintCount;
-
-        var debug = {
-            'paint fps': paintFps.framerate,
-            'game update fps': gameUpdateFps.framerate,
-            'render fps': renderFps.framerate
-        };
-
-        var gameDebug = game.debugInfo();
-        var key;
-
-        for (key in gameDebug) {
-            if (Object.prototype.hasOwnProperty.call(gameDebug, key)) {
-                debug[key] = gameDebug[key];
+        button(e, {
+            left: function () {
+                isLeftDown = false;
+            },
+            right: function () {
+                isRightDown = false;
             }
+        });
+
+        mouseStateChanged();
+        e.preventDefault();
+    }, false);
+
+    playArea.addEventListener('contextmenu', function (e) {
+        e.preventDefault();
+    }, false);
+
+    playArea.addEventListener('mousemove', function (e) {
+        mouseX = e.pageX - this.offsetLeft;
+        mouseY = e.pageY - this.offsetTop;
+        mouseStateChanged();
+    }, false);
+
+    document.addEventListener('keydown', function (e) {
+        switch (e.which) {
+        case 90: // LMB
+            isLeftDown = true;
+            e.preventDefault();
+            break;
+
+        case 88: // RMB
+            isRightDown = true;
+            e.preventDefault();
+            break;
         }
 
-        return debug;
-    }
+        mouseStateChanged();
+    }, false);
 
-    function updateDebugInfo() {
-        if (!game) {
-            return;
+    document.addEventListener('keyup', function (e) {
+        switch (e.which) {
+        case 90: // LMB
+            isLeftDown = false;
+            e.preventDefault();
+            break;
+
+        case 88: // RMB
+            isRightDown = false;
+            e.preventDefault();
+            break;
         }
 
-        var debugElement = document.getElementById('debug');
+        mouseStateChanged();
+    }, false);
 
-        if (!debugElement) {
-            return;
-        }
-
-        var debug = debugInfo();
-
-        var text = Object.keys(debug).map(function (key) {
-            var value = debug[key];
-
-            if (typeof value === 'number') {
-                value = value.toFixed(2);
-            }
-
-            return key + ': ' + value;
-        }).join('\n');
-
-        debugElement.textContent = text;
-    }
-
-    function getMissingFeatures() {
-        var features = [ ];
-
-        if (!window.Audio) {
-            features.push('HTML5 <audio> element');
-        }
-
-        return features;
-    }
-
-    var missingFeatures = getMissingFeatures();
-
-    if (missingFeatures.length > 0) {
-        var text = 'Your browser is not supported; it is missing the following features:';
-        text = [ text ].concat(missingFeatures).join('\n* ');
-
-        var messageElement = document.createElement('pre');
-        messageElement.textContent = text;
-        document.body.appendChild(messageElement);
-
-        return;
-    }
+    var playfield = document.getElementById('playfield');
+    playfield.innerHTML = '';
+    playfield.appendChild(playArea);
 
     if (DEBUG) {
+        function getPaintCount() {
+            return window.mozPaintCount || 0;
+        }
+
+        var lastPaintCount = 0;
+        var paintFps = new FramerateCounter();
+
+        function debugInfo() {
+            var currentPaintCount = getPaintCount();
+            paintFps.addTicks(currentPaintCount - lastPaintCount);
+            lastPaintCount = currentPaintCount;
+
+            var debug = {
+                'paint fps': paintFps.framerate,
+                'game update fps': gameUpdateFps.framerate,
+                'render fps': renderFps.framerate
+            };
+
+            var gameDebug = game.debugInfo();
+            var key;
+
+            for (key in gameDebug) {
+                if (Object.prototype.hasOwnProperty.call(gameDebug, key)) {
+                    debug[key] = gameDebug[key];
+                }
+            }
+
+            return debug;
+        }
+
+        function updateDebugInfo() {
+            if (!game) {
+                return;
+            }
+
+            var debugElement = document.getElementById('debug');
+
+            if (!debugElement) {
+                return;
+            }
+
+            var debug = debugInfo();
+
+            var text = Object.keys(debug).map(function (key) {
+                var value = debug[key];
+
+                if (typeof value === 'number') {
+                    value = value.toFixed(2);
+                }
+
+                return key + ': ' + value;
+            }).join('\n');
+
+            debugElement.textContent = text;
+        }
+
         loop(updateDebugInfo, 100);
     }
 
-    Q.ref(init()).then(go);
+    window.game = game;
 });

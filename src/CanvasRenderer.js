@@ -69,7 +69,8 @@ define('CanvasRenderer', [ 'mapObject', 'Util/Cache', 'canvasShaders', 'MapState
         }
 
         // Les variables
-        var mapState, ruleSet, skin;
+        var ruleSet, skin;
+        var objects;
         var mouseHistory;
         var scoreHistory, comboHistory, accuracyHistory;
         var storyboard;
@@ -78,15 +79,15 @@ define('CanvasRenderer', [ 'mapObject', 'Util/Cache', 'canvasShaders', 'MapState
 
         function vars(v) {
             accuracyHistory = v.accuracyHistory;
+            assetManager = v.assetManager;
             comboHistory = v.comboHistory;
-            mapState = v.mapState;
             mouseHistory = v.mouseHistory;
+            objects = v.objects;
             ruleSet = v.ruleSet;
             scoreHistory = v.scoreHistory;
             skin = v.skin;
-            time = v.time;
             storyboard = v.storyboard;
-            assetManager = v.assetManager;
+            time = v.time;
         }
 
         // Views {{{
@@ -633,31 +634,45 @@ define('CanvasRenderer', [ 'mapObject', 'Util/Cache', 'canvasShaders', 'MapState
             });
         }
 
-        function getObjectsToRender() {
-            // Visible objects
-            var objects = mapState.getVisibleObjects(time);
-
-            // Hit markers
-            objects = objects.concat(
-                mapState.timeline.getAllInTimeRange(time - 4000, time, MapState.HIT_MARKER_CREATION)
-            );
-
-            return ruleSet.getObjectsByZ(objects);
-        }
-
         function renderMap() {
             view(View.map, function () {
-                getObjectsToRender().forEach(function (object) {
+                var sortedObjects = ruleSet.getObjectsByZ(objects);
+
+                sortedObjects.forEach(function (object) {
                     renderObject(object);
 
                     gPubSub.publish('tick');
                 });
             });
-
-            // TODO Render cursor in another render step
-            // (See cursor + trail rendering code in file history)
         }
         // Map rendering }}}
+
+        // Cursor rendering {{{
+        function renderCursorHead(state) {
+            if (!state) {
+                return;
+            }
+
+            var cursor = skin.assetManager.get('cursor', 'image-set')[0];
+            var el = dom.get('cursor', function () {
+                return cloneAbsolute(cursor);
+            });
+
+            var x = state.x - cursor.width / 2;
+            var y = state.y - cursor.height / 2;
+
+            el.style.left = x + 'px';
+            el.style.top = y + 'px';
+
+            setZ(el);
+        }
+
+        function renderCursor() {
+            view(View.map, function () {
+                renderCursorHead(mouseHistory.getDataAtTime(time));
+            });
+        }
+        // Cursor rendering }}}
 
         // HUD rendering {{{
         function renderScore() {
@@ -805,7 +820,8 @@ define('CanvasRenderer', [ 'mapObject', 'Util/Cache', 'canvasShaders', 'MapState
             renderHud: renderHud,
             renderStoryboard: renderStoryboard,
             renderLoading: renderLoading,
-            renderReadyToPlay: renderReadyToPlay
+            renderReadyToPlay: renderReadyToPlay,
+            renderCursor: renderCursor
         };
     }
 
@@ -827,8 +843,9 @@ define('CanvasRenderer', [ 'mapObject', 'Util/Cache', 'canvasShaders', 'MapState
             // [ graphic, canvasWidth, canvasHeight ] => graphic
             background: new Cache(),
 
-            // [ sliderObject, mapState, skin ] => { image, pointCount }
-            sliderTrack: new Cache(),
+            // [ sliderObject, ruleSet, skin ] => { image, pointCount }
+            // TODO Cache + snake
+            //sliderTrack: new Cache(),
 
             // [ graphic, scale ] => graphic
             scaledImages: new Cache()
@@ -899,11 +916,11 @@ define('CanvasRenderer', [ 'mapObject', 'Util/Cache', 'canvasShaders', 'MapState
             },
 
             renderMap: function (state, time) {
-                initSkin(state.skin, state.mapState.ruleSet);
+                initSkin(state.skin, state.ruleSet);
 
                 r.vars({
-                    mapState: state.mapState,
-                    ruleSet: state.mapState.ruleSet,
+                    objects: state.objects,
+                    ruleSet: state.ruleSet,
                     skin: state.skin,
                     mouseHistory: state.mouseHistory,
                     time: time
@@ -952,6 +969,16 @@ define('CanvasRenderer', [ 'mapObject', 'Util/Cache', 'canvasShaders', 'MapState
                 });
 
                 r.renderReadyToPlay();
+            },
+
+            renderCursor: function (skin, mouseHistory, time) {
+                r.vars({
+                    skin: skin,
+                    mouseHistory: mouseHistory,
+                    time: time
+                });
+
+                r.renderCursor();
             }
         };
     }

@@ -69,7 +69,8 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
         }
 
         // Les variables
-        var mapState, ruleSet, skin;
+        var ruleSet, skin;
+        var objects;
         var mouseHistory;
         var scoreHistory, comboHistory, accuracyHistory;
         var videoElement;
@@ -78,8 +79,8 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
         function vars(v) {
             accuracyHistory = v.accuracyHistory;
             comboHistory = v.comboHistory;
-            mapState = v.mapState;
             mouseHistory = v.mouseHistory;
+            objects = v.objects
             ruleSet = v.ruleSet;
             scoreHistory = v.scoreHistory;
             skin = v.skin;
@@ -459,7 +460,7 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
             var alpha = ruleSet.getObjectOpacity(object, time)
 
             renderUnit({ alpha: alpha }, function () {
-                var key = [ object, mapState ];
+                var key = [ object, ruleSet, skin ];
 
                 var c = caches.sliderTrack.get(key, function () {
                     var points = object.curve.points;
@@ -616,7 +617,21 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
             });
         }
 
-        function renderCursor(state) {
+        function renderMap() {
+            view(View.map, function () {
+                var sortedObjects = ruleSet.getObjectsByZ(objects);
+
+                sortedObjects.forEach(function (object) {
+                    renderObject(object);
+
+                    gPubSub.publish('tick');
+                });
+            });
+        }
+        // Map rendering }}}
+
+        // Cursor rendering {{{
+        function renderCursorHead(state) {
             if (!state) {
                 return;
             }
@@ -631,46 +646,12 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
             });
         }
 
-        function renderCursorTrail(state, alpha) {
-            if (!state) {
-                return;
-            }
-
-            sprite(function (draw) {
-                gl.uniform2f(programs.sprite.uni.position, state.x, state.y);
-                gl.uniform4f(programs.sprite.uni.color, 255, 255, 255, alpha * 255);
-                gl.uniform2f(programs.sprite.uni.offset, 0, 0);
-                gl.uniform1f(programs.sprite.uni.scale, 1);
-
-                draw(textures.cursorTrail);
-            });
-        }
-
-        function getObjectsToRender() {
-            // Visible objects
-            var objects = mapState.getVisibleObjects(time);
-
-            // Hit markers
-            objects = objects.concat(
-                mapState.timeline.getAllInTimeRange(time - 4000, time, MapState.HIT_MARKER_CREATION)
-            );
-
-            return ruleSet.getObjectsByZ(objects);
-        }
-
-        function renderMap() {
+        function renderCursor() {
             view(View.map, function () {
-                getObjectsToRender().forEach(function (object) {
-                    renderObject(object);
-
-                    gPubSub.publish('tick');
-                });
+                renderCursorHead(mouseHistory.getDataAtTime(time));
             });
-
-            // TODO Render cursor in another render step
-            // (See cursor + trail rendering code in file history)
         }
-        // Map rendering }}}
+        // Cursor rendering }}}
 
         // HUD rendering {{{
         function renderScore() {
@@ -825,7 +806,8 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
             renderHud: renderHud,
             renderStoryboard: renderStoryboard,
             renderLoading: renderLoading,
-            renderReadyToPlay: renderReadyToPlay
+            renderReadyToPlay: renderReadyToPlay,
+            renderCursor: renderCursor
         };
     }
 
@@ -1038,7 +1020,7 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
         var misc = { };
 
         var caches = {
-            // [ sliderObject, mapState, skin ] => curveId
+            // [ sliderObject, ruleSet, skin ] => curveId
             sliderTrack: new Cache()
         };
 
@@ -1334,7 +1316,7 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
             },
 
             beginRender: function () {
-                gl.clearColor(0, 0, 0, 0);
+                gl.clearColor(0, 0, 0, 1);
                 gl.clear(gl.COLOR_BUFFER_BIT);
 
                 gl.viewport(
@@ -1347,11 +1329,11 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
             },
 
             renderMap: function (state, time) {
-                initSkin(state.skin, state.mapState.ruleSet);
+                initSkin(state.skin, state.ruleSet);
 
                 r.vars({
-                    mapState: state.mapState,
-                    ruleSet: state.mapState.ruleSet,
+                    objects: state.objects,
+                    ruleSet: state.ruleSet,
                     skin: state.skin,
                     mouseHistory: state.mouseHistory,
                     time: time
@@ -1406,6 +1388,16 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
                 });
 
                 r.renderReadyToPlay();
+            },
+
+            renderCursor: function (skin, mouseHistory, time) {
+                r.vars({
+                    skin: skin,
+                    mouseHistory: mouseHistory,
+                    time: time
+                });
+
+                r.renderCursor();
             }
         };
     }

@@ -4,6 +4,8 @@ define('RuleSet', [ 'Util/util', 'mapObject', 'Util/History' ], function (util, 
         this.overallDifficulty = 5;
         this.hpDrain = 5;
         this.circleSize = 5;
+        this.sliderMultiplier = 1;
+        this.sliderTickRate = 1;
         this.uninheritedTimingPointHistory = new History();
         this.inheritedTimingPointHistory = new History();
     }
@@ -44,12 +46,17 @@ define('RuleSet', [ 'Util/util', 'mapObject', 'Util/History' ], function (util, 
             }
         },
 
-        getAppearTime: function () {
-            return this.threePartLerp(1800, 1200, 450, this.approachRate);
-        },
+        getAppearTime: mapObject.matcher({
+            HitMarker: function () {
+                return 0;
+            },
+            _: function () {
+                return this.threePartLerp(1800, 1200, 450, this.approachRate);
+            }
+        }),
 
         getObjectStartAppearTime: function (object) {
-            return this.getObjectStartTime(object) - this.getAppearTime();
+            return this.getObjectStartTime(object) - this.getAppearTime(object);
         },
 
         getObjectEndAppearTime: function (object) {

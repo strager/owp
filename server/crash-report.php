@@ -1,11 +1,8 @@
 <?php
 
 // This script just stores whatever crash report is POSTed in a database.
-// Be sure to change your database information:
-$dbUsername = 'username';
-$dbPassword = 'password';
-$dbDatabase = 'database';
-$dbHostname = 'localhost';
+
+require_once 'config.php';
 
 function err() {
     header('HTTP/1.1 500 Internal Server Error');
