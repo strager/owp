@@ -276,7 +276,7 @@ define('Game', [ 'q', 'MapState', 'AssetManager', 'Util/PubSub', 'Soundboard', '
                 var combos = [
                     new Combo([ 255, 255, 128 ]),
                     new Combo([ 255, 128, 255 ]),
-                    new Combo([ 128, 255, 255 ])
+                    new Combo([ 128, 255, 255 ]),
                     new Combo([ 192, 192, 192 ])
                 ];
 
