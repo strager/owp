@@ -243,7 +243,7 @@ define('Game', [ 'q', 'MapState', 'AssetManager', 'Util/PubSub', 'Soundboard', '
             return Q.when(load, readyToPlay, agentInfo.crash);
         }
 
-        function tutorial() {
+        function tutorial(mapRoot, audioFileName) {
             if (!skin) {
                 throw new Error('Must set a skin before starting a map');
             }
@@ -277,7 +277,7 @@ define('Game', [ 'q', 'MapState', 'AssetManager', 'Util/PubSub', 'Soundboard', '
                 return n / (timing.bpm / 60) * 1000 + timing.time;
             }
 
-            var measureCount = 64;
+            var measureCount = 16;
 
             var scene0, scene1, scene2;
 
@@ -645,7 +645,7 @@ define('Game', [ 'q', 'MapState', 'AssetManager', 'Util/PubSub', 'Soundboard', '
             }
 
             var load = Q.all([
-                Q.ref(new AssetManager('.').load('Jeez Louise Lou Ease Le Ooz.mp3', 'audio'))
+                Q.ref(new AssetManager(mapRoot).load(audioFileName, 'audio'))
                     .then(function (audio_) {
                         audio = audio_;
                         currentTime = audioTimer.auto(audio);
