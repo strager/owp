@@ -260,31 +260,32 @@ define('Game', [ 'q', 'MapState', 'AssetManager', 'Util/PubSub', 'Soundboard', '
             ruleSet.circleSize = 3;
             ruleSet.uninheritedTimingPointHistory.add(timing.time, timing);
 
-            var audio;
+            var audio, currentTime;
+            var boundEvents = [ ];
+
+            var combos = [
+                new Combo([ 255, 255, 128 ]),
+                new Combo([ 255, 128, 255 ]),
+                new Combo([ 128, 255, 255 ]),
+                new Combo([ 192, 192, 192 ])
+            ];
+
+            function beat(n) {
+                return n / (timing.bpm / 60) * 1000 + timing.time;
+            }
 
             function screen0() {
-                var timeline = new Timeline();
-                var boundEvents = [ ];
                 var soundboard = new Soundboard(skin.valueOf().assetManager);
-
+                var timeline = new Timeline();
                 var mapState = new MapState(ruleSet, [ ], timeline);
-
-                function beat(n) {
-                    return n / (timing.bpm / 60) * 1000 + timing.time;
-                }
-
-                var combos = [
-                    new Combo([ 255, 255, 128 ]),
-                    new Combo([ 255, 128, 255 ]),
-                    new Combo([ 128, 255, 255 ]),
-                    new Combo([ 192, 192, 192 ])
-                ];
 
                 for (var i = 0; i < 20; ++i) {
                     var curCombo = combos[i % combos.length];
+                    var x = 60;
+                    var y = 80;
 
                     // 300
-                    var hitObject = new mapObject.HitCircle(beat(i * 16), 40, 40);
+                    var hitObject = new mapObject.HitCircle(beat(i * 16), x, y);
                     hitObject.hitSounds = [ 'hitnormal' ];
                     hitObject.comboIndex = 0;
                     hitObject.combo = curCombo;
@@ -295,7 +296,7 @@ define('Game', [ 'q', 'MapState', 'AssetManager', 'Util/PubSub', 'Soundboard', '
                     mapState.applyHitMarker(hitMarker);
 
                     // 100
-                    var hitObject = new mapObject.HitCircle(beat(i * 16 + 4), 40, 40);
+                    var hitObject = new mapObject.HitCircle(beat(i * 16 + 4), x, y);
                     hitObject.hitSounds = [ 'hitnormal' ];
                     hitObject.comboIndex = 1;
                     hitObject.combo = curCombo;
@@ -306,7 +307,7 @@ define('Game', [ 'q', 'MapState', 'AssetManager', 'Util/PubSub', 'Soundboard', '
                     mapState.applyHitMarker(hitMarker);
 
                     // 50
-                    var hitObject = new mapObject.HitCircle(beat(i * 16 + 8), 40, 40);
+                    var hitObject = new mapObject.HitCircle(beat(i * 16 + 8), x, y);
                     hitObject.hitSounds = [ 'hitnormal' ];
                     hitObject.comboIndex = 2;
                     hitObject.combo = curCombo;
@@ -317,7 +318,7 @@ define('Game', [ 'q', 'MapState', 'AssetManager', 'Util/PubSub', 'Soundboard', '
                     mapState.applyHitMarker(hitMarker);
 
                     // X
-                    var hitObject = new mapObject.HitCircle(beat(i * 16 + 12), 40, 40);
+                    var hitObject = new mapObject.HitCircle(beat(i * 16 + 12), x, y);
                     hitObject.hitSounds = [ 'hitnormal' ];
                     hitObject.comboIndex = 3;
                     hitObject.combo = curCombo;
@@ -327,8 +328,6 @@ define('Game', [ 'q', 'MapState', 'AssetManager', 'Util/PubSub', 'Soundboard', '
                     var hitMarker = new mapObject.HitMarker(hitObject, hitTime, ruleSet.getHitScore(hitObject, hitTime), false);
                     mapState.applyHitMarker(hitMarker);
                 }
-
-                var currentTime = audioTimer.auto(audio);
 
                 setState({
                     render: function (renderer) {
@@ -390,6 +389,7 @@ define('Game', [ 'q', 'MapState', 'AssetManager', 'Util/PubSub', 'Soundboard', '
                 Q.ref(new AssetManager('.').load('Jeez Louise Lou Ease Le Ooz.mp3', 'audio'))
                     .then(function (audio_) {
                         audio = audio_;
+                        currentTime = audioTimer.auto(audio);
                     }),
                 skin
             ]);
