@@ -259,6 +259,7 @@ define('Game', [ 'q', 'MapState', 'AssetManager', 'Util/PubSub', 'Soundboard', '
             var ruleSet = new RuleSet();
             ruleSet.circleSize = 3;
             ruleSet.uninheritedTimingPointHistory.add(timing.time, timing);
+            ruleSet.approachRate = 3;
 
             var audio, currentTime;
             var boundEvents = [ ];
@@ -409,11 +410,17 @@ define('Game', [ 'q', 'MapState', 'AssetManager', 'Util/PubSub', 'Soundboard', '
                     mapState.applyHitMarker(hitMarker);
 
                     // Move le cursor
-                    var fromTime = beat(i * 4 - 3);
+                    var fromTime = beat(i * 4 - 2.5);
                     var toTime = hitObject.time;
 
                     for (var j = fromTime; j < toTime; j += 10) {
                         var p = (j - fromTime) / (toTime - fromTime)
+
+                        if (p < 0.2) {
+                            p = p * Math.pow(0.2, 0.6) / 0.2;
+                        } else {
+                            p = Math.pow(p, 0.6);
+                        }
 
                         mouseHistory.add(j, {
                             x: p * x + (1 - p) * lastX,
