@@ -1,21 +1,15 @@
 <?php
 
 require_once 'config.php';
-require_once 'maps.php';
-
-if (!isset($_GET['map']) || !isset($maps[$_GET['map']])) {
-    header('Location: map-select.php');
-    die();
-}
-
-$map = $maps[$_GET['map']];
 
 require 'header.php';
 
 ?>
 
-<h1>owp</h1>
-<p><?php echo htmlspecialchars($map['text']); ?></p>
+<h2>Tutorial</h2>
+<p>Watch the awesome tutorial to learn how to play!</p>
+<p>Click to continue to the next screen.</p>
+<p>Track is <a href="https://8bc.org/music/UncleBibby/Jeez+Louise+Lou+Ease+Le+Ooz+%28Nanoloop+on+iPod+Touch%29/">Jeez Louise Lou Ease Le Ooz by Peter Locke</a>, released under CC BY-NC-SA.</p>
 
 <div id="playfield">
     <script type="text/javascript">document.write('<p>Loading...</p>');</script>
@@ -27,9 +21,10 @@ require 'header.php';
 <script src="<?php echo htmlspecialchars($owpScriptPath); ?>"></script>
 <script>
 game.loadSkin(<?php echo json_encode($skinsRoot); ?>);
-game.startMap(<?php echo json_encode($mapsRoot . '/' . $map['root']); ?>, <?php echo json_encode($map['name']); ?>);
+game.tutorial(<?php echo json_encode($mapsRoot . '/tutorial'); ?>, "Jeez Louise Lou Ease Le Ooz.mp3");
 </script>
 
 <?php
 
 require 'footer.php';
+

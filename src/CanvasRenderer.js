@@ -644,11 +644,35 @@ define('CanvasRenderer', [ 'mapObject', 'Util/Cache', 'canvasShaders', 'MapState
                     gPubSub.publish('tick');
                 });
             });
-
-            // TODO Render cursor in another render step
-            // (See cursor + trail rendering code in file history)
         }
         // Map rendering }}}
+
+        // Cursor rendering {{{
+        function renderCursorHead(state) {
+            if (!state) {
+                return;
+            }
+
+            var cursor = skin.assetManager.get('cursor', 'image-set')[0];
+            var el = dom.get('cursor', function () {
+                return cloneAbsolute(cursor);
+            });
+
+            var x = state.x - cursor.width / 2;
+            var y = state.y - cursor.height / 2;
+
+            el.style.left = x + 'px';
+            el.style.top = y + 'px';
+
+            setZ(el);
+        }
+
+        function renderCursor() {
+            view(View.map, function () {
+                renderCursorHead(mouseHistory.getDataAtTime(time));
+            });
+        }
+        // Cursor rendering }}}
 
         // HUD rendering {{{
         function renderScore() {
@@ -796,7 +820,8 @@ define('CanvasRenderer', [ 'mapObject', 'Util/Cache', 'canvasShaders', 'MapState
             renderHud: renderHud,
             renderStoryboard: renderStoryboard,
             renderLoading: renderLoading,
-            renderReadyToPlay: renderReadyToPlay
+            renderReadyToPlay: renderReadyToPlay,
+            renderCursor: renderCursor
         };
     }
 
@@ -944,6 +969,16 @@ define('CanvasRenderer', [ 'mapObject', 'Util/Cache', 'canvasShaders', 'MapState
                 });
 
                 r.renderReadyToPlay();
+            },
+
+            renderCursor: function (skin, mouseHistory, time) {
+                r.vars({
+                    skin: skin,
+                    mouseHistory: mouseHistory,
+                    time: time
+                });
+
+                r.renderCursor();
             }
         };
     }

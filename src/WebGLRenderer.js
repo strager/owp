@@ -617,7 +617,21 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
             });
         }
 
-        function renderCursor(state) {
+        function renderMap() {
+            view(View.map, function () {
+                var sortedObjects = ruleSet.getObjectsByZ(objects);
+
+                sortedObjects.forEach(function (object) {
+                    renderObject(object);
+
+                    gPubSub.publish('tick');
+                });
+            });
+        }
+        // Map rendering }}}
+
+        // Cursor rendering {{{
+        function renderCursorHead(state) {
             if (!state) {
                 return;
             }
@@ -632,36 +646,12 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
             });
         }
 
-        function renderCursorTrail(state, alpha) {
-            if (!state) {
-                return;
-            }
-
-            sprite(function (draw) {
-                gl.uniform2f(programs.sprite.uni.position, state.x, state.y);
-                gl.uniform4f(programs.sprite.uni.color, 255, 255, 255, alpha * 255);
-                gl.uniform2f(programs.sprite.uni.offset, 0, 0);
-                gl.uniform1f(programs.sprite.uni.scale, 1);
-
-                draw(textures.cursorTrail);
-            });
-        }
-
-        function renderMap() {
+        function renderCursor() {
             view(View.map, function () {
-                var sortedObjects = ruleSet.getObjectsByZ(objects);
-
-                sortedObjects.forEach(function (object) {
-                    renderObject(object);
-
-                    gPubSub.publish('tick');
-                });
+                renderCursorHead(mouseHistory.getDataAtTime(time));
             });
-
-            // TODO Render cursor in another render step
-            // (See cursor + trail rendering code in file history)
         }
-        // Map rendering }}}
+        // Cursor rendering }}}
 
         // HUD rendering {{{
         function renderScore() {
@@ -816,7 +806,8 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
             renderHud: renderHud,
             renderStoryboard: renderStoryboard,
             renderLoading: renderLoading,
-            renderReadyToPlay: renderReadyToPlay
+            renderReadyToPlay: renderReadyToPlay,
+            renderCursor: renderCursor
         };
     }
 
@@ -1325,7 +1316,7 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
             },
 
             beginRender: function () {
-                gl.clearColor(0, 0, 0, 0);
+                gl.clearColor(0, 0, 0, 1);
                 gl.clear(gl.COLOR_BUFFER_BIT);
 
                 gl.viewport(
@@ -1397,6 +1388,16 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
                 });
 
                 r.renderReadyToPlay();
+            },
+
+            renderCursor: function (skin, mouseHistory, time) {
+                r.vars({
+                    skin: skin,
+                    mouseHistory: mouseHistory,
+                    time: time
+                });
+
+                r.renderCursor();
             }
         };
     }

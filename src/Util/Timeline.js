@@ -120,7 +120,7 @@ define('Util/Timeline', [ 'Util/PubSub' ], function (PubSub) {
         },
 
         subscribe: function (key, callback) {
-            this.getEvents(key).subscribe(callback);
+            return this.getEvents(key).subscribe(callback);
         },
 
         update: function (time) {
