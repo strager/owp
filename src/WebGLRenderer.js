@@ -646,29 +646,8 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
             });
         }
 
-        function renderCursorTrail(state, alpha) {
-            if (!state) {
-                return;
-            }
-
-            sprite(function (draw) {
-                gl.uniform2f(programs.sprite.uni.position, state.x, state.y);
-                gl.uniform4f(programs.sprite.uni.color, 255, 255, 255, alpha * 255);
-                gl.uniform2f(programs.sprite.uni.offset, 0, 0);
-                gl.uniform1f(programs.sprite.uni.scale, 1);
-
-                draw(textures.cursorTrail);
-            });
-        }
-
         function renderCursor() {
             view(View.map, function () {
-                var i;
-
-                for (i = 0; i < 5; ++i) {
-                    renderCursorTrail(mouseHistory.getDataAtTime(time - (6 - i) * 30), i / 5);
-                }
-
                 renderCursorHead(mouseHistory.getDataAtTime(time));
             });
         }
