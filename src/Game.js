@@ -277,7 +277,7 @@ define('Game', [ 'q', 'MapState', 'AssetManager', 'Util/PubSub', 'Soundboard', '
                 return n / (timing.bpm / 60) * 1000 + timing.time;
             }
 
-            var measureCount = 16;
+            var measureCount = 64;
 
             var scene0, scene1, scene2;
 

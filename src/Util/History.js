@@ -7,9 +7,11 @@ define('Util/History', [ ], function () {
     function sortIndex(array, value) {
         var i;
 
-        for (i = 0; i < array.length; ++i) {
-            if (array[i] > value) {
-                return i;
+        // History items are usually added in time order, so we scan from the
+        // last element to the first.
+        for (i = array.length; i --> 0; /* */) {
+            if (array[i] <= value) {
+                return i + 1;
             }
         }
 
