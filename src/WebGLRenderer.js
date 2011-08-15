@@ -617,7 +617,21 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
             });
         }
 
-        function renderCursor(state) {
+        function renderMap() {
+            view(View.map, function () {
+                var sortedObjects = ruleSet.getObjectsByZ(objects);
+
+                sortedObjects.forEach(function (object) {
+                    renderObject(object);
+
+                    gPubSub.publish('tick');
+                });
+            });
+        }
+        // Map rendering }}}
+
+        // Cursor rendering {{{
+        function renderCursorHead(state) {
             if (!state) {
                 return;
             }
@@ -647,21 +661,18 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
             });
         }
 
-        function renderMap() {
+        function renderCursor() {
             view(View.map, function () {
-                var sortedObjects = ruleSet.getObjectsByZ(objects);
+                var i;
 
-                sortedObjects.forEach(function (object) {
-                    renderObject(object);
+                for (i = 0; i < 5; ++i) {
+                    renderCursorTrail(mouseHistory.getDataAtTime(time - (6 - i) * 30), i / 5);
+                }
 
-                    gPubSub.publish('tick');
-                });
+                renderCursorHead(mouseHistory.getDataAtTime(time));
             });
-
-            // TODO Render cursor in another render step
-            // (See cursor + trail rendering code in file history)
         }
-        // Map rendering }}}
+        // Cursor rendering }}}
 
         // HUD rendering {{{
         function renderScore() {
@@ -816,7 +827,8 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
             renderHud: renderHud,
             renderStoryboard: renderStoryboard,
             renderLoading: renderLoading,
-            renderReadyToPlay: renderReadyToPlay
+            renderReadyToPlay: renderReadyToPlay,
+            renderCursor: renderCursor
         };
     }
 
@@ -1397,6 +1409,16 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
                 });
 
                 r.renderReadyToPlay();
+            },
+
+            renderCursor: function (skin, mouseHistory, time) {
+                r.vars({
+                    skin: skin,
+                    mouseHistory: mouseHistory,
+                    time: time
+                });
+
+                r.renderCursor();
             }
         };
     }

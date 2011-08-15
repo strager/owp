@@ -274,12 +274,14 @@ define('Game', [ 'q', 'MapState', 'AssetManager', 'Util/PubSub', 'Soundboard', '
                 return n / (timing.bpm / 60) * 1000 + timing.time;
             }
 
+            var measureCount = 20;
+
             function screen0() {
                 var soundboard = new Soundboard(skin.valueOf().assetManager);
                 var timeline = new Timeline();
                 var mapState = new MapState(ruleSet, [ ], timeline);
 
-                for (var i = 0; i < 20; ++i) {
+                for (var i = 0; i < measureCount; ++i) {
                     var curCombo = combos[i % combos.length];
                     var x = 60;
                     var y = 80;
@@ -339,6 +341,101 @@ define('Game', [ 'q', 'MapState', 'AssetManager', 'Util/PubSub', 'Soundboard', '
                             skin: skin.valueOf(),
                             mouseHistory: null
                         }, time);
+                    },
+                    enter: function () {
+                        audio.play();
+
+                        boundEvents.push(timeline.subscribe(MapState.HIT_MARKER_CREATION, function (hitMarker) {
+                            var hitSounds = ruleSet.getHitSoundNames(hitMarker);
+
+                            // Note that osu! uses the hit marker time itself,
+                            // where we use the more mapper-friendly hit object
+                            // time.  FIXME Maybe this detail should be moved
+                            // to RuleSet (i.e. pass in a HitMarker)?
+                            var volume = ruleSet.getHitSoundVolume(hitMarker.hitObject.time);
+
+                            hitSounds.forEach(function (soundName) {
+                                soundboard.playSound(soundName, {
+                                    // Scale volume to how many hit sounds are
+                                    // being played
+                                    volume: volume / hitSounds.length
+                                });
+                            });
+                        }));
+
+                        gPubSub.subscribe(function () {
+                            var time = currentTime();
+                            timeline.update(time);
+                        });
+
+                        boundEvents.push(mousePubSub.subscribe(function (e) {
+                            if (e.left || e.right) {
+                                screen1();
+                            }
+                        }));
+                    },
+                    leave: function () {
+                        debugger;
+                        boundEvents.forEach(function (be) {
+                            be.unsubscribe();
+                        });
+                        boundEvents = [ ];
+                    }
+                });
+            }
+
+            function screen1() {
+                var soundboard = new Soundboard(skin.valueOf().assetManager);
+                var timeline = new Timeline();
+                var mapState = new MapState(ruleSet, [ ], timeline);
+                var mouseHistory = new History();
+
+                var lastX = 0, lastY = 0;
+
+                for (var i = 0; i < measureCount * 4; ++i) {
+                    var curCombo = combos[Math.floor(i / 4) % combos.length];
+
+                    var x = [ 120, 300, 300, 120 ][i % 4];
+                    var y = [ 120, 120, 300, 300 ][i % 4];
+
+                    var hitObject = new mapObject.HitCircle(beat(i * 4), x, y);
+                    hitObject.hitSounds = [ 'hitnormal' ];
+                    hitObject.comboIndex = i % 4;
+                    hitObject.combo = curCombo;
+                    mapState.addHitObject(hitObject);
+
+                    var hitTime = hitObject.time;
+                    var hitMarker = new mapObject.HitMarker(hitObject, hitTime, ruleSet.getHitScore(hitObject, hitTime), true);
+                    mapState.applyHitMarker(hitMarker);
+
+                    // Move le cursor
+                    var fromTime = beat(i * 4 - 3);
+                    var toTime = hitObject.time;
+
+                    for (var j = fromTime; j < toTime; j += 10) {
+                        var p = (j - fromTime) / (toTime - fromTime)
+
+                        mouseHistory.add(j, {
+                            x: p * x + (1 - p) * lastX,
+                            y: p * y + (1 - p) * lastY
+                        });
+                    }
+
+                    lastX = x;
+                    lastY = y;
+                }
+
+                setState({
+                    render: function (renderer) {
+                        var time = currentTime();
+
+                        renderer.renderMap({
+                            ruleSet: ruleSet,
+                            objects: mapState.getVisibleObjects(time),
+                            skin: skin.valueOf(),
+                            mouseHistory: null
+                        }, time);
+                        renderer.renderCursor(skin.valueOf(), mouseHistory, time);
                     },
                     enter: function () {
                         audio.play();
