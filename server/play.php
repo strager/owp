@@ -14,6 +14,9 @@ require 'header.php';
 
 ?>
 
+<h1>owp</h1>
+<p><?php echo htmlspecialchars($map['text']); ?></p>
+
 <div id="playfield">
     <script type="text/javascript">document.write('<p>Loading...</p>');</script>
     <noscript>
