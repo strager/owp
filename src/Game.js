@@ -198,9 +198,6 @@ define('Game', [ 'q', 'MapState', 'AssetManager', 'Util/PubSub', 'Soundboard', '
                     .then(function (r) {
                         audio = r[0];
 
-                        audio.controls = 'controls';
-                        document.body.appendChild(audio);
-
                         mapState = MapState.fromMapInfo(mapInfo, timeline);
                     }),
                 Q.ref(skin)
