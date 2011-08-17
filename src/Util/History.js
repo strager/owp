@@ -15,7 +15,7 @@ define('Util/History', [ ], function () {
             }
         }
 
-        return array.length;
+        return 0;
     }
 
     History.prototype = {
