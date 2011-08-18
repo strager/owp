@@ -353,7 +353,7 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
             var radius;
 
             if (progress > 0) {
-                radius = 1 + (1 - progress);
+                radius = 1 + (1 - progress) * 2;
             } else {
                 radius = 1 + (1 - (-progress)) / 4;
             }
