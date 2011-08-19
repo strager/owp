@@ -277,18 +277,19 @@ define('CanvasRenderer', [ 'mapObject', 'Util/Cache', 'canvasShaders', 'MapState
             });
         }
 
-        function renderApproachProgress(object, alpha) {
+        function renderApproachProgress(object) {
+            var alpha = ruleSet.getApproachCircleOpacity(object, time);
+            var color = object.combo.color;
+
             var progress = ruleSet.getObjectApproachProgress(object, time);
-
             var radius;
-
             if (progress > 0) {
-                radius = 1 + (1 - progress);
+                radius = 1 + (1 - progress) * 2;
             } else {
                 radius = 1 + (1 - (-progress)) / 4;
             }
 
-            renderApproachCircle(radius, object.x, object.y, object.combo.color, alpha, object);
+            renderApproachCircle(radius, object.x, object.y, color, alpha, object);
         }
 
         function renderApproachCircle(radius, x, y, color, alpha, object) {
@@ -405,8 +406,6 @@ define('CanvasRenderer', [ 'mapObject', 'Util/Cache', 'canvasShaders', 'MapState
             el.style.opacity = alpha;
 
             setZ(el);
-
-            renderApproachProgress(object, alpha);
         }
 
         function renderHitMarkerObject(object) {
@@ -617,10 +616,6 @@ define('CanvasRenderer', [ 'mapObject', 'Util/Cache', 'canvasShaders', 'MapState
             if (visibility === 'during') {
                 renderSliderBall(object);
             }
-
-            if (visibility === 'appearing') {
-                renderApproachProgress(object, alpha);
-            }
         }
 
         function renderObject(object) {
@@ -634,12 +629,33 @@ define('CanvasRenderer', [ 'mapObject', 'Util/Cache', 'canvasShaders', 'MapState
             });
         }
 
+        function renderObjectApproachProgress(object) {
+            mapObject.match(object, {
+                Slider: function () {
+                    var visibility = ruleSet.getObjectVisibilityAtTime(object, time);
+
+                    if (visibility === 'appearing') {
+                        renderApproachProgress(object);
+                    }
+                },
+                HitCircle: function () {
+                    renderApproachProgress(object);
+                }
+            });
+        }
+
         function renderMap() {
             view(View.map, function () {
                 var sortedObjects = ruleSet.getObjectsByZ(objects);
 
                 sortedObjects.forEach(function (object) {
                     renderObject(object);
+
+                    gPubSub.publish('tick');
+                });
+
+                sortedObjects.forEach(function (object) {
+                    renderObjectApproachProgress(object);
 
                     gPubSub.publish('tick');
                 });
