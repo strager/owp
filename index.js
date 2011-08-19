@@ -117,6 +117,7 @@ define('index', [ 'WebGLRenderer', 'CanvasRenderer', 'AssetManager', 'q', 'Game'
     var gameUpdateFps = new FramerateCounter();
 
     var game = new Game();
+    window.game = game;
 
     renderLoop(function () {
         game.render(renderer);
@@ -240,8 +241,10 @@ define('index', [ 'WebGLRenderer', 'CanvasRenderer', 'AssetManager', 'q', 'Game'
     }, false);
 
     var playfield = document.getElementById('playfield');
-    playfield.innerHTML = '';
-    playfield.appendChild(playArea);
+    if (playfield) {
+        playfield.innerHTML = '';
+        playfield.appendChild(playArea);
+    }
 
     if (DEBUG) {
         function getPaintCount() {
@@ -302,6 +305,4 @@ define('index', [ 'WebGLRenderer', 'CanvasRenderer', 'AssetManager', 'q', 'Game'
 
         loop(updateDebugInfo, 100);
     }
-
-    window.game = game;
 });
