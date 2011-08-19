@@ -7,6 +7,8 @@ require 'header.php';
 
 ?>
 
+<body id="screen-map-select">
+
 <h1>owp</h1>
 <p>Choose a map to play:</p>
 <ul>
@@ -20,6 +22,8 @@ require 'header.php';
 // Try to preload to reduce map load time
 game.loadSkin(<?php echo json_encode($skinsRoot); ?>);
 </script>
+
+</body>
 
 <?php
 

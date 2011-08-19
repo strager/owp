@@ -346,14 +346,13 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
         }
 
         function renderApproachProgress(object) {
-            var color = object.combo.color;
+            var alpha = ruleSet.getApproachCircleOpacity(object, time);
+            var color = object.combo.color.concat([ alpha * 255 ]);
 
             var progress = ruleSet.getObjectApproachProgress(object, time);
-
             var radius;
-
             if (progress > 0) {
-                radius = 1 + (1 - progress);
+                radius = 1 + (1 - progress) * 2;
             } else {
                 radius = 1 + (1 - (-progress)) / 4;
             }
@@ -365,7 +364,7 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
             var scale = radius * ruleSet.getCircleSize() / 128;
 
             sprite(function (draw) {
-                gl.uniform4f(programs.sprite.uni.color, color[0], color[1], color[2], 255);
+                gl.uniform4fv(programs.sprite.uni.color, color);
                 gl.uniform2f(programs.sprite.uni.position, x, y);
                 gl.uniform1f(programs.sprite.uni.scale, scale);
                 gl.uniform2f(programs.sprite.uni.offset, 0, 0);
@@ -543,10 +542,6 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
                 if (visibility === 'during') {
                     renderSliderBall(object);
                 }
-
-                if (visibility === 'appearing') {
-                    renderApproachProgress(object);
-                }
             });
         }
 
@@ -583,7 +578,6 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
                 renderHitCircleBackground(object.x, object.y, object.combo.color);
                 renderComboNumber(object.comboIndex + 1, object.x, object.y);
                 renderHitCircleOverlay(object.x, object.y);
-                renderApproachProgress(object);
             });
         }
 
@@ -617,12 +611,33 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
             });
         }
 
+        function renderObjectApproachProgress(object) {
+            mapObject.match(object, {
+                Slider: function () {
+                    var visibility = ruleSet.getObjectVisibilityAtTime(object, time);
+
+                    if (visibility === 'appearing') {
+                        renderApproachProgress(object);
+                    }
+                },
+                HitCircle: function () {
+                    renderApproachProgress(object);
+                }
+            });
+        }
+
         function renderMap() {
             view(View.map, function () {
                 var sortedObjects = ruleSet.getObjectsByZ(objects);
 
                 sortedObjects.forEach(function (object) {
                     renderObject(object);
+
+                    gPubSub.publish('tick');
+                });
+
+                sortedObjects.forEach(function (object) {
+                    renderObjectApproachProgress(object);
 
                     gPubSub.publish('tick');
                 });

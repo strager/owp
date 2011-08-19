@@ -77,11 +77,11 @@ define('index', [ 'WebGLRenderer', 'CanvasRenderer', 'AssetManager', 'q', 'Game'
         }, interval);
     }
 
-    function renderLoop(callback) {
+    function renderLoop(callback, element) {
         requestAnimFrame(function () {
-            renderLoop(callback);
+            renderLoop(callback, element);
             callback();
-        }, document.body); // should prolly use the canvas here...
+        }, element);
     }
 
     function infLoop(callback) {
@@ -117,6 +117,7 @@ define('index', [ 'WebGLRenderer', 'CanvasRenderer', 'AssetManager', 'q', 'Game'
     var gameUpdateFps = new FramerateCounter();
 
     var game = new Game();
+    window.game = game;
 
     renderLoop(function () {
         game.render(renderer);
@@ -207,41 +208,42 @@ define('index', [ 'WebGLRenderer', 'CanvasRenderer', 'AssetManager', 'q', 'Game'
         mouseStateChanged();
     }, false);
 
+    function charToKey(c) {
+        return c.charCodeAt(0);
+    }
+
+    var leftKeys  = 'ZAQCDEBGTMJU02468'.split('').map(charToKey);
+    var rightKeys = 'XSWVFRNHY,ki13579'.split('').map(charToKey);
+
     document.addEventListener('keydown', function (e) {
-        switch (e.which) {
-        case 90: // LMB
+        if (leftKeys.indexOf(e.which) >= 0) {
             isLeftDown = true;
             e.preventDefault();
-            break;
-
-        case 88: // RMB
+        } else if (rightKeys.indexOf(e.which) >= 0) {
             isRightDown = true;
             e.preventDefault();
-            break;
         }
 
         mouseStateChanged();
     }, false);
 
     document.addEventListener('keyup', function (e) {
-        switch (e.which) {
-        case 90: // LMB
+        if (leftKeys.indexOf(e.which) >= 0) {
             isLeftDown = false;
             e.preventDefault();
-            break;
-
-        case 88: // RMB
+        } else if (rightKeys.indexOf(e.which) >= 0) {
             isRightDown = false;
             e.preventDefault();
-            break;
         }
 
         mouseStateChanged();
     }, false);
 
     var playfield = document.getElementById('playfield');
-    playfield.innerHTML = '';
-    playfield.appendChild(playArea);
+    if (playfield) {
+        playfield.innerHTML = '';
+        playfield.appendChild(playArea);
+    }
 
     if (DEBUG) {
         function getPaintCount() {
@@ -302,6 +304,4 @@ define('index', [ 'WebGLRenderer', 'CanvasRenderer', 'AssetManager', 'q', 'Game'
 
         loop(updateDebugInfo, 100);
     }
-
-    window.game = game;
 });

@@ -14,6 +14,8 @@ require 'header.php';
 
 ?>
 
+<body id="screen-play">
+
 <h1>owp</h1>
 <p><?php echo htmlspecialchars($map['text']); ?></p>
 
@@ -29,6 +31,8 @@ require 'header.php';
 game.loadSkin(<?php echo json_encode($skinsRoot); ?>);
 game.startMap(<?php echo json_encode($mapsRoot . '/' . $map['root']); ?>, <?php echo json_encode($map['name']); ?>);
 </script>
+
+</body>
 
 <?php
 

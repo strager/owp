@@ -6,6 +6,8 @@ require 'header.php';
 
 ?>
 
+<body id="screen-tutorial">
+
 <h2>Tutorial</h2>
 <p>Watch the awesome tutorial to learn how to play!</p>
 <p>Click to continue to the next screen.</p>
@@ -23,6 +25,8 @@ require 'header.php';
 game.loadSkin(<?php echo json_encode($skinsRoot); ?>);
 game.tutorial(<?php echo json_encode($mapsRoot . '/tutorial'); ?>, "Jeez Louise Lou Ease Le Ooz.mp3");
 </script>
+
+</body>
 
 <?php
 

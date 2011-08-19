@@ -4,6 +4,10 @@ DIR="$( cd "$( dirname "$0" )" && pwd )"
 ROOT="$DIR/.."
 OUT="$ROOT/owp.min.js"
 
+if [ "$#" -eq 1 ]; then
+    OUT="$1"
+fi
+
 (
     # Build main JS file
     NAMES='document, window, Array, Object'

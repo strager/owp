@@ -1,0 +1,30 @@
+html {
+    color: #F0F0F0;
+    background-color: #0E0E0E;
+    font-family: Helvetica, sans-serif;
+}
+
+a:link {
+    color: #4E6EFF;
+}
+
+a:active {
+    color: #6E90FF;
+}
+
+a:visited {
+    color: #4E2EBB;
+}
+
+a:hover {
+    color: #6E90FF;
+}
+
+body {
+    width: 640px;
+    margin: 0 auto;
+}
+
+#playfield {
+    margin: 0;
+}

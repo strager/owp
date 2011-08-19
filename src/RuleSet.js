@@ -141,6 +141,10 @@ define('RuleSet', [ 'Util/util', 'mapObject', 'Util/History' ], function (util, 
             }
         },
 
+        getApproachCircleOpacity: function (object, time) {
+            return this.getObjectOpacity(object, time);
+        },
+
         getObjectOpacity: function (object, time) {
             var startAppearTime    = this.getObjectStartAppearTime(object);
             var endAppearTime      = this.getObjectEndAppearTime(object);

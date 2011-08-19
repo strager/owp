@@ -78,11 +78,7 @@ define('mapFile', [ 'RuleSet', 'Map', 'Combo', 'MapInfo', 'mapObject', 'Storyboa
     function readHitSounds(hitSoundNumber) {
         var hitSounds = [ ];
 
-        // FIXME No clue if these are correct
-
-        if (hitSoundNumber & 1) {
-            hitSounds.push('hitnormal');
-        }
+        // Bit 1 is the hitnormal sound, which we always activate
 
         if (hitSoundNumber & 2) {
             hitSounds.push('hitwhistle');
@@ -96,11 +92,8 @@ define('mapFile', [ 'RuleSet', 'Map', 'Combo', 'MapInfo', 'mapObject', 'Storyboa
             hitSounds.push('hitclap');
         }
 
-        if (hitSounds.length === 0) {
-            // normal is the default hitsound,
-            // in case none is specified
-            hitSounds.push('hitnormal');
-        }
+        // normal is the default hitsound, and is always played
+        hitSounds.push('hitnormal');
 
         return hitSounds;
     }
