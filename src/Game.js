@@ -147,11 +147,14 @@ define('Game', [ 'q', 'MapState', 'AssetManager', 'Util/PubSub', 'Soundboard', '
                             // to RuleSet (i.e. pass in a HitMarker)?
                             var volume = mapState.ruleSet.getHitSoundVolume(hitMarker.hitObject.time);
 
+                            // Scale volume to how many hit sounds are being
+                            // played
+                            volume /= Math.sqrt(hitSounds.length);
+
+
                             hitSounds.forEach(function (soundName) {
                                 soundboard.playSound(soundName, {
-                                    // Scale volume to how many hit sounds are
-                                    // being played
-                                    volume: volume / hitSounds.length
+                                    volume: volume
                                 });
                             });
                         }));
