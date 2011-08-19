@@ -208,33 +208,32 @@ define('index', [ 'WebGLRenderer', 'CanvasRenderer', 'AssetManager', 'q', 'Game'
         mouseStateChanged();
     }, false);
 
+    function charToKey(c) {
+        return c.charCodeAt(0);
+    }
+
+    var leftKeys  = 'ZAQCDEBGTMJU02468'.split('').map(charToKey);
+    var rightKeys = 'XSWVFRNHY,ki13579'.split('').map(charToKey);
+
     document.addEventListener('keydown', function (e) {
-        switch (e.which) {
-        case 90: // LMB
+        if (leftKeys.indexOf(e.which) >= 0) {
             isLeftDown = true;
             e.preventDefault();
-            break;
-
-        case 88: // RMB
+        } else if (rightKeys.indexOf(e.which) >= 0) {
             isRightDown = true;
             e.preventDefault();
-            break;
         }
 
         mouseStateChanged();
     }, false);
 
     document.addEventListener('keyup', function (e) {
-        switch (e.which) {
-        case 90: // LMB
+        if (leftKeys.indexOf(e.which) >= 0) {
             isLeftDown = false;
             e.preventDefault();
-            break;
-
-        case 88: // RMB
+        } else if (rightKeys.indexOf(e.which) >= 0) {
             isRightDown = false;
             e.preventDefault();
-            break;
         }
 
         mouseStateChanged();
