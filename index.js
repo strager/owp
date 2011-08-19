@@ -77,11 +77,11 @@ define('index', [ 'WebGLRenderer', 'CanvasRenderer', 'AssetManager', 'q', 'Game'
         }, interval);
     }
 
-    function renderLoop(callback) {
+    function renderLoop(callback, element) {
         requestAnimFrame(function () {
             callback();
             renderLoop(callback);
-        }, document.body); // should prolly use the canvas here...
+        }, element);
     }
 
     function infLoop(callback) {
