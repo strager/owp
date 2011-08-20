@@ -88,44 +88,14 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
             videoElement = v.videoElement;
         }
 
-        // Views {{{
-        var currentView;
+        // Render batch {{{
+        var renderBatch = [ ];
 
-        function view(v, callback) {
-            var oldView = currentView;
-            currentView = v;
-            callback();
-            currentView = oldView;
-        }
+        var renderBatchFlushers = {
+            sprite: function flushSprite(sprite) {
+                gl.useProgram(programs.sprite);
 
-        function setViewUniform(uniform) {
-            gl.uniform2fv(uniform, currentView.mat);
-        }
-        // Views }}}
-
-        // Shader programs {{{
-        var inProgram = false;
-
-        function program(prog, init, uninit, callback) {
-            if (inProgram) {
-                throw new Error('Already in program');
-            }
-
-            inProgram = true;
-
-            // TODO Optimize useProgram and init/uninit calls
-
-            gl.useProgram(prog);
-
-            init();
-            callback();
-            uninit();
-
-            inProgram = false;
-        }
-
-        function sprite(callback) {
-            function init() {
+                // Buffers
                 // Same as objectTarget
                 var vertexOffset = 0;
                 var uvOffset = 2 * 3 * 2 * 4; // Skip faces (2x3 pairs, x2 floats, x4 bytes)
@@ -135,29 +105,55 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
                 gl.vertexAttribPointer(programs.sprite.attr.textureCoord, 2, gl.FLOAT, false, 0, uvOffset);
                 gl.enableVertexAttribArray(programs.sprite.attr.vertexCoord);
                 gl.enableVertexAttribArray(programs.sprite.attr.textureCoord);
-            }
 
-            function uninit() {
+                // Uniforms
+                gl.uniform2fv(programs.sprite.uni.view, sprite.view.mat);
+                gl.uniform2f(programs.sprite.uni.position, sprite.x, sprite.y);
+                gl.uniform2f(programs.sprite.uni.offset, sprite.ox, sprite.oy);
+                gl.uniform4fv(programs.sprite.uni.color, sprite.color);
+                gl.uniform1f(programs.sprite.uni.scale, sprite.scale);
+
+                gl.uniform2f(programs.sprite.uni.size, sprite.texture.image.width, sprite.texture.image.height);
+                gl.activeTexture(gl.TEXTURE0);
+                gl.bindTexture(gl.TEXTURE_2D, sprite.texture);
+                gl.uniform1i(programs.sprite.uni.sampler, 0);
+
+                // Draw
+                gl.drawArrays(gl.TRIANGLES, 0, 6);
+
+                // Cleanup
                 gl.disableVertexAttribArray(programs.sprite.attr.textureCoord);
                 gl.disableVertexAttribArray(programs.sprite.attr.vertexCoord);
                 gl.bindBuffer(gl.ARRAY_BUFFER, null);
+
+                gl.useProgram(null);
             }
+        };
 
-            program(programs.sprite, init, uninit, function () {
-                setViewUniform(programs.sprite.uni.view);
-
-                callback(function draw(texture) {
-                    if (typeof texture !== 'undefined') {
-                        gl.uniform2f(programs.sprite.uni.size, texture.image.width, texture.image.height);
-
-                        gl.activeTexture(gl.TEXTURE0);
-                        gl.bindTexture(gl.TEXTURE_2D, texture);
-                        gl.uniform1i(programs.sprite.uni.sampler, 0);
-                    }
-
-                    gl.drawArrays(gl.TRIANGLES, 0, 6);
-                });
+        function flushRenderBatch() {
+            renderBatch.forEach(function (batch) {
+                renderBatchFlushers[batch[0]](batch[1]);
             });
+
+            renderBatch = [ ];
+        }
+        // Render batch }}}
+
+        // Views {{{
+        var currentView = null;
+
+        function view(v, callback) {
+            var oldView = currentView;
+            currentView = v;
+            callback();
+            currentView = oldView;
+        }
+        // Views }}}
+
+        // Shader programs {{{
+        function sprite(options) {
+            options.view = currentView;
+            renderBatch.push([ 'sprite', options ]);
         }
 
         function objectTarget(callback) {
@@ -214,6 +210,7 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
         }
 
         function loading(callback) {
+return;
             function init() {
                 // Same as sprite
                 var vertexOffset = 0;
@@ -280,22 +277,22 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
                 break;
             }
 
-            sprite(function (draw) {
-                gl.uniform4f(programs.sprite.uni.color, 255, 255, 255, 255);
-                gl.uniform2f(programs.sprite.uni.position, options.x || 0, options.y || 0);
+            textures.forEach(function (texture, i) {
+                var width = texture.image.width;
+                var x = (offset + width / 2) * scale;
+                var y = 0;
 
-                textures.forEach(function (texture, i) {
-                    var width = texture.image.width;
-                    var x = (offset + width / 2) * scale;
-                    var y = 0;
-
-                    gl.uniform1f(programs.sprite.uni.scale, scale);
-                    gl.uniform2f(programs.sprite.uni.offset, x, y);
-
-                    draw(texture);
-
-                    offset += width + spacing;
+                sprite({
+                    x: options.x || 0,
+                    y: options.y || 0,
+                    ox: x,
+                    oy: y,
+                    color: [ 255, 255, 255, 255 ],
+                    scale: scale,
+                    texture: texture
                 });
+
+                offset += width + spacing;
             });
         }
         // Rendering helpers }}}
@@ -363,13 +360,14 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
         function renderApproachCircle(radius, x, y, color) {
             var scale = radius * ruleSet.getCircleSize() / 128;
 
-            sprite(function (draw) {
-                gl.uniform4fv(programs.sprite.uni.color, color);
-                gl.uniform2f(programs.sprite.uni.position, x, y);
-                gl.uniform1f(programs.sprite.uni.scale, scale);
-                gl.uniform2f(programs.sprite.uni.offset, 0, 0);
-
-                draw(textures.approachCircle);
+            sprite({
+                x: x,
+                y: y,
+                ox: 0,
+                oy: 0,
+                color: color,
+                scale: scale,
+                texture:textures.approachCircle
             });
         }
 
@@ -396,13 +394,14 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
 
             var scale = ruleSet.getCircleSize() / 128;
 
-            sprite(function (draw) {
-                gl.uniform2f(programs.sprite.uni.position, sliderBallPosition[0], sliderBallPosition[1]);
-                gl.uniform4f(programs.sprite.uni.color, 255, 255, 255, 255);
-                gl.uniform2f(programs.sprite.uni.offset, 0, 0);
-                gl.uniform1f(programs.sprite.uni.scale, scale);
-
-                draw(textures.sliderBall);
+            sprite({
+                x: sliderBallPosition[0],
+                y: sliderBallPosition[1],
+                ox: 0,
+                oy: 0,
+                color: [ 255, 255, 255, 255 ],
+                scale: scale,
+                texture: textures.sliderBall
             });
         }
 
@@ -413,17 +412,21 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
 
             var scale = ruleSet.getCircleSize() / 128;
 
-            sprite(function (draw) {
-                gl.uniform2f(programs.sprite.uni.position, tick.x, tick.y);
-                gl.uniform4f(programs.sprite.uni.color, 255, 255, 255, 255);
-                gl.uniform2f(programs.sprite.uni.offset, 0, 0);
-                gl.uniform1f(programs.sprite.uni.scale, scale);
-
-                draw(textures.sliderTick);
+            sprite({
+                x: tick.x,
+                y: tick.y,
+                ox: 0,
+                oy: 0,
+                color: [ 255, 255, 255, 255 ],
+                scale: scale,
+                texture: textures.sliderTick
             });
         }
 
         function renderUnit(options, callback) {
+            callback();
+            return;
+
             var alpha = typeof options.alpha === 'undefined' ? 1 : options.alpha;
 
             // Optimize the common case of alpha === 1, where there's no point in rendering to an FBO
@@ -481,11 +484,13 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
                 var scale = ruleSet.getCircleSize() / 128;
                 var growPercentage = ruleSet.getSliderGrowPercentage(object, time);
 
+                /*
                 curve(c.id, function (draw) {
                     gl.uniform4f(programs.curve.uni.color, color[0], color[1], color[2], 255);
 
                     draw(Math.round(c.vertexCount * growPercentage));
                 });
+                */
 
                 object.ticks.forEach(renderSliderTick);
 
@@ -495,20 +500,24 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
 
                 if (lastPoint) {
                     // End
-                    sprite(function (draw) {
-                        gl.uniform2f(programs.sprite.uni.position, lastPoint[0], lastPoint[1]);
-                        gl.uniform4f(programs.sprite.uni.color, color[0], color[1], color[2], 255);
-                        gl.uniform2f(programs.sprite.uni.offset, 0, 0);
-                        gl.uniform1f(programs.sprite.uni.scale, scale);
+                    sprite({
+                        x: lastPoint[0],
+                        y: lastPoint[1],
+                        ox: 0,
+                        oy: 0,
+                        color: color.concat([ 255 ]),
+                        scale: scale,
+                        texture: textures.hitCircle
+                    });
 
-                        draw(textures.hitCircle);
-
-                        gl.uniform2f(programs.sprite.uni.position, lastPoint[0], lastPoint[1]);
-                        gl.uniform4f(programs.sprite.uni.color, 255, 255, 255, 255);
-                        gl.uniform2f(programs.sprite.uni.offset, 0, 0);
-                        gl.uniform1f(programs.sprite.uni.scale, scale);
-
-                        draw(textures.hitCircleOverlay);
+                    sprite({
+                        x: lastPoint[0],
+                        y: lastPoint[1],
+                        ox: 0,
+                        oy: 0,
+                        color: [ 255, 255, 255, 255 ],
+                        scale: scale,
+                        texture: textures.hitCircleOverlay
                     });
                 }
 
@@ -528,24 +537,25 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
                 })[0];
 
                 if (repeatArrow) {
-                    sprite(function (draw) {
-                        var x, y;
+                    var repeatArrowX, repeatArrowY;
 
-                        if (growPercentage === 1 || !lastPoint) {
-                            x = repeatArrow.x;
-                            y = repeatArrow.y;
-                        } else {
-                            // Repeat arrow follows snaking
-                            x = lastPoint[0];
-                            y = lastPoint[1];
-                        }
+                    if (growPercentage === 1 || !lastPoint) {
+                        repeatArrowX = repeatArrow.x;
+                        repeatArrowY = repeatArrow.y;
+                    } else {
+                        // Repeat arrow follows snaking
+                        repeatArrowX = lastPoint[0];
+                        repeatArrowY = lastPoint[1];
+                    }
 
-                        gl.uniform2f(programs.sprite.uni.position, x, y);
-                        gl.uniform4f(programs.sprite.uni.color, 255, 255, 255, 255);
-                        gl.uniform2f(programs.sprite.uni.offset, 0, 0);
-                        gl.uniform1f(programs.sprite.uni.scale, scale);
-
-                        draw(textures.repeatArrow);
+                    sprite({
+                        x: repeatArrowX,
+                        y: repeatArrowY,
+                        ox: 0,
+                        oy: 0,
+                        color: [ 255, 255, 255, 255 ],
+                        scale: scale,
+                        texture: textures.repeatArrow
                     });
                 }
 
@@ -558,26 +568,28 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
         function renderHitCircleBackground(x, y, color) {
             var scale = ruleSet.getCircleSize() / 128;
 
-            sprite(function (draw) {
-                gl.uniform2f(programs.sprite.uni.position, x, y);
-                gl.uniform4f(programs.sprite.uni.color, color[0], color[1], color[2], 255);
-                gl.uniform2f(programs.sprite.uni.offset, 0, 0);
-                gl.uniform1f(programs.sprite.uni.scale, scale);
-
-                draw(textures.hitCircle);
+            sprite({
+                x: x,
+                y: y,
+                ox: 0,
+                oy: 0,
+                color: color.concat([ 255 ]),
+                scale: scale,
+                texture: textures.hitCircle
             });
         }
 
         function renderHitCircleOverlay(x, y) {
             var scale = ruleSet.getCircleSize() / 128;
 
-            sprite(function (draw) {
-                gl.uniform2f(programs.sprite.uni.position, x, y);
-                gl.uniform4f(programs.sprite.uni.color, 255, 255, 255, 255);
-                gl.uniform2f(programs.sprite.uni.offset, 0, 0);
-                gl.uniform1f(programs.sprite.uni.scale, scale);
-
-                draw(textures.hitCircleOverlay);
+            sprite({
+                x: x,
+                y: y,
+                ox: 0,
+                oy: 0,
+                color: [ 255, 255, 255, 255 ],
+                scale: scale,
+                texture: textures.hitCircleOverlay
             });
         }
 
@@ -600,13 +612,14 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
             var scale = ruleSet.getHitMarkerScale(object, time);
             var alpha = ruleSet.getObjectOpacity(object, time);
 
-            sprite(function (draw) {
-                gl.uniform2f(programs.sprite.uni.position, object.hitObject.x, object.hitObject.y);
-                gl.uniform4f(programs.sprite.uni.color, 255, 255, 255, alpha * 255);
-                gl.uniform2f(programs.sprite.uni.offset, 0, 0);
-                gl.uniform1f(programs.sprite.uni.scale, scale);
-
-                draw(textures.hitMarkers[image]);
+            sprite({
+                x: object.hitObject.x,
+                y: object.hitObject.y,
+                ox: 0,
+                oy: 0,
+                color: [ 255, 255, 255, alpha * 255 ],
+                scale: scale,
+                texture: textures.hitMarkers[image]
             });
         }
 
@@ -661,13 +674,14 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
                 return;
             }
 
-            sprite(function (draw) {
-                gl.uniform2f(programs.sprite.uni.position, state.x, state.y);
-                gl.uniform4f(programs.sprite.uni.color, 255, 255, 255, 255);
-                gl.uniform2f(programs.sprite.uni.offset, 0, 0);
-                gl.uniform1f(programs.sprite.uni.scale, 1);
-
-                draw(textures.cursor);
+            sprite({
+                x: state.x,
+                y: state.y,
+                ox: 0,
+                oy: 0,
+                color: [ 255, 255, 255, 255 ],
+                scale: 1,
+                texture: textures.cursor
             });
         }
 
@@ -737,24 +751,25 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
             }
 
             // Background
-            sprite(function (draw) {
-                // TODO Get background texture at specific time
-                var texture = textures.background;
-                var backgroundImage = texture.image;
+            // TODO Get background texture at specific time
+            var texture = textures.background;
+            var backgroundImage = texture.image;
 
-                var containerW = 640;
-                var containerH = 480;
-                var innerW = backgroundImage.width;
-                var innerH = backgroundImage.height;
+            var containerW = 640;
+            var containerH = 480;
+            var innerW = backgroundImage.width;
+            var innerH = backgroundImage.height;
 
-                var scale = util.fitRectangleScale(containerW, containerH, innerW, innerH);
+            var scale = util.fitRectangleScale(containerW, containerH, innerW, innerH);
 
-                gl.uniform4f(programs.sprite.uni.color, 255, 255, 255, 255);
-                gl.uniform2f(programs.sprite.uni.position, 320, 240);
-                gl.uniform1f(programs.sprite.uni.scale, scale);
-                gl.uniform2f(programs.sprite.uni.offset, 0, 0);
-
-                draw(texture);
+            sprite({
+                x: 320,
+                y: 240,
+                ox: 0,
+                oy: 0,
+                color: [ 255, 255, 255, 255 ],
+                scale: scale,
+                texture: texture
             });
         }
 
@@ -810,15 +825,16 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
         // Ready-to-play rendering {{{
         function renderReadyToPlay() {
             view(View.storyboard, function () {
-                sprite(function (draw) {
-                    var texture = textures.readyToPlay;
+                var texture = textures.readyToPlay;
 
-                    gl.uniform4f(programs.sprite.uni.color, 255, 255, 255, 255);
-                    gl.uniform2f(programs.sprite.uni.position, 320, 240);
-                    gl.uniform1f(programs.sprite.uni.scale, 1);
-                    gl.uniform2f(programs.sprite.uni.offset, 0, 0);
-
-                    draw(texture);
+                sprite({
+                    x: 320,
+                    y: 240,
+                    ox: 0,
+                    oy: 0,
+                    color: [ 255, 255, 255, 255 ],
+                    scale: 1,
+                    texture: texture
                 });
             });
         }
@@ -832,7 +848,8 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
             renderStoryboard: renderStoryboard,
             renderLoading: renderLoading,
             renderReadyToPlay: renderReadyToPlay,
-            renderCursor: renderCursor
+            renderCursor: renderCursor,
+            flush: flushRenderBatch
         };
     }
 
@@ -1366,6 +1383,7 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
                 });
 
                 r.renderMap();
+                r.flush();
             },
 
             renderHud: function (state, time) {
@@ -1381,6 +1399,7 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
                 });
 
                 r.renderHud();
+                r.flush();
             },
 
             renderStoryboard: function (storyboard, assetManager, time) {
@@ -1393,6 +1412,7 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
                 });
 
                 r.renderStoryboard();
+                r.flush();
             },
 
             renderLoading: function (time) {
@@ -1403,6 +1423,7 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
                 });
 
                 r.renderLoading();
+                r.flush();
             },
 
             renderReadyToPlay: function (skin, time) {
@@ -1414,6 +1435,7 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
                 });
 
                 r.renderReadyToPlay();
+                r.flush();
             },
 
             renderCursor: function (skin, mouseHistory, time) {
@@ -1424,6 +1446,7 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
                 });
 
                 r.renderCursor();
+                r.flush();
             }
         };
     }
