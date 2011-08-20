@@ -169,6 +169,33 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
                 gl.bindBuffer(gl.ARRAY_BUFFER, null);
 
                 gl.useProgram(null);
+            },
+            curve: function curve(curve) {
+                gl.useProgram(programs.curve);
+
+                // Buffers
+                // Vertex and UV are interleaved
+                var stride = 2 * 4 * 2;
+
+                gl.bindBuffer(gl.ARRAY_BUFFER, buffers.curves[curve.id]);
+                gl.vertexAttribPointer(programs.curve.attr.vertexCoord, 2, gl.FLOAT, false, stride, 0);
+                gl.vertexAttribPointer(programs.curve.attr.textureCoord, 2, gl.FLOAT, false, stride, 2 * 4);
+                gl.enableVertexAttribArray(programs.curve.attr.vertexCoord);
+                gl.enableVertexAttribArray(programs.curve.attr.textureCoord);
+
+                // Uniforms
+                gl.uniform2fv(programs.curve.uni.view, curve.view.mat);
+                gl.uniform4fv(programs.curve.uni.color, curve.color);
+
+                // Draw
+                gl.drawArrays(gl.TRIANGLE_STRIP, 0, curve.vertexCount);
+
+                // Cleanup
+                gl.disableVertexAttribArray(programs.curve.attr.textureCoord);
+                gl.disableVertexAttribArray(programs.curve.attr.vertexCoord);
+                gl.bindBuffer(gl.ARRAY_BUFFER, null);
+
+                gl.useProgram(null);
             }
         };
 
@@ -198,31 +225,9 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
             renderBatch.push([ 'sprite', options ]);
         }
 
-        function curve(curveId, callback) {
-            function init() {
-                // Vertex and UV are interleaved
-                var stride = 2 * 4 * 2;
-
-                gl.bindBuffer(gl.ARRAY_BUFFER, buffers.curves[curveId]);
-                gl.vertexAttribPointer(programs.curve.attr.vertexCoord, 2, gl.FLOAT, false, stride, 0);
-                gl.vertexAttribPointer(programs.curve.attr.textureCoord, 2, gl.FLOAT, false, stride, 2 * 4);
-                gl.enableVertexAttribArray(programs.curve.attr.vertexCoord);
-                gl.enableVertexAttribArray(programs.curve.attr.textureCoord);
-            }
-
-            function uninit() {
-                gl.disableVertexAttribArray(programs.curve.attr.textureCoord);
-                gl.disableVertexAttribArray(programs.curve.attr.vertexCoord);
-                gl.bindBuffer(gl.ARRAY_BUFFER, null);
-            }
-
-            program(programs.curve, init, uninit, function () {
-                setViewUniform(programs.curve.uni.view);
-
-                callback(function draw(vertexCount) {
-                    gl.drawArrays(gl.TRIANGLE_STRIP, 0, vertexCount);
-                });
-            });
+        function curve(options) {
+            options.view = currentView;
+            renderBatch.push([ 'curve', options ]);
         }
 
         function loading(callback) {
@@ -478,13 +483,11 @@ return;
                 var scale = ruleSet.getCircleSize() / 128;
                 var growPercentage = ruleSet.getSliderGrowPercentage(object, time);
 
-                /*
-                curve(c.id, function (draw) {
-                    gl.uniform4f(programs.curve.uni.color, color[0], color[1], color[2], 255);
-
-                    draw(Math.round(c.vertexCount * growPercentage));
+                curve({
+                    id: c.id,
+                    color: color.concat([ 255 ]),
+                    vertexCount: Math.round(c.vertexCount * growPercentage)
                 });
-                */
 
                 object.ticks.forEach(renderSliderTick);
 
