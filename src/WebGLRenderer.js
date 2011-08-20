@@ -88,44 +88,19 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
             videoElement = v.videoElement;
         }
 
-        // Views {{{
-        var currentView;
+        // Render batch {{{
+        var renderBatch = [ ];
 
-        function view(v, callback) {
-            var oldView = currentView;
-            currentView = v;
-            callback();
-            currentView = oldView;
-        }
+        var renderBatchFlushers = {
+            clear: function flushClear(color) {
+                gl.clearColor.apply(gl, color);
+                gl.clear(gl.COLOR_BUFFER_BIT);
+            },
 
-        function setViewUniform(uniform) {
-            gl.uniform2fv(uniform, currentView.mat);
-        }
-        // Views }}}
+            beginSprite: function flushBeginSprite() {
+                gl.useProgram(programs.sprite);
 
-        // Shader programs {{{
-        var inProgram = false;
-
-        function program(prog, init, uninit, callback) {
-            if (inProgram) {
-                throw new Error('Already in program');
-            }
-
-            inProgram = true;
-
-            // TODO Optimize useProgram and init/uninit calls
-
-            gl.useProgram(prog);
-
-            init();
-            callback();
-            uninit();
-
-            inProgram = false;
-        }
-
-        function sprite(callback) {
-            function init() {
+                // Buffers
                 // Same as objectTarget
                 var vertexOffset = 0;
                 var uvOffset = 2 * 3 * 2 * 4; // Skip faces (2x3 pairs, x2 floats, x4 bytes)
@@ -135,33 +110,45 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
                 gl.vertexAttribPointer(programs.sprite.attr.textureCoord, 2, gl.FLOAT, false, 0, uvOffset);
                 gl.enableVertexAttribArray(programs.sprite.attr.vertexCoord);
                 gl.enableVertexAttribArray(programs.sprite.attr.textureCoord);
-            }
+            },
+            drawSprite: function flushDrawSprite(sprite) {
+                // Uniforms
+                gl.uniform2fv(programs.sprite.uni.view, sprite.view.mat);
+                gl.uniform2f(programs.sprite.uni.position, sprite.x, sprite.y);
+                gl.uniform4fv(programs.sprite.uni.color, sprite.color);
+                gl.uniform1f(programs.sprite.uni.scale, sprite.scale);
 
-            function uninit() {
+                gl.uniform2f(programs.sprite.uni.size, sprite.texture.image.width, sprite.texture.image.height);
+                gl.activeTexture(gl.TEXTURE0);
+                gl.bindTexture(gl.TEXTURE_2D, sprite.texture);
+                gl.uniform1i(programs.sprite.uni.sampler, 0);
+
+                // Draw
+                gl.drawArrays(gl.TRIANGLES, 0, 6);
+            },
+            endSprite: function flushEndSprite() {
+                // Cleanup
                 gl.disableVertexAttribArray(programs.sprite.attr.textureCoord);
                 gl.disableVertexAttribArray(programs.sprite.attr.vertexCoord);
                 gl.bindBuffer(gl.ARRAY_BUFFER, null);
-            }
 
-            program(programs.sprite, init, uninit, function () {
-                setViewUniform(programs.sprite.uni.view);
+                gl.useProgram(null);
+            },
 
-                callback(function draw(texture) {
-                    if (typeof texture !== 'undefined') {
-                        gl.uniform2f(programs.sprite.uni.size, texture.image.width, texture.image.height);
+            beginUnit: function flushBeginUnit() {
+                gl.bindFramebuffer(gl.FRAMEBUFFER, misc.objectTarget.framebuffer);
+                gl.clearColor(0, 0, 0, 0);
+                gl.clear(gl.COLOR_BUFFER_BIT);
 
-                        gl.activeTexture(gl.TEXTURE0);
-                        gl.bindTexture(gl.TEXTURE_2D, texture);
-                        gl.uniform1i(programs.sprite.uni.sampler, 0);
-                    }
+                gl.viewport(0, 0, viewport.width, viewport.height);
+            },
+            endUnit: function flushEndUnit(unit) {
+                gl.viewport(viewport.x, viewport.y, viewport.width, viewport.height);
+                gl.bindFramebuffer(gl.FRAMEBUFFER, null);
 
-                    gl.drawArrays(gl.TRIANGLES, 0, 6);
-                });
-            });
-        }
+                gl.useProgram(programs.objectTarget);
 
-        function objectTarget(callback) {
-            function init() {
+                // Buffers
                 // Same as sprite
                 var vertexOffset = 0;
                 var uvOffset = 2 * 3 * 2 * 4; // Skip faces (2x3 pairs, x2 floats, x4 bytes)
@@ -171,50 +158,59 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
                 gl.vertexAttribPointer(programs.objectTarget.attr.textureCoord, 2, gl.FLOAT, false, 0, uvOffset);
                 gl.enableVertexAttribArray(programs.objectTarget.attr.vertexCoord);
                 gl.enableVertexAttribArray(programs.objectTarget.attr.textureCoord);
-            }
 
-            function uninit() {
+                // Uniforms
+                gl.uniform2f(programs.objectTarget.uni.view, viewport.width, viewport.height);
+                gl.uniform2f(programs.objectTarget.uni.size, misc.objectTarget.width, misc.objectTarget.height);
+                gl.uniform1f(programs.objectTarget.uni.alpha, unit.alpha);
+
+                gl.activeTexture(gl.TEXTURE0);
+                gl.bindTexture(gl.TEXTURE_2D, misc.objectTarget.texture);
+                gl.uniform1i(programs.objectTarget.uni.sampler, 0);
+
+                // Draw
+                gl.drawArrays(gl.TRIANGLES, 0, 6);
+
+                // Cleanup
                 gl.disableVertexAttribArray(programs.objectTarget.attr.textureCoord);
                 gl.disableVertexAttribArray(programs.objectTarget.attr.vertexCoord);
                 gl.bindBuffer(gl.ARRAY_BUFFER, null);
-            }
 
-            program(programs.objectTarget, init, uninit, function () {
-                callback(function draw() {
-                    gl.drawArrays(gl.TRIANGLES, 0, 6);
-                });
-            });
-        }
+                gl.useProgram(null);
+            },
 
-        function curve(curveId, callback) {
-            function init() {
+            curve: function flushCurve(curve) {
+                gl.useProgram(programs.curve);
+
+                // Buffers
                 // Vertex and UV are interleaved
                 var stride = 2 * 4 * 2;
 
-                gl.bindBuffer(gl.ARRAY_BUFFER, buffers.curves[curveId]);
+                gl.bindBuffer(gl.ARRAY_BUFFER, buffers.curves[curve.id]);
                 gl.vertexAttribPointer(programs.curve.attr.vertexCoord, 2, gl.FLOAT, false, stride, 0);
                 gl.vertexAttribPointer(programs.curve.attr.textureCoord, 2, gl.FLOAT, false, stride, 2 * 4);
                 gl.enableVertexAttribArray(programs.curve.attr.vertexCoord);
                 gl.enableVertexAttribArray(programs.curve.attr.textureCoord);
-            }
 
-            function uninit() {
+                // Uniforms
+                gl.uniform2fv(programs.curve.uni.view, curve.view.mat);
+                gl.uniform4fv(programs.curve.uni.color, curve.color);
+
+                // Draw
+                gl.drawArrays(gl.TRIANGLE_STRIP, 0, curve.vertexCount);
+
+                // Cleanup
                 gl.disableVertexAttribArray(programs.curve.attr.textureCoord);
                 gl.disableVertexAttribArray(programs.curve.attr.vertexCoord);
                 gl.bindBuffer(gl.ARRAY_BUFFER, null);
-            }
 
-            program(programs.curve, init, uninit, function () {
-                setViewUniform(programs.curve.uni.view);
+                gl.useProgram(null);
+            },
 
-                callback(function draw(vertexCount) {
-                    gl.drawArrays(gl.TRIANGLE_STRIP, 0, vertexCount);
-                });
-            });
-        }
+            loading: function flushLoading(loading) {
+                gl.useProgram(programs.loading);
 
-        function loading(callback) {
-            function init() {
+                // Buffers
                 // Same as sprite
                 var vertexOffset = 0;
                 var uvOffset = 2 * 3 * 2 * 4; // Skip faces (2x3 pairs, x2 floats, x4 bytes)
@@ -224,25 +220,74 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
                 gl.vertexAttribPointer(programs.loading.attr.textureCoord, 2, gl.FLOAT, false, 0, uvOffset);
                 gl.enableVertexAttribArray(programs.loading.attr.vertexCoord);
                 gl.enableVertexAttribArray(programs.loading.attr.textureCoord);
-            }
 
-            function uninit() {
+                gl.uniform2f(programs.loading.uni.position, loading.x, loading.y);
+                gl.uniform2f(programs.loading.uni.size, loading.width, loading.height);
+                gl.uniform1f(programs.loading.uni.time, loading.time);
+
+                gl.activeTexture(gl.TEXTURE0);
+                gl.bindTexture(gl.TEXTURE_2D, loading.texture);
+                gl.uniform1i(programs.loading.uni.sampler, 0);
+
+                // Draw
+                gl.drawArrays(gl.TRIANGLES, 0, 6);
+
+                // Cleanup
                 gl.disableVertexAttribArray(programs.loading.attr.textureCoord);
                 gl.disableVertexAttribArray(programs.loading.attr.vertexCoord);
                 gl.bindBuffer(gl.ARRAY_BUFFER, null);
+
+                gl.useProgram(null);
             }
+        };
 
-            program(programs.loading, init, uninit, function () {
-                callback(function draw(texture) {
-                    gl.activeTexture(gl.TEXTURE0);
-                    gl.bindTexture(gl.TEXTURE_2D, texture);
-                    gl.uniform1i(programs.loading.uni.sampler, 0);
-
-                    gl.drawArrays(gl.TRIANGLES, 0, 6);
-                });
+        function flushRenderBatch() {
+            renderBatch.forEach(function (batch) {
+                renderBatchFlushers[batch[0]](batch[1]);
             });
+
+            renderBatch = [ ];
         }
-        // Shader programs }}}
+
+        function sprite(options) {
+            options.view = currentView;
+            var draw = [ 'drawSprite', options ];
+
+            if (renderBatch[renderBatch.length - 1][0] === 'endSprite') {
+                renderBatch.splice(-1, 0, draw);
+            } else {
+                renderBatch.push([ 'beginSprite', null ]);
+                renderBatch.push(draw);
+                renderBatch.push([ 'endSprite', null ]);
+            }
+        }
+
+        function curve(options) {
+            options.view = currentView;
+            renderBatch.push([ 'curve', options ]);
+        }
+
+        function loading(options) {
+            renderBatch.push([ 'loading', options ]);
+        }
+
+        function clear(r, g, b, a) {
+            // We're clearing the entire screen, and we are targeted at the
+            // screen.  All previous draw commands were useless.
+            renderBatch = [ [ 'clear', [ r, g, b, a ] ] ];
+        }
+        // Render batch }}}
+
+        // Views {{{
+        var currentView = null;
+
+        function view(v, callback) {
+            var oldView = currentView;
+            currentView = v;
+            callback();
+            currentView = oldView;
+        }
+        // Views }}}
 
         // Rendering helpers {{{
         function getCharacters(string) {
@@ -280,22 +325,22 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
                 break;
             }
 
-            sprite(function (draw) {
-                gl.uniform4f(programs.sprite.uni.color, 255, 255, 255, 255);
-                gl.uniform2f(programs.sprite.uni.position, options.x || 0, options.y || 0);
+            var x = options.x || 0;
+            var y = options.y || 0;
 
-                textures.forEach(function (texture, i) {
-                    var width = texture.image.width;
-                    var x = (offset + width / 2) * scale;
-                    var y = 0;
+            textures.forEach(function (texture, i) {
+                var width = texture.image.width;
+                var ox = (offset + width / 2) * scale;
 
-                    gl.uniform1f(programs.sprite.uni.scale, scale);
-                    gl.uniform2f(programs.sprite.uni.offset, x, y);
-
-                    draw(texture);
-
-                    offset += width + spacing;
+                sprite({
+                    x: x + ox,
+                    y: y,
+                    color: [ 255, 255, 255, 255 ],
+                    scale: scale,
+                    texture: texture
                 });
+
+                offset += width + spacing;
             });
         }
         // Rendering helpers }}}
@@ -363,13 +408,12 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
         function renderApproachCircle(radius, x, y, color) {
             var scale = radius * ruleSet.getCircleSize() / 128;
 
-            sprite(function (draw) {
-                gl.uniform4fv(programs.sprite.uni.color, color);
-                gl.uniform2f(programs.sprite.uni.position, x, y);
-                gl.uniform1f(programs.sprite.uni.scale, scale);
-                gl.uniform2f(programs.sprite.uni.offset, 0, 0);
-
-                draw(textures.approachCircle);
+            sprite({
+                x: x,
+                y: y,
+                color: color,
+                scale: scale,
+                texture:textures.approachCircle
             });
         }
 
@@ -396,13 +440,12 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
 
             var scale = ruleSet.getCircleSize() / 128;
 
-            sprite(function (draw) {
-                gl.uniform2f(programs.sprite.uni.position, sliderBallPosition[0], sliderBallPosition[1]);
-                gl.uniform4f(programs.sprite.uni.color, 255, 255, 255, 255);
-                gl.uniform2f(programs.sprite.uni.offset, 0, 0);
-                gl.uniform1f(programs.sprite.uni.scale, scale);
-
-                draw(textures.sliderBall);
+            sprite({
+                x: sliderBallPosition[0],
+                y: sliderBallPosition[1],
+                color: [ 255, 255, 255, 255 ],
+                scale: scale,
+                texture: textures.sliderBall
             });
         }
 
@@ -413,46 +456,32 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
 
             var scale = ruleSet.getCircleSize() / 128;
 
-            sprite(function (draw) {
-                gl.uniform2f(programs.sprite.uni.position, tick.x, tick.y);
-                gl.uniform4f(programs.sprite.uni.color, 255, 255, 255, 255);
-                gl.uniform2f(programs.sprite.uni.offset, 0, 0);
-                gl.uniform1f(programs.sprite.uni.scale, scale);
-
-                draw(textures.sliderTick);
+            sprite({
+                x: tick.x,
+                y: tick.y,
+                color: [ 255, 255, 255, 255 ],
+                scale: scale,
+                texture: textures.sliderTick
             });
         }
 
         function renderUnit(options, callback) {
             var alpha = typeof options.alpha === 'undefined' ? 1 : options.alpha;
 
-            // Optimize the common case of alpha === 1, where there's no point in rendering to an FBO
+            // Optimize the common case of alpha === 1, where there's no point
+            // in rendering to an FBO
             if (alpha >= 1) {
                 callback();
                 return;
             }
 
-            gl.bindFramebuffer(gl.FRAMEBUFFER, misc.objectTarget.framebuffer);
-            gl.clearColor(0, 0, 0, 0);
-            gl.clear(gl.COLOR_BUFFER_BIT);
+            renderBatch.push([ 'beginUnit', null ]);
 
-            gl.viewport(0, 0, viewport.width, viewport.height);
             callback();
-            gl.viewport(viewport.x, viewport.y, viewport.width, viewport.height);
 
-            gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-
-            objectTarget(function (draw) {
-                gl.uniform2f(programs.objectTarget.uni.view, viewport.width, viewport.height);
-                gl.uniform2f(programs.objectTarget.uni.size, misc.objectTarget.width, misc.objectTarget.height);
-                gl.uniform1f(programs.objectTarget.uni.alpha, alpha);
-
-                gl.activeTexture(gl.TEXTURE0);
-                gl.bindTexture(gl.TEXTURE_2D, misc.objectTarget.texture);
-                gl.uniform1i(programs.objectTarget.uni.sampler, 0);
-
-                draw();
-            });
+            renderBatch.push([ 'endUnit', {
+                alpha: alpha
+            } ]);
         }
 
         function renderSliderObject(object) {
@@ -481,10 +510,10 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
                 var scale = ruleSet.getCircleSize() / 128;
                 var growPercentage = ruleSet.getSliderGrowPercentage(object, time);
 
-                curve(c.id, function (draw) {
-                    gl.uniform4f(programs.curve.uni.color, color[0], color[1], color[2], 255);
-
-                    draw(Math.round(c.vertexCount * growPercentage));
+                curve({
+                    id: c.id,
+                    color: color.concat([ 255 ]),
+                    vertexCount: Math.round(c.vertexCount * growPercentage)
                 });
 
                 object.ticks.forEach(renderSliderTick);
@@ -495,20 +524,20 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
 
                 if (lastPoint) {
                     // End
-                    sprite(function (draw) {
-                        gl.uniform2f(programs.sprite.uni.position, lastPoint[0], lastPoint[1]);
-                        gl.uniform4f(programs.sprite.uni.color, color[0], color[1], color[2], 255);
-                        gl.uniform2f(programs.sprite.uni.offset, 0, 0);
-                        gl.uniform1f(programs.sprite.uni.scale, scale);
+                    sprite({
+                        x: lastPoint[0],
+                        y: lastPoint[1],
+                        color: color.concat([ 255 ]),
+                        scale: scale,
+                        texture: textures.hitCircle
+                    });
 
-                        draw(textures.hitCircle);
-
-                        gl.uniform2f(programs.sprite.uni.position, lastPoint[0], lastPoint[1]);
-                        gl.uniform4f(programs.sprite.uni.color, 255, 255, 255, 255);
-                        gl.uniform2f(programs.sprite.uni.offset, 0, 0);
-                        gl.uniform1f(programs.sprite.uni.scale, scale);
-
-                        draw(textures.hitCircleOverlay);
+                    sprite({
+                        x: lastPoint[0],
+                        y: lastPoint[1],
+                        color: [ 255, 255, 255, 255 ],
+                        scale: scale,
+                        texture: textures.hitCircleOverlay
                     });
                 }
 
@@ -528,24 +557,23 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
                 })[0];
 
                 if (repeatArrow) {
-                    sprite(function (draw) {
-                        var x, y;
+                    var repeatArrowX, repeatArrowY;
 
-                        if (growPercentage === 1 || !lastPoint) {
-                            x = repeatArrow.x;
-                            y = repeatArrow.y;
-                        } else {
-                            // Repeat arrow follows snaking
-                            x = lastPoint[0];
-                            y = lastPoint[1];
-                        }
+                    if (growPercentage === 1 || !lastPoint) {
+                        repeatArrowX = repeatArrow.x;
+                        repeatArrowY = repeatArrow.y;
+                    } else {
+                        // Repeat arrow follows snaking
+                        repeatArrowX = lastPoint[0];
+                        repeatArrowY = lastPoint[1];
+                    }
 
-                        gl.uniform2f(programs.sprite.uni.position, x, y);
-                        gl.uniform4f(programs.sprite.uni.color, 255, 255, 255, 255);
-                        gl.uniform2f(programs.sprite.uni.offset, 0, 0);
-                        gl.uniform1f(programs.sprite.uni.scale, scale);
-
-                        draw(textures.repeatArrow);
+                    sprite({
+                        x: repeatArrowX,
+                        y: repeatArrowY,
+                        color: [ 255, 255, 255, 255 ],
+                        scale: scale,
+                        texture: textures.repeatArrow
                     });
                 }
 
@@ -558,26 +586,24 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
         function renderHitCircleBackground(x, y, color) {
             var scale = ruleSet.getCircleSize() / 128;
 
-            sprite(function (draw) {
-                gl.uniform2f(programs.sprite.uni.position, x, y);
-                gl.uniform4f(programs.sprite.uni.color, color[0], color[1], color[2], 255);
-                gl.uniform2f(programs.sprite.uni.offset, 0, 0);
-                gl.uniform1f(programs.sprite.uni.scale, scale);
-
-                draw(textures.hitCircle);
+            sprite({
+                x: x,
+                y: y,
+                color: color.concat([ 255 ]),
+                scale: scale,
+                texture: textures.hitCircle
             });
         }
 
         function renderHitCircleOverlay(x, y) {
             var scale = ruleSet.getCircleSize() / 128;
 
-            sprite(function (draw) {
-                gl.uniform2f(programs.sprite.uni.position, x, y);
-                gl.uniform4f(programs.sprite.uni.color, 255, 255, 255, 255);
-                gl.uniform2f(programs.sprite.uni.offset, 0, 0);
-                gl.uniform1f(programs.sprite.uni.scale, scale);
-
-                draw(textures.hitCircleOverlay);
+            sprite({
+                x: x,
+                y: y,
+                color: [ 255, 255, 255, 255 ],
+                scale: scale,
+                texture: textures.hitCircleOverlay
             });
         }
 
@@ -600,13 +626,12 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
             var scale = ruleSet.getHitMarkerScale(object, time);
             var alpha = ruleSet.getObjectOpacity(object, time);
 
-            sprite(function (draw) {
-                gl.uniform2f(programs.sprite.uni.position, object.hitObject.x, object.hitObject.y);
-                gl.uniform4f(programs.sprite.uni.color, 255, 255, 255, alpha * 255);
-                gl.uniform2f(programs.sprite.uni.offset, 0, 0);
-                gl.uniform1f(programs.sprite.uni.scale, scale);
-
-                draw(textures.hitMarkers[image]);
+            sprite({
+                x: object.hitObject.x,
+                y: object.hitObject.y,
+                color: [ 255, 255, 255, alpha * 255 ],
+                scale: scale,
+                texture: textures.hitMarkers[image]
             });
         }
 
@@ -661,13 +686,12 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
                 return;
             }
 
-            sprite(function (draw) {
-                gl.uniform2f(programs.sprite.uni.position, state.x, state.y);
-                gl.uniform4f(programs.sprite.uni.color, 255, 255, 255, 255);
-                gl.uniform2f(programs.sprite.uni.offset, 0, 0);
-                gl.uniform1f(programs.sprite.uni.scale, 1);
-
-                draw(textures.cursor);
+            sprite({
+                x: state.x,
+                y: state.y,
+                color: [ 255, 255, 255, 255 ],
+                scale: 1,
+                texture: textures.cursor
             });
         }
 
@@ -732,29 +756,30 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
 
         // Storyboard rendering {{{
         function renderBackground() {
+            clear(1, 1, 1, 1);
+
             if (!textures.background) {
                 return;
             }
 
             // Background
-            sprite(function (draw) {
-                // TODO Get background texture at specific time
-                var texture = textures.background;
-                var backgroundImage = texture.image;
+            // TODO Get background texture at specific time
+            var texture = textures.background;
+            var backgroundImage = texture.image;
 
-                var containerW = 640;
-                var containerH = 480;
-                var innerW = backgroundImage.width;
-                var innerH = backgroundImage.height;
+            var containerW = 640;
+            var containerH = 480;
+            var innerW = backgroundImage.width;
+            var innerH = backgroundImage.height;
 
-                var scale = util.fitRectangleScale(containerW, containerH, innerW, innerH);
+            var scale = util.fitRectangleScale(containerW, containerH, innerW, innerH);
 
-                gl.uniform4f(programs.sprite.uni.color, 255, 255, 255, 255);
-                gl.uniform2f(programs.sprite.uni.position, 320, 240);
-                gl.uniform1f(programs.sprite.uni.scale, scale);
-                gl.uniform2f(programs.sprite.uni.offset, 0, 0);
-
-                draw(texture);
+            sprite({
+                x: 320,
+                y: 240,
+                color: [ 255, 255, 255, 255 ],
+                scale: scale,
+                texture: texture
             });
         }
 
@@ -781,28 +806,28 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
 
         // Loading rendering {{{
         function renderLoading() {
-            gl.clearColor(0, 0, 0, 1);
-            gl.clear(gl.COLOR_BUFFER_BIT);
+            clear(0, 0, 0, 1);
 
             if (!textures.loading) {
                 return;
             }
 
-            loading(function (draw) {
-                var size = 0.6;
-                var texture = textures.loading;
-                var rect = util.fitRectangle(size, size, texture.image.width, texture.image.height);
+            var size = 0.6;
+            var texture = textures.loading;
+            var rect = util.fitRectangle(size, size, texture.image.width, texture.image.height);
 
-                var angle = time / 35000;
-                angle = angle - Math.floor(angle);
-                angle = angle * Math.PI * 4;
-                angle = angle - Math.floor(angle);
+            var angle = time / 35000;
+            angle = angle - Math.floor(angle);
+            angle = angle * Math.PI * 4;
+            angle = angle - Math.floor(angle);
 
-                gl.uniform1f(programs.loading.uni.time, angle);
-                gl.uniform2f(programs.loading.uni.size, rect.width, rect.height);
-                gl.uniform2f(programs.loading.uni.position, rect.x / size, rect.y / size);
-
-                draw(texture);
+            loading({
+                x: rect.x / size,
+                y: rect.y / size,
+                width: rect.width,
+                height: rect.height,
+                time: angle,
+                texture: texture
             });
         }
         // Loading rendering }}}
@@ -810,15 +835,14 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
         // Ready-to-play rendering {{{
         function renderReadyToPlay() {
             view(View.storyboard, function () {
-                sprite(function (draw) {
-                    var texture = textures.readyToPlay;
+                var texture = textures.readyToPlay;
 
-                    gl.uniform4f(programs.sprite.uni.color, 255, 255, 255, 255);
-                    gl.uniform2f(programs.sprite.uni.position, 320, 240);
-                    gl.uniform1f(programs.sprite.uni.scale, 1);
-                    gl.uniform2f(programs.sprite.uni.offset, 0, 0);
-
-                    draw(texture);
+                sprite({
+                    x: 320,
+                    y: 240,
+                    color: [ 255, 255, 255, 255 ],
+                    scale: 1,
+                    texture: texture
                 });
             });
         }
@@ -832,7 +856,8 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
             renderStoryboard: renderStoryboard,
             renderLoading: renderLoading,
             renderReadyToPlay: renderReadyToPlay,
-            renderCursor: renderCursor
+            renderCursor: renderCursor,
+            flush: flushRenderBatch
         };
     }
 
@@ -852,7 +877,6 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
             'uniform vec2 uView;',
             'uniform vec2 uSize;',
             'uniform vec2 uPosition;',
-            'uniform vec2 uOffset;',
             'uniform float uScale;',
 
             'varying vec2 vTextureCoord;',
@@ -865,7 +889,7 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
             ');',
 
             'void main(void) {',
-                'gl_Position = (vec4(aVertexCoord / 2.0, 0.0, 1.0) * vec4(uSize * uScale, 1.0, 1.0) + vec4(uView + uPosition + uOffset, 0.0, 0.0)) * projection;',
+                'gl_Position = (vec4(aVertexCoord / 2.0, 0.0, 1.0) * vec4(uSize * uScale, 1.0, 1.0) + vec4(uView + uPosition, 0.0, 0.0)) * projection;',
                 'vTextureCoord = aTextureCoord;',
             '}'
         ].join('\n');
@@ -1086,7 +1110,6 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
                 view: gl.getUniformLocation(programs.sprite, 'uView'),
                 size: gl.getUniformLocation(programs.sprite, 'uSize'),
                 position: gl.getUniformLocation(programs.sprite, 'uPosition'),
-                offset: gl.getUniformLocation(programs.sprite, 'uOffset'),
                 scale: gl.getUniformLocation(programs.sprite, 'uScale'),
                 color: gl.getUniformLocation(programs.sprite, 'uColor')
             };
@@ -1342,16 +1365,15 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
             },
 
             beginRender: function () {
-                gl.clearColor(0, 0, 0, 1);
-                gl.clear(gl.COLOR_BUFFER_BIT);
+            },
 
+            endRender: function () {
                 gl.viewport(
                     viewport.x, viewport.y,
                     viewport.width, viewport.height
                 );
-            },
 
-            endRender: function () {
+                r.flush();
             },
 
             renderMap: function (state, time) {

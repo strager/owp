@@ -216,32 +216,34 @@ define('RuleSet', [ 'Util/util', 'mapObject', 'Util/History' ], function (util, 
         }),
 
         // Meh, code duplication
-        canHitObject: mapObject.matcher({
-            HitCircle: function (object, x, y, time) {
-                var distance = Math.pow(object.x - x, 2) + Math.pow(object.y - y, 2);
-                var radius = this.getCircleSize() / 2;
+        canHitObject: function (object, x, y, time) {
+            return mapObject.match(object, {
+                HitCircle: function (object) {
+                    var distance = Math.pow(object.x - x, 2) + Math.pow(object.y - y, 2);
+                    var radius = this.getCircleSize() / 2;
 
-                return distance <= radius * radius;
-            },
-            Slider: function (object, x, y, time) {
-                var distance = Math.pow(object.x - x, 2) + Math.pow(object.y - y, 2);
-                var radius = this.getCircleSize() / 2;
+                    return distance <= radius * radius;
+                },
+                Slider: function (object) {
+                    var distance = Math.pow(object.x - x, 2) + Math.pow(object.y - y, 2);
+                    var radius = this.getCircleSize() / 2;
 
-                return distance <= radius * radius;
-            },
-            SliderTick: function (object, x, y, time) {
-                var distance = Math.pow(object.x - x, 2) + Math.pow(object.y - y, 2);
-                var radius = this.getSliderSize() / 2;
+                    return distance <= radius * radius;
+                },
+                SliderTick: function (object) {
+                    var distance = Math.pow(object.x - x, 2) + Math.pow(object.y - y, 2);
+                    var radius = this.getSliderSize() / 2;
 
-                return distance <= radius * radius;
-            },
-            SliderEnd: function (object, x, y, time) {
-                var distance = Math.pow(object.x - x, 2) + Math.pow(object.y - y, 2);
-                var radius = this.getSliderSize() / 2;
+                    return distance <= radius * radius;
+                },
+                SliderEnd: function (object) {
+                    var distance = Math.pow(object.x - x, 2) + Math.pow(object.y - y, 2);
+                    var radius = this.getSliderSize() / 2;
 
-                return distance <= radius * radius;
-            }
-        }),
+                    return distance <= radius * radius;
+                }
+            }, this);
+        },
 
         // Gives diameter
         getCircleSize: function () {
@@ -304,25 +306,27 @@ define('RuleSet', [ 'Util/util', 'mapObject', 'Util/History' ], function (util, 
             return this.threePartLerp(window[0], window[1], window[2], this.overallDifficulty);
         },
 
-        getHitScore: mapObject.matcher({
-            HitCircle: function (object, time) {
-                var delta = Math.abs(this.getObjectEndTime(object) - time);
+        getHitScore: function (object, time) {
+            return mapObject.match(object, {
+                HitCircle: function (object) {
+                    var delta = Math.abs(this.getObjectEndTime(object) - time);
 
-                var scores = [ 300, 100, 50, 0 ];
-                var i;
+                    var scores = [ 300, 100, 50, 0 ];
+                    var i;
 
-                for (i = 0; i < scores.length; ++i) {
-                    if (delta <= this.getHitWindow(scores[i])) {
-                        return scores[i];
+                    for (i = 0; i < scores.length; ++i) {
+                        if (delta <= this.getHitWindow(scores[i])) {
+                            return scores[i];
+                        }
                     }
-                }
 
-                return 0;   // TODO Return "shouldn't be hit" or throw or something
-            },
-            Slider: 0
-            // TODO Move SliderTick, SliderEnd from
-            // MapState#hitSlide to here
-        }),
+                    return 0;   // TODO Return "shouldn't be hit" or throw or something
+                },
+                Slider: 0
+                // TODO Move SliderTick, SliderEnd from
+                // MapState#hitSlide to here
+            }, this);
+        },
 
         getHitMarkerScale: function (hitMarker, time) {
             // TODO
