@@ -258,7 +258,9 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
         }
 
         function clear(r, g, b, a) {
-            renderBatch.push([ 'clear', [ r, g, b, a ] ]);
+            // We're clearing the entire screen, and we are targeted at the
+            // screen.  All previous draw commands were useless.
+            renderBatch = [ 'clear', [ r, g, b, a ] ]
         }
         // Render batch }}}
 
