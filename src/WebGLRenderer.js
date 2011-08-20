@@ -523,14 +523,24 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
                 renderHitCircleOverlay(object.x, object.y);
 
                 // Next end (repeat arrow)
-                // TODO Position properly when sliding
                 var repeatArrow = object.ends.filter(function (end) {
                     return !end.hitMarker && !end.isFinal;
                 })[0];
 
                 if (repeatArrow) {
                     sprite(function (draw) {
-                        gl.uniform2f(programs.sprite.uni.position, repeatArrow.x, repeatArrow.y);
+                        var x, y;
+
+                        if (growPercentage === 1 || !lastPoint) {
+                            x = repeatArrow.x;
+                            y = repeatArrow.y;
+                        } else {
+                            // Repeat arrow follows snaking
+                            x = lastPoint[0];
+                            y = lastPoint[1];
+                        }
+
+                        gl.uniform2f(programs.sprite.uni.position, x, y);
                         gl.uniform4f(programs.sprite.uni.color, 255, 255, 255, 255);
                         gl.uniform2f(programs.sprite.uni.offset, 0, 0);
                         gl.uniform1f(programs.sprite.uni.scale, scale);
