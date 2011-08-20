@@ -909,6 +909,7 @@ define('CanvasRenderer', [ 'mapObject', 'Util/Cache', 'canvasShaders', 'MapState
 
         return {
             element: container,
+            animationElement: container,
 
             resize: resize,
 

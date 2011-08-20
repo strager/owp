@@ -1326,6 +1326,7 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
 
         return {
             element: container,
+            animationElement: canvas,
 
             resize: resize,
 

@@ -117,7 +117,7 @@ define('index', [ 'WebGLRenderer', 'CanvasRenderer', 'AssetManager', 'q', 'Game'
         game.render(renderer);
 
         renderFps.addTick();
-    }, playArea);
+    }, playArea.animationElement);
 
     infLoop(function () {
         gPubSub.publish('tick');
