@@ -196,6 +196,41 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
                 gl.bindBuffer(gl.ARRAY_BUFFER, null);
 
                 gl.useProgram(null);
+            },
+            loading: function loading(loading) {
+                gl.clearColor(0, 0, 0, 1);
+                gl.clear(gl.COLOR_BUFFER_BIT);
+
+                gl.useProgram(programs.loading);
+
+                // Buffers
+                // Same as sprite
+                var vertexOffset = 0;
+                var uvOffset = 2 * 3 * 2 * 4; // Skip faces (2x3 pairs, x2 floats, x4 bytes)
+
+                gl.bindBuffer(gl.ARRAY_BUFFER, buffers.sprite);
+                gl.vertexAttribPointer(programs.loading.attr.vertexCoord, 2, gl.FLOAT, false, 0, vertexOffset);
+                gl.vertexAttribPointer(programs.loading.attr.textureCoord, 2, gl.FLOAT, false, 0, uvOffset);
+                gl.enableVertexAttribArray(programs.loading.attr.vertexCoord);
+                gl.enableVertexAttribArray(programs.loading.attr.textureCoord);
+
+                gl.uniform2f(programs.loading.uni.position, loading.x, loading.y);
+                gl.uniform2f(programs.loading.uni.size, loading.width, loading.height);
+                gl.uniform1f(programs.loading.uni.time, loading.time);
+
+                gl.activeTexture(gl.TEXTURE0);
+                gl.bindTexture(gl.TEXTURE_2D, loading.texture);
+                gl.uniform1i(programs.loading.uni.sampler, 0);
+
+                // Draw
+                gl.drawArrays(gl.TRIANGLES, 0, 6);
+
+                // Cleanup
+                gl.disableVertexAttribArray(programs.loading.attr.textureCoord);
+                gl.disableVertexAttribArray(programs.loading.attr.vertexCoord);
+                gl.bindBuffer(gl.ARRAY_BUFFER, null);
+
+                gl.useProgram(null);
             }
         };
 
@@ -230,35 +265,8 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
             renderBatch.push([ 'curve', options ]);
         }
 
-        function loading(callback) {
-return;
-            function init() {
-                // Same as sprite
-                var vertexOffset = 0;
-                var uvOffset = 2 * 3 * 2 * 4; // Skip faces (2x3 pairs, x2 floats, x4 bytes)
-
-                gl.bindBuffer(gl.ARRAY_BUFFER, buffers.sprite);
-                gl.vertexAttribPointer(programs.loading.attr.vertexCoord, 2, gl.FLOAT, false, 0, vertexOffset);
-                gl.vertexAttribPointer(programs.loading.attr.textureCoord, 2, gl.FLOAT, false, 0, uvOffset);
-                gl.enableVertexAttribArray(programs.loading.attr.vertexCoord);
-                gl.enableVertexAttribArray(programs.loading.attr.textureCoord);
-            }
-
-            function uninit() {
-                gl.disableVertexAttribArray(programs.loading.attr.textureCoord);
-                gl.disableVertexAttribArray(programs.loading.attr.vertexCoord);
-                gl.bindBuffer(gl.ARRAY_BUFFER, null);
-            }
-
-            program(programs.loading, init, uninit, function () {
-                callback(function draw(texture) {
-                    gl.activeTexture(gl.TEXTURE0);
-                    gl.bindTexture(gl.TEXTURE_2D, texture);
-                    gl.uniform1i(programs.loading.uni.sampler, 0);
-
-                    gl.drawArrays(gl.TRIANGLES, 0, 6);
-                });
-            });
+        function loading(options) {
+            renderBatch.push([ 'loading', options ]);
         }
         // Shader programs }}}
 
@@ -777,28 +785,26 @@ return;
 
         // Loading rendering {{{
         function renderLoading() {
-            gl.clearColor(0, 0, 0, 1);
-            gl.clear(gl.COLOR_BUFFER_BIT);
-
             if (!textures.loading) {
                 return;
             }
 
-            loading(function (draw) {
-                var size = 0.6;
-                var texture = textures.loading;
-                var rect = util.fitRectangle(size, size, texture.image.width, texture.image.height);
+            var size = 0.6;
+            var texture = textures.loading;
+            var rect = util.fitRectangle(size, size, texture.image.width, texture.image.height);
 
-                var angle = time / 35000;
-                angle = angle - Math.floor(angle);
-                angle = angle * Math.PI * 4;
-                angle = angle - Math.floor(angle);
+            var angle = time / 35000;
+            angle = angle - Math.floor(angle);
+            angle = angle * Math.PI * 4;
+            angle = angle - Math.floor(angle);
 
-                gl.uniform1f(programs.loading.uni.time, angle);
-                gl.uniform2f(programs.loading.uni.size, rect.width, rect.height);
-                gl.uniform2f(programs.loading.uni.position, rect.x / size, rect.y / size);
-
-                draw(texture);
+            loading({
+                x: rect.x / size,
+                y: rect.y / size,
+                width: rect.width,
+                height: rect.height,
+                time: angle,
+                texture: texture
             });
         }
         // Loading rendering }}}
