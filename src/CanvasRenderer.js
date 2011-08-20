@@ -168,58 +168,23 @@ define('CanvasRenderer', [ 'mapObject', 'Util/Cache', 'canvasShaders', 'MapState
             });
         }
 
-        function renderCharactersImages(images, context, options) {
-            var offset = 0;
-
+        function getMaxStringSize(images, options) {
             var scale = options.scale || 1;
             var spacing = options.spacing || 0;
+            var length = options.length || 1;
 
-            var totalWidth = images.reduce(function (acc, image) {
-                return acc + image.width;
+            var maxImageWidth = images.reduce(function (acc, image) {
+                return Math.max(acc, image.width);
             }, 0);
 
-            totalWidth += spacing * (images.length - 1);
+            var maxImageHeight = images.reduce(function (acc, image) {
+                return Math.max(acc, image.height);
+            }, 0);
 
-            switch (options.align) {
-            default:
-            case 'left':
-                offset = 0;
-                break;
-            case 'center':
-                offset = -totalWidth / 2;
-                break;
-            case 'right':
-                offset = -totalWidth;
-                break;
-            }
-
-            var ox = options.x || 0;
-            var oy = options.y || 0;
-
-            images.forEach(function (image, i) {
-                var el = dom.get([ context, i ], function () {
-                    var el = document.createElement('img');
-                    el.style.position = 'absolute';
-                    return el;
-                });
-
-                var width = image.width;
-                var x = (offset + width / 2) * scale + ox;
-                var y = oy;
-                var scaledWidth = image.width * scale;
-                var scaledHeight = image.height * scale;
-
-                el.src = image.src;
-
-                el.style.left = (x + -scaledWidth / 2) + 'px';
-                el.style.top = (y + -scaledHeight / 2) + 'px';
-                el.style.width = scaledWidth + 'px';
-                el.style.height = scaledHeight + 'px';
-
-                setZ(el);
-
-                offset += width + spacing;
-            });
+            return [
+                ((maxImageWidth + spacing) * scale) * length,
+                maxImageHeight * scale
+            ];
         }
 
         function renderCharactersCanvas(images, context, options) {
@@ -247,10 +212,13 @@ define('CanvasRenderer', [ 'mapObject', 'Util/Cache', 'canvasShaders', 'MapState
                 break;
             }
 
+            var baseX = options.x || 0;
+            var baseY = options.y || 0;
+
             images.forEach(function (image) {
                 var width = image.width;
-                var x = (offset + width / 2) * scale;
-                var y = 0;
+                var x = (offset + width / 2) * scale + baseX;
+                var y = baseY;
 
                 context.save();
 
@@ -697,42 +665,119 @@ define('CanvasRenderer', [ 'mapObject', 'Util/Cache', 'canvasShaders', 'MapState
             var digitCount = 7;
             var zeros = new Array(digitCount + 1).join('0');
             var score = scoreHistory.getDataAtTime(time) || 0;
-            score = zeros + score;
-            score = score.slice(-digitCount);
+            var string = (zeros + score).slice(-digitCount);
 
-            renderCharactersImages(getStringImages('score-', skin.assetManager, score), 'score', {
-                x: 640,
-                y: 20,
-                scale: .7,
-                align: 'right',
-                spacing: skin.scoreFontSpacing
+            var canvas = dom.get('score', function () {
+                var size = getMaxStringSize(getStringImages('score-', skin.assetManager, '0123456789'), {
+                    length: digitCount,
+                    scale: .7,
+                    spacing: skin.scoreFontSpacing
+                });
+
+                var canvas = document.createElement('canvas');
+                canvas.style.position = 'absolute';
+                canvas.width = Math.ceil(size[0]);
+                canvas.height = Math.ceil(size[1]);
+
+                canvas.style.left = (640 - size[0]) + 'px';
+                canvas.style.top = (20 - size[1] / 2) + 'px';
+
+                return canvas;
             });
+
+            if (canvas.getAttribute('data-displayed') !== string) {
+                canvas.width = canvas.width; // Clear
+
+                var context = canvas.getContext('2d');
+
+                renderCharactersCanvas(getStringImages('score-', skin.assetManager, string), context, {
+                    x: canvas.width,
+                    y: canvas.height / 2,
+                    scale: .7,
+                    align: 'right',
+                    spacing: skin.scoreFontSpacing
+                });
+
+                canvas.setAttribute('data-displayed', string);
+            }
         }
 
         function renderCombo() {
             var combo = comboHistory.getDataAtTime(time) || 0;
+            var string = combo + 'x';
 
-            renderCharactersImages(getStringImages('score-', skin.assetManager, combo + 'x'), 'combo', {
-                x: 0,
-                y: 460,
-                scale: .7,
-                align: 'left',
-                spacing: skin.scoreFontSpacing
+            var canvas = dom.get('combo', function () {
+                var size = getMaxStringSize(getStringImages('score-', skin.assetManager, '0123456789x'), {
+                    length: '99999x'.length, // Let's say this is the max combo...
+                    scale: .7,
+                    spacing: skin.scoreFontSpacing
+                });
+
+                var canvas = document.createElement('canvas');
+                canvas.style.position = 'absolute';
+                canvas.width = Math.ceil(size[0]);
+                canvas.height = Math.ceil(size[1]);
+
+                canvas.style.left = '0px';
+                canvas.style.top = (460 - size[1] / 2) + 'px';
+
+                return canvas;
             });
+
+            if (canvas.getAttribute('data-displayed') !== string) {
+                canvas.width = canvas.width; // Clear
+
+                var context = canvas.getContext('2d');
+
+                renderCharactersCanvas(getStringImages('score-', skin.assetManager, string), context, {
+                    x: 0,
+                    y: canvas.height / 2,
+                    scale: .7,
+                    align: 'left',
+                    spacing: skin.scoreFontSpacing
+                });
+
+                canvas.setAttribute('data-displayed', string);
+            }
         }
 
         function renderAccuracy() {
             var accuracy = accuracyHistory.getDataAtTime(time) || 0;
-            accuracy *= 100;
-            accuracy = accuracy.toFixed(2);
+            var string = (accuracy * 100).toFixed(2) + '%';
 
-            renderCharactersImages(getStringImages('score-', skin.assetManager, accuracy + '%'), 'accuracy', {
-                x: 640,
-                y: 45,
-                scale: .4,
-                align: 'right',
-                spacing: skin.scoreFontSpacing
+            var canvas = dom.get('accuracy', function () {
+                var size = getMaxStringSize(getStringImages('score-', skin.assetManager, '0123456789.%'), {
+                    length: '100.00%'.length,
+                    scale: .4,
+                    spacing: skin.scoreFontSpacing
+                });
+
+                var canvas = document.createElement('canvas');
+                canvas.style.position = 'absolute';
+                canvas.width = Math.ceil(size[0]);
+                canvas.height = Math.ceil(size[1]);
+
+                canvas.style.left = (640 - size[0]) + 'px';
+                canvas.style.top = (45 - size[1] / 2) + 'px';
+
+                return canvas;
             });
+
+            if (canvas.getAttribute('data-displayed') !== string) {
+                canvas.width = canvas.width; // Clear
+
+                var context = canvas.getContext('2d');
+
+                renderCharactersCanvas(getStringImages('score-', skin.assetManager, string), context, {
+                    x: canvas.width,
+                    y: canvas.height / 2,
+                    scale: .4,
+                    align: 'right',
+                    spacing: skin.scoreFontSpacing
+                });
+
+                canvas.setAttribute('data-displayed', string);
+            }
         }
 
         function renderHud() {
