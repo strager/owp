@@ -94,6 +94,8 @@ define('CanvasRenderer', [ 'mapObject', 'Util/Cache', 'canvasShaders', 'MapState
         var currentView;
 
         function view(v, callback) {
+            z = 0; // Each view/layer has its own z space
+
             var oldView = currentView;
             currentView = v;
 
