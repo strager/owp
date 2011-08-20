@@ -96,7 +96,8 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
                 gl.clearColor.apply(gl, color);
                 gl.clear(gl.COLOR_BUFFER_BIT);
             },
-            sprite: function flushSprite(sprite) {
+
+            beginSprite: function flushBeginSprite() {
                 gl.useProgram(programs.sprite);
 
                 // Buffers
@@ -109,7 +110,8 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
                 gl.vertexAttribPointer(programs.sprite.attr.textureCoord, 2, gl.FLOAT, false, 0, uvOffset);
                 gl.enableVertexAttribArray(programs.sprite.attr.vertexCoord);
                 gl.enableVertexAttribArray(programs.sprite.attr.textureCoord);
-
+            },
+            drawSprite: function flushDrawSprite(sprite) {
                 // Uniforms
                 gl.uniform2fv(programs.sprite.uni.view, sprite.view.mat);
                 gl.uniform2f(programs.sprite.uni.position, sprite.x, sprite.y);
@@ -123,7 +125,8 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
 
                 // Draw
                 gl.drawArrays(gl.TRIANGLES, 0, 6);
-
+            },
+            endSprite: function flushEndSprite() {
                 // Cleanup
                 gl.disableVertexAttribArray(programs.sprite.attr.textureCoord);
                 gl.disableVertexAttribArray(programs.sprite.attr.vertexCoord);
@@ -131,6 +134,7 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
 
                 gl.useProgram(null);
             },
+
             beginUnit: function flushBeginUnit() {
                 gl.bindFramebuffer(gl.FRAMEBUFFER, misc.objectTarget.framebuffer);
                 gl.clearColor(0, 0, 0, 0);
@@ -174,6 +178,7 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
 
                 gl.useProgram(null);
             },
+
             curve: function flushCurve(curve) {
                 gl.useProgram(programs.curve);
 
@@ -201,6 +206,7 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
 
                 gl.useProgram(null);
             },
+
             loading: function flushLoading(loading) {
                 gl.useProgram(programs.loading);
 
@@ -245,7 +251,15 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
 
         function sprite(options) {
             options.view = currentView;
-            renderBatch.push([ 'sprite', options ]);
+            var draw = [ 'drawSprite', options ];
+
+            if (renderBatch[renderBatch.length - 1][0] === 'endSprite') {
+                renderBatch.splice(-1, 0, draw);
+            } else {
+                renderBatch.push([ 'beginSprite', null ]);
+                renderBatch.push(draw);
+                renderBatch.push([ 'endSprite', null ]);
+            }
         }
 
         function curve(options) {
