@@ -109,7 +109,6 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
                 // Uniforms
                 gl.uniform2fv(programs.sprite.uni.view, sprite.view.mat);
                 gl.uniform2f(programs.sprite.uni.position, sprite.x, sprite.y);
-                gl.uniform2f(programs.sprite.uni.offset, sprite.ox, sprite.oy);
                 gl.uniform4fv(programs.sprite.uni.color, sprite.color);
                 gl.uniform1f(programs.sprite.uni.scale, sprite.scale);
 
@@ -277,16 +276,16 @@ return;
                 break;
             }
 
+            var x = options.x || 0;
+            var y = options.y || 0;
+
             textures.forEach(function (texture, i) {
                 var width = texture.image.width;
-                var x = (offset + width / 2) * scale;
-                var y = 0;
+                var ox = (offset + width / 2) * scale;
 
                 sprite({
-                    x: options.x || 0,
-                    y: options.y || 0,
-                    ox: x,
-                    oy: y,
+                    x: x + ox,
+                    y: y,
                     color: [ 255, 255, 255, 255 ],
                     scale: scale,
                     texture: texture
@@ -363,8 +362,6 @@ return;
             sprite({
                 x: x,
                 y: y,
-                ox: 0,
-                oy: 0,
                 color: color,
                 scale: scale,
                 texture:textures.approachCircle
@@ -397,8 +394,6 @@ return;
             sprite({
                 x: sliderBallPosition[0],
                 y: sliderBallPosition[1],
-                ox: 0,
-                oy: 0,
                 color: [ 255, 255, 255, 255 ],
                 scale: scale,
                 texture: textures.sliderBall
@@ -415,8 +410,6 @@ return;
             sprite({
                 x: tick.x,
                 y: tick.y,
-                ox: 0,
-                oy: 0,
                 color: [ 255, 255, 255, 255 ],
                 scale: scale,
                 texture: textures.sliderTick
@@ -503,8 +496,6 @@ return;
                     sprite({
                         x: lastPoint[0],
                         y: lastPoint[1],
-                        ox: 0,
-                        oy: 0,
                         color: color.concat([ 255 ]),
                         scale: scale,
                         texture: textures.hitCircle
@@ -513,8 +504,6 @@ return;
                     sprite({
                         x: lastPoint[0],
                         y: lastPoint[1],
-                        ox: 0,
-                        oy: 0,
                         color: [ 255, 255, 255, 255 ],
                         scale: scale,
                         texture: textures.hitCircleOverlay
@@ -551,8 +540,6 @@ return;
                     sprite({
                         x: repeatArrowX,
                         y: repeatArrowY,
-                        ox: 0,
-                        oy: 0,
                         color: [ 255, 255, 255, 255 ],
                         scale: scale,
                         texture: textures.repeatArrow
@@ -571,8 +558,6 @@ return;
             sprite({
                 x: x,
                 y: y,
-                ox: 0,
-                oy: 0,
                 color: color.concat([ 255 ]),
                 scale: scale,
                 texture: textures.hitCircle
@@ -585,8 +570,6 @@ return;
             sprite({
                 x: x,
                 y: y,
-                ox: 0,
-                oy: 0,
                 color: [ 255, 255, 255, 255 ],
                 scale: scale,
                 texture: textures.hitCircleOverlay
@@ -615,8 +598,6 @@ return;
             sprite({
                 x: object.hitObject.x,
                 y: object.hitObject.y,
-                ox: 0,
-                oy: 0,
                 color: [ 255, 255, 255, alpha * 255 ],
                 scale: scale,
                 texture: textures.hitMarkers[image]
@@ -677,8 +658,6 @@ return;
             sprite({
                 x: state.x,
                 y: state.y,
-                ox: 0,
-                oy: 0,
                 color: [ 255, 255, 255, 255 ],
                 scale: 1,
                 texture: textures.cursor
@@ -765,8 +744,6 @@ return;
             sprite({
                 x: 320,
                 y: 240,
-                ox: 0,
-                oy: 0,
                 color: [ 255, 255, 255, 255 ],
                 scale: scale,
                 texture: texture
@@ -830,8 +807,6 @@ return;
                 sprite({
                     x: 320,
                     y: 240,
-                    ox: 0,
-                    oy: 0,
                     color: [ 255, 255, 255, 255 ],
                     scale: 1,
                     texture: texture
@@ -869,7 +844,6 @@ return;
             'uniform vec2 uView;',
             'uniform vec2 uSize;',
             'uniform vec2 uPosition;',
-            'uniform vec2 uOffset;',
             'uniform float uScale;',
 
             'varying vec2 vTextureCoord;',
@@ -882,7 +856,7 @@ return;
             ');',
 
             'void main(void) {',
-                'gl_Position = (vec4(aVertexCoord / 2.0, 0.0, 1.0) * vec4(uSize * uScale, 1.0, 1.0) + vec4(uView + uPosition + uOffset, 0.0, 0.0)) * projection;',
+                'gl_Position = (vec4(aVertexCoord / 2.0, 0.0, 1.0) * vec4(uSize * uScale, 1.0, 1.0) + vec4(uView + uPosition, 0.0, 0.0)) * projection;',
                 'vTextureCoord = aTextureCoord;',
             '}'
         ].join('\n');
@@ -1103,7 +1077,6 @@ return;
                 view: gl.getUniformLocation(programs.sprite, 'uView'),
                 size: gl.getUniformLocation(programs.sprite, 'uSize'),
                 position: gl.getUniformLocation(programs.sprite, 'uPosition'),
-                offset: gl.getUniformLocation(programs.sprite, 'uOffset'),
                 scale: gl.getUniformLocation(programs.sprite, 'uScale'),
                 color: gl.getUniformLocation(programs.sprite, 'uColor')
             };
