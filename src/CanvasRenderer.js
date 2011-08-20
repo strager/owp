@@ -379,23 +379,30 @@ define('CanvasRenderer', [ 'mapObject', 'Util/Cache', 'canvasShaders', 'MapState
         }
 
         function renderHitMarkerObject(object) {
-            var graphicName = ruleSet.getHitMarkerImageName(object);
-            if (!graphicName) {
-                return;
-            }
-
-            var hitMarkerGraphic = skin.assetManager.get(graphicName, 'image-set');
-            var hitMarkerFrame = 0;
-
-            var graphic = hitMarkerGraphic[hitMarkerFrame];
-
             var el = dom.get(object, function () {
-                return cloneAbsolute(graphic);
+                var graphicName = ruleSet.getHitMarkerImageName(object);
+                if (!graphicName) {
+                    return null;
+                }
+
+                var hitMarkerGraphic = skin.assetManager.get(graphicName, 'image-set');
+                var hitMarkerFrame = 0;
+                var graphic = hitMarkerGraphic[hitMarkerFrame];
+
+                var el = cloneAbsolute(graphic);
+                el.setAttribute('data-orig-size', graphic.width + ',' + graphic.height);
+                return el;
             });
 
+            if (!el) {
+                return null;
+            }
+
+            var origSize = el.getAttribute('data-orig-size').split(',');
+
             var scale = ruleSet.getHitMarkerScale(object, time);
-            var width = getCoord(graphic.width * scale);
-            var height = getCoord(graphic.height * scale);
+            var width = getCoord(origSize[0] * scale);
+            var height = getCoord(origSize[1] * scale);
             var x = getCoord(object.hitObject.x - width / 2);
             var y = getCoord(object.hitObject.y - height / 2);
             var alpha = ruleSet.getObjectOpacity(object, time);
