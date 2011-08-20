@@ -79,8 +79,8 @@ define('index', [ 'WebGLRenderer', 'CanvasRenderer', 'AssetManager', 'q', 'Game'
 
     function renderLoop(callback, element) {
         requestAnimFrame(function () {
+            renderLoop(callback, element);
             callback();
-            renderLoop(callback);
         }, element);
     }
 
