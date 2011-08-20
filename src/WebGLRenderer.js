@@ -126,6 +126,49 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
                 gl.bindBuffer(gl.ARRAY_BUFFER, null);
 
                 gl.useProgram(null);
+            },
+            beginUnit: function beginUnit() {
+                gl.bindFramebuffer(gl.FRAMEBUFFER, misc.objectTarget.framebuffer);
+                gl.clearColor(0, 0, 0, 0);
+                gl.clear(gl.COLOR_BUFFER_BIT);
+
+                gl.viewport(0, 0, viewport.width, viewport.height);
+            },
+            endUnit: function endUnit(unit) {
+                gl.viewport(viewport.x, viewport.y, viewport.width, viewport.height);
+                gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+
+                gl.useProgram(programs.objectTarget);
+
+                // Buffers
+                // Same as sprite
+                var vertexOffset = 0;
+                var uvOffset = 2 * 3 * 2 * 4; // Skip faces (2x3 pairs, x2 floats, x4 bytes)
+
+                gl.bindBuffer(gl.ARRAY_BUFFER, buffers.sprite);
+                gl.vertexAttribPointer(programs.objectTarget.attr.vertexCoord, 2, gl.FLOAT, false, 0, vertexOffset);
+                gl.vertexAttribPointer(programs.objectTarget.attr.textureCoord, 2, gl.FLOAT, false, 0, uvOffset);
+                gl.enableVertexAttribArray(programs.objectTarget.attr.vertexCoord);
+                gl.enableVertexAttribArray(programs.objectTarget.attr.textureCoord);
+
+                // Uniforms
+                gl.uniform2f(programs.objectTarget.uni.view, viewport.width, viewport.height);
+                gl.uniform2f(programs.objectTarget.uni.size, misc.objectTarget.width, misc.objectTarget.height);
+                gl.uniform1f(programs.objectTarget.uni.alpha, unit.alpha);
+
+                gl.activeTexture(gl.TEXTURE0);
+                gl.bindTexture(gl.TEXTURE_2D, misc.objectTarget.texture);
+                gl.uniform1i(programs.objectTarget.uni.sampler, 0);
+
+                // Draw
+                gl.drawArrays(gl.TRIANGLES, 0, 6);
+
+                // Cleanup
+                gl.disableVertexAttribArray(programs.objectTarget.attr.textureCoord);
+                gl.disableVertexAttribArray(programs.objectTarget.attr.vertexCoord);
+                gl.bindBuffer(gl.ARRAY_BUFFER, null);
+
+                gl.useProgram(null);
             }
         };
 
@@ -153,32 +196,6 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
         function sprite(options) {
             options.view = currentView;
             renderBatch.push([ 'sprite', options ]);
-        }
-
-        function objectTarget(callback) {
-            function init() {
-                // Same as sprite
-                var vertexOffset = 0;
-                var uvOffset = 2 * 3 * 2 * 4; // Skip faces (2x3 pairs, x2 floats, x4 bytes)
-
-                gl.bindBuffer(gl.ARRAY_BUFFER, buffers.sprite);
-                gl.vertexAttribPointer(programs.objectTarget.attr.vertexCoord, 2, gl.FLOAT, false, 0, vertexOffset);
-                gl.vertexAttribPointer(programs.objectTarget.attr.textureCoord, 2, gl.FLOAT, false, 0, uvOffset);
-                gl.enableVertexAttribArray(programs.objectTarget.attr.vertexCoord);
-                gl.enableVertexAttribArray(programs.objectTarget.attr.textureCoord);
-            }
-
-            function uninit() {
-                gl.disableVertexAttribArray(programs.objectTarget.attr.textureCoord);
-                gl.disableVertexAttribArray(programs.objectTarget.attr.vertexCoord);
-                gl.bindBuffer(gl.ARRAY_BUFFER, null);
-            }
-
-            program(programs.objectTarget, init, uninit, function () {
-                callback(function draw() {
-                    gl.drawArrays(gl.TRIANGLES, 0, 6);
-                });
-            });
         }
 
         function curve(curveId, callback) {
@@ -417,38 +434,22 @@ return;
         }
 
         function renderUnit(options, callback) {
-            callback();
-            return;
-
             var alpha = typeof options.alpha === 'undefined' ? 1 : options.alpha;
 
-            // Optimize the common case of alpha === 1, where there's no point in rendering to an FBO
+            // Optimize the common case of alpha === 1, where there's no point
+            // in rendering to an FBO
             if (alpha >= 1) {
                 callback();
                 return;
             }
 
-            gl.bindFramebuffer(gl.FRAMEBUFFER, misc.objectTarget.framebuffer);
-            gl.clearColor(0, 0, 0, 0);
-            gl.clear(gl.COLOR_BUFFER_BIT);
+            renderBatch.push([ 'beginUnit', null ]);
 
-            gl.viewport(0, 0, viewport.width, viewport.height);
             callback();
-            gl.viewport(viewport.x, viewport.y, viewport.width, viewport.height);
 
-            gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-
-            objectTarget(function (draw) {
-                gl.uniform2f(programs.objectTarget.uni.view, viewport.width, viewport.height);
-                gl.uniform2f(programs.objectTarget.uni.size, misc.objectTarget.width, misc.objectTarget.height);
-                gl.uniform1f(programs.objectTarget.uni.alpha, alpha);
-
-                gl.activeTexture(gl.TEXTURE0);
-                gl.bindTexture(gl.TEXTURE_2D, misc.objectTarget.texture);
-                gl.uniform1i(programs.objectTarget.uni.sampler, 0);
-
-                draw();
-            });
+            renderBatch.push([ 'endUnit', {
+                alpha: alpha
+            } ]);
         }
 
         function renderSliderObject(object) {
