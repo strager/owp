@@ -92,6 +92,10 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
         var renderBatch = [ ];
 
         var renderBatchFlushers = {
+            clear: function flushClear(color) {
+                gl.clearColor.apply(gl, color);
+                gl.clear(gl.COLOR_BUFFER_BIT);
+            },
             sprite: function flushSprite(sprite) {
                 gl.useProgram(programs.sprite);
 
@@ -127,14 +131,14 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
 
                 gl.useProgram(null);
             },
-            beginUnit: function beginUnit() {
+            beginUnit: function flushBeginUnit() {
                 gl.bindFramebuffer(gl.FRAMEBUFFER, misc.objectTarget.framebuffer);
                 gl.clearColor(0, 0, 0, 0);
                 gl.clear(gl.COLOR_BUFFER_BIT);
 
                 gl.viewport(0, 0, viewport.width, viewport.height);
             },
-            endUnit: function endUnit(unit) {
+            endUnit: function flushEndUnit(unit) {
                 gl.viewport(viewport.x, viewport.y, viewport.width, viewport.height);
                 gl.bindFramebuffer(gl.FRAMEBUFFER, null);
 
@@ -170,7 +174,7 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
 
                 gl.useProgram(null);
             },
-            curve: function curve(curve) {
+            curve: function flushCurve(curve) {
                 gl.useProgram(programs.curve);
 
                 // Buffers
@@ -197,10 +201,7 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
 
                 gl.useProgram(null);
             },
-            loading: function loading(loading) {
-                gl.clearColor(0, 0, 0, 1);
-                gl.clear(gl.COLOR_BUFFER_BIT);
-
+            loading: function flushLoading(loading) {
                 gl.useProgram(programs.loading);
 
                 // Buffers
@@ -241,20 +242,7 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
 
             renderBatch = [ ];
         }
-        // Render batch }}}
 
-        // Views {{{
-        var currentView = null;
-
-        function view(v, callback) {
-            var oldView = currentView;
-            currentView = v;
-            callback();
-            currentView = oldView;
-        }
-        // Views }}}
-
-        // Shader programs {{{
         function sprite(options) {
             options.view = currentView;
             renderBatch.push([ 'sprite', options ]);
@@ -268,7 +256,22 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
         function loading(options) {
             renderBatch.push([ 'loading', options ]);
         }
-        // Shader programs }}}
+
+        function clear(r, g, b, a) {
+            renderBatch.push([ 'clear', [ r, g, b, a ] ]);
+        }
+        // Render batch }}}
+
+        // Views {{{
+        var currentView = null;
+
+        function view(v, callback) {
+            var oldView = currentView;
+            currentView = v;
+            callback();
+            currentView = oldView;
+        }
+        // Views }}}
 
         // Rendering helpers {{{
         function getCharacters(string) {
@@ -737,6 +740,8 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
 
         // Storyboard rendering {{{
         function renderBackground() {
+            clear(1, 1, 1, 1);
+
             if (!textures.background) {
                 return;
             }
@@ -785,6 +790,8 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
 
         // Loading rendering {{{
         function renderLoading() {
+            clear(0, 0, 0, 1);
+
             if (!textures.loading) {
                 return;
             }
@@ -1342,16 +1349,15 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
             },
 
             beginRender: function () {
-                gl.clearColor(0, 0, 0, 1);
-                gl.clear(gl.COLOR_BUFFER_BIT);
+            },
 
+            endRender: function () {
                 gl.viewport(
                     viewport.x, viewport.y,
                     viewport.width, viewport.height
                 );
-            },
 
-            endRender: function () {
+                r.flush();
             },
 
             renderMap: function (state, time) {
@@ -1366,7 +1372,6 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
                 });
 
                 r.renderMap();
-                r.flush();
             },
 
             renderHud: function (state, time) {
@@ -1382,7 +1387,6 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
                 });
 
                 r.renderHud();
-                r.flush();
             },
 
             renderStoryboard: function (storyboard, assetManager, time) {
@@ -1395,7 +1399,6 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
                 });
 
                 r.renderStoryboard();
-                r.flush();
             },
 
             renderLoading: function (time) {
@@ -1406,7 +1409,6 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
                 });
 
                 r.renderLoading();
-                r.flush();
             },
 
             renderReadyToPlay: function (skin, time) {
@@ -1418,7 +1420,6 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
                 });
 
                 r.renderReadyToPlay();
-                r.flush();
             },
 
             renderCursor: function (skin, mouseHistory, time) {
@@ -1429,7 +1430,6 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
                 });
 
                 r.renderCursor();
-                r.flush();
             }
         };
     }
