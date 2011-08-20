@@ -67,31 +67,25 @@ define('mapObject', [ ], function () {
 
     var hasOwnProperty = Object.prototype.hasOwnProperty;
 
-    function call(value, context, args) {
+    classes.match = function (object, callbacks, context) {
+        var type = object.type;
+
+        if (!hasOwnProperty.call(callbacks, type)) {
+            type = '_';
+        }
+
+        var value = callbacks[type];
+
         if (typeof value === 'function') {
-            return value.apply(context, args);
+            value = value.call(context, object);
         }
 
         return value;
-    }
-
-    classes.match = function (object, callbacks, context, args) {
-        var type = object.type;
-
-        args = args || [ object ];
-
-        if (hasOwnProperty.call(callbacks, type)) {
-            return call(callbacks[type], context, args);
-        } else {
-            return call(callbacks._, context, args);
-        }
     };
-
-    var slice = Array.prototype.slice;
 
     classes.matcher = function (callbacks) {
         return function (object) {
-            return classes.match(object, callbacks, this, arguments);
+            return classes.match(object, callbacks, this);
         };
     };
 
