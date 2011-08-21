@@ -11,3 +11,5 @@ $mapsRoot = '/./';
 $skinsRoot = '/./';
 
 $owpScriptPath = '/owp.min.js';
+
+$googleAnalyticsId = '';
