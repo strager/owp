@@ -28,6 +28,26 @@ define('index', [ 'WebGLRenderer', 'CanvasRenderer', 'AssetManager', 'q', 'Game'
 
         agentInfo.crashReportHandler.subscribe(function (report) {
             try {
+                var notification = document.createElement('div');
+                notification.className = 'notification error';
+                notification.textContent = 'owp is having problems!  The issue has been reported to owp\'s developers.  Sorry for the inconvenience.';
+
+                // Allow for CSS transitions
+                notification.style.opacity = 0;
+                setTimeout(function () {
+                    try {
+                        notification.style.opacity = 1;
+                    } catch (e) {
+                        // Whatever.
+                    }
+                }, 0);
+
+                document.body.appendChild(notification);
+            } catch (e) {
+                // Whatever.
+            }
+
+            try {
                 var xhr = new XMLHttpRequest();
                 // If we get an error, oh well.
 
@@ -111,7 +131,7 @@ define('index', [ 'WebGLRenderer', 'CanvasRenderer', 'AssetManager', 'q', 'Game'
         try {
             setRenderer(new CanvasRenderer(), 'DOM + Canvas');
         } catch (e) {
-            throw new Error('Browser not supported');
+            agentInfo.crash(new Error('Browser not supported'));
         }
     }
 
