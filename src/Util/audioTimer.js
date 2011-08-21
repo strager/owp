@@ -42,6 +42,32 @@ define('Util/audioTimer', [ ], function () {
             audio.addEventListener(eventName, update, false);
         });
 
+        // This is a workaround for Firefox's refusal to give sane currentTime
+        // values on timeupdate.  Basically, Firefox can send us (say) 18 ms
+        // into the past, then on the next timeupdate 18 ms into the future.
+        // This causes terrible jittery gameplay *even on good machines*, which
+        // is completely unacceptable.
+        // The workaround here is by no means perfect, but it's effective
+        // enough to prevent random jitters and to prevent the music being
+        // totally off after lag.
+        var lastDiff = 0;
+        var diffThreshold = 15;
+        audio.addEventListener('timeupdate', function () {
+            var computed = Date.now() - rtcStartTime;
+            var reported = audioCurrentTime();
+
+            var diff = computed - reported;
+
+            if ((diff >  diffThreshold && lastDiff >  diffThreshold)
+             || (diff < -diffThreshold && lastDiff < -diffThreshold)) {
+                console.log('diff', diff, 'last', lastDiff);
+                update();
+                lastDiff = 0;
+            } else {
+                lastDiff = diff;
+            }
+        }, false);
+
         update();
 
         return function () {
