@@ -256,7 +256,7 @@ define('CanvasRenderer', [ 'mapObject', 'Util/Cache', 'canvasShaders', 'MapState
             if (progress > 0) {
                 radius = 1 + (1 - progress) * 2;
             } else {
-                radius = 1 + (1 - (-progress)) / 4;
+                radius = 1;
             }
 
             renderApproachCircle(radius, object.x, object.y, color, alpha, object);
