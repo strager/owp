@@ -1212,9 +1212,8 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
             textures.sliderTick = makeSkinTexture('sliderscorepoint');
             textures.repeatArrow = makeSkinTexture('reversearrow');
 
-            // FIXME Possible XSS?
             var cursorImage = skin.assetManager.get('cursor', 'image-set')[0];
-            canvas.style.cursor = 'url("' + cursorImage.src + '") ' + Math.floor(cursorImage.width / 2) + ' ' + Math.floor(cursorImage.height / 2) + ', none';
+            util.setCursorImage(canvas, cursorImage.src, cursorImage.width / 2, cursorImage.height / 2);
 
             var i;
 

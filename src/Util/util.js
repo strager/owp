@@ -62,11 +62,22 @@ define('Util/util', [ ], function () {
         return extend({ }, obj);
     }
 
+    function setCursorImage(element, src, centreX, centreY) {
+        if (typeof window.opera !== 'undefined' && Object.prototype.toString.call(window.opera) === '[object Opera]') {
+            // Opera doesn't support mouse cursor images
+            // TODO Do something serious about this
+            element.style.cursor = 'crosshair';
+        } else {
+            element.style.cursor = 'url(' + JSON.stringify(src) + ') ' + Math.floor(centreX) + ' ' + Math.floor(centreY) + ', none';
+        }
+    }
+
     return {
         fitRectangleScale: fitRectangleScale,
         fitRectangle: fitRectangle,
         extendObjectWithFields: extendObjectWithFields,
         extend: extend,
-        clone: clone
+        clone: clone,
+        setCursorImage: setCursorImage
     };
 });

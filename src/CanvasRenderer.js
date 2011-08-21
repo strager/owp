@@ -948,9 +948,7 @@ define('CanvasRenderer', [ 'mapObject', 'Util/Cache', 'canvasShaders', 'MapState
             }
 
             var cursorGraphic = skin.assetManager.get('cursor', 'image-set');
-
-            // FIXME Possible XSS?
-            container.style.cursor = 'url("' + cursorGraphic[0].src + '") ' + Math.floor(cursorGraphic[0].width / 2) + ' ' + Math.floor(cursorGraphic[0].height / 2) + ', none';
+            util.setCursorImage(container, cursorGraphic[0].src, cursorGraphic[0].width / 2, cursorGraphic[0].height / 2);
 
             skinInitd = true;
         }
