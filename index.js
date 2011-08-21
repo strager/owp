@@ -85,13 +85,7 @@ define('index', [ 'WebGLRenderer', 'CanvasRenderer', 'AssetManager', 'q', 'Game'
     }
 
     function infLoop(callback) {
-        hardLoop(function () {
-            var i;
-
-            for (i = 0; i < 10; ++i) {
-                callback();
-            }
-        }, 0);
+        hardLoop(callback, 0);
     }
 
     var renderer, playArea;
@@ -123,7 +117,7 @@ define('index', [ 'WebGLRenderer', 'CanvasRenderer', 'AssetManager', 'q', 'Game'
         game.render(renderer);
 
         renderFps.addTick();
-    }, playArea);
+    }, playArea.animationElement);
 
     infLoop(function () {
         gPubSub.publish('tick');

@@ -1,61 +1,35 @@
 define('Util/gPubSub', [ 'Util/PubSub' ], function (PubSub) {
     var secret = 'gpubsub';
-    var secretRe = /^gpubsub/;
-    var secretLength = secret.length;
 
     var events = new PubSub();
 
-    var lastPubs = { };
+    var lastPub = 0;
     var PUBLISH_THRESHOLD = 2; // Minimum ms between publishes
-
-    function serialize(args) {
-        return secret + args.join(',');
-    }
-
-    function deserialize(string) {
-        if (!secretRe.test(string)) {
-            return null;
-        }
-
-        return string.substr(secretLength).split(',');
-    }
 
     window.addEventListener('message', function (event) {
         if (event.source !== window) {
             return;
         }
 
-        var data = deserialize(event.data);
+        if (event.data === secret) {
+            events.publishSync();
 
-        if (!data) {
-            return;
+            event.preventDefault();
+            return false;
         }
-
-        events.publishSync.apply(
-            events,
-            event.data.args
-        );
-
-        event.preventDefault();
-        return false;
     }, false);
 
     return {
         publish: function () {
-            var args = Array.prototype.slice.call(arguments, 1);
-            var data = serialize(args);
-
             var now = Date.now();
 
-            if (Object.prototype.hasOwnProperty.call(lastPubs, data)) {
-                if (lastPubs[data] > now + PUBLISH_THRESHOLD) {
-                    return;
-                }
+            if (lastPub + PUBLISH_THRESHOLD >= now) {
+                return;
             }
 
-            lastPubs[data] = now;
+            lastPub = now;
 
-            window.postMessage(data, '*');
+            window.postMessage(secret, '*');
         },
 
         subscribe: function (callback) {
