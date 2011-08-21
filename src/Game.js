@@ -240,7 +240,10 @@ define('Game', [ 'q', 'MapState', 'AssetManager', 'Util/PubSub', 'Soundboard', '
 
             loading();
 
-            return Q.when(load, readyToPlay, agentInfo.crash);
+            return Q.fail(
+                Q.when(load, readyToPlay),
+                agentInfo.crash
+            );
         }
 
         function tutorial(mapRoot, audioFileName) {
