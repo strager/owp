@@ -1,7 +1,12 @@
 define('index', [ 'WebGLRenderer', 'CanvasRenderer', 'AssetManager', 'q', 'Game', 'Util/FramerateCounter', 'Util/gPubSub', 'agentInfo' ], function (WebGLRenderer, CanvasRenderer, AssetManager, Q, Game, FramerateCounter, gPubSub, agentInfo) {
     var oldOnError = window.onerror;
 
-    if (!DEBUG) {
+    if (DEBUG) {
+        agentInfo.crashHandler.subscribe(function (crashInfo) {
+            console.error && console.error(crashInfo.exception);
+            throw crashInfo.exception;
+        });
+    } else {
         window.onerror = function (message, url, line) {
             try {
                 if (typeof oldOnError === 'function') {
@@ -20,15 +25,28 @@ define('index', [ 'WebGLRenderer', 'CanvasRenderer', 'AssetManager', 'q', 'Game'
 
             return false;
         };
-    }
 
-    if (DEBUG) {
-        agentInfo.crashHandler.subscribe(function (crashInfo) {
-            console.error && console.error(crashInfo.exception);
-            throw crashInfo.exception;
-        });
-    } else {
         agentInfo.crashReportHandler.subscribe(function (report) {
+            try {
+                var notification = document.createElement('div');
+                notification.className = 'notification error';
+                notification.textContent = 'owp is having problems!  The issue has been reported to owp\'s developers.  Sorry for the inconvenience.';
+
+                // Allow for CSS transitions
+                notification.style.opacity = 0;
+                setTimeout(function () {
+                    try {
+                        notification.style.opacity = 1;
+                    } catch (e) {
+                        // Whatever.
+                    }
+                }, 0);
+
+                document.body.appendChild(notification);
+            } catch (e) {
+                // Whatever.
+            }
+
             try {
                 var xhr = new XMLHttpRequest();
                 // If we get an error, oh well.
@@ -59,29 +77,39 @@ define('index', [ 'WebGLRenderer', 'CanvasRenderer', 'AssetManager', 'q', 'Game'
             || requestAnimationFrame;
     }());
 
-    function loop(callback, interval) {
-        function innerLoop() {
-            Q.when(callback(), function () {
-                setTimeout(innerLoop, interval);
-            });
-        }
+    function nextTick(callback) {
+        setTimeout(callback, 0);
+    }
 
-        innerLoop();
+    function loop(callback, interval) {
+        var innerLoop = agentInfo.catchAll(innerLoopImpl);
+        nextTick(innerLoop);
+
+        function innerLoopImpl() {
+            setTimeout(innerLoop, interval);
+            callback();
+        }
     }
 
     function hardLoop(callback, interval) {
-        var timer = setInterval(function () {
+        var innerLoop = agentInfo.catchAll(innerLoopImpl);
+        var timer = setInterval(innerLoop, interval);
+
+        function innerLoopImpl() {
             if (callback() === false) {
                 clearInterval(timer);
             }
-        }, interval);
+        }
     }
 
     function renderLoop(callback, element) {
-        requestAnimFrame(function () {
-            renderLoop(callback, element);
+        var innerLoop = agentInfo.catchAll(innerLoopImpl);
+        nextTick(innerLoop);
+
+        function innerLoopImpl() {
+            requestAnimFrame(innerLoop, element);
             callback();
-        }, element);
+        }
     }
 
     function infLoop(callback) {
@@ -103,7 +131,7 @@ define('index', [ 'WebGLRenderer', 'CanvasRenderer', 'AssetManager', 'q', 'Game'
         try {
             setRenderer(new CanvasRenderer(), 'DOM + Canvas');
         } catch (e) {
-            throw new Error('Browser not supported');
+            agentInfo.crash(new Error('Browser not supported'));
         }
     }
 

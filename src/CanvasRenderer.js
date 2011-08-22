@@ -523,12 +523,14 @@ define('CanvasRenderer', [ 'mapObject', 'Util/Cache', 'canvasShaders', 'MapState
             var el = dom.get(object, function () {
                 var canvas = document.createElement('canvas');
                 canvas.style.position = 'absolute';
-                canvas.style.left = '0px';
-                canvas.style.top = '0px';
+                canvas.style.left = (-currentView.mat[0]) + 'px';
+                canvas.style.top = (-currentView.mat[1]) + 'px';
                 canvas.width = 640;
                 canvas.height = 480;
 
                 var context = canvas.getContext('2d');
+
+                context.translate(currentView.mat[0], currentView.mat[1]);
 
                 renderSliderTrack(object.curve.points, object.combo.color, context);
 
@@ -948,9 +950,7 @@ define('CanvasRenderer', [ 'mapObject', 'Util/Cache', 'canvasShaders', 'MapState
             }
 
             var cursorGraphic = skin.assetManager.get('cursor', 'image-set');
-
-            // FIXME Possible XSS?
-            container.style.cursor = 'url("' + cursorGraphic[0].src + '") ' + Math.floor(cursorGraphic[0].width / 2) + ' ' + Math.floor(cursorGraphic[0].height / 2) + ', none';
+            util.setCursorImage(container, cursorGraphic[0].src, cursorGraphic[0].width / 2, cursorGraphic[0].height / 2);
 
             skinInitd = true;
         }

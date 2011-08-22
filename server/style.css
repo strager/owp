@@ -28,3 +28,29 @@ body {
 #playfield {
     margin: 0;
 }
+
+.notification {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    padding: 0.5em 1.5em;
+    text-align: center;
+
+    box-shadow:         0px 8px 8px black;
+    -o-box-shadow:      0px 8px 8px black;
+    -moz-box-shadow:    0px 8px 8px black;
+    -webkit-box-shadow: 0px 8px 8px black;
+
+    transition:         opacity 0.3s ease-in-out;
+    -o-transition:      opacity 0.3s ease-in-out;
+    -moz-transition:    opacity 0.3s ease-in-out;
+    -webkit-transition: opacity 0.3s ease-in-out;
+
+}
+
+.notification.error {
+    background-color: #DD2222;
+    color: #FFFFFF;
+    font-weight: normal;
+}

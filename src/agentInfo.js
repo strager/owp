@@ -10,6 +10,7 @@ define('agentInfo', [ 'Util/PubSub', 'Util/util' ], function (PubSub, util) {
         delete crashInfo.crash;
         delete crashInfo.crashHandler;
         delete crashInfo.crashReportHandler;
+        delete crashInfo.catchAll;
 
         agentInfo.crashHandler.publishSync(crashInfo);
     };
@@ -39,6 +40,20 @@ define('agentInfo', [ 'Util/PubSub', 'Util/util' ], function (PubSub, util) {
             });
         }, crashTimeout);
     });
+
+    agentInfo.catchAll = function catchAll(callback) {
+        if (DEBUG) {
+            return callback;
+        } else {
+            return function () {
+                try {
+                    callback.apply(this, arguments);
+                } catch (e) {
+                    agentInfo.crash(e);
+                }
+            };
+        }
+    };
 
     return agentInfo;
 });
