@@ -23,7 +23,6 @@ a:hover {
 body {
     width: 640px;
     margin: 0 auto;
-    position: relative;
 }
 
 #playfield {
@@ -58,7 +57,7 @@ body {
 
 .follow {
     position: absolute;
-    right: 0;
     top: 0;
-    margin: 0.5em 0 0 0;
+    margin-left: 604px;
+    margin-top: 0.5em;
 }
