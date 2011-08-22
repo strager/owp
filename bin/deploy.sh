@@ -12,7 +12,7 @@ fi
 case "$1" in
     demo)  HOST="train" ; AREA="~/owp/demo" ;;
     stage) HOST="train" ; AREA="~/owp/staging" ;;
-    local) HOST=""      ; AREA="$DIR/demo/" ;;
+    local) HOST=""      ; AREA="$ROOT/demo" ;;
     *) echo "ERROR: unknown area: $1" 2>&1 ; exit 2 ;;
 esac
 
