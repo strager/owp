@@ -23,6 +23,7 @@ a:hover {
 body {
     width: 640px;
     margin: 0 auto;
+    position: relative;
 }
 
 #playfield {
@@ -53,4 +54,11 @@ body {
     background-color: #DD2222;
     color: #FFFFFF;
     font-weight: normal;
+}
+
+.follow {
+    position: absolute;
+    right: 0;
+    top: 0;
+    margin: 0.5em 0 0 0;
 }

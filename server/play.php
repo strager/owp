@@ -17,6 +17,8 @@ require 'header.php';
 <body id="screen-play">
 
 <h1>owp</h1>
+<p class="follow"><a href="http://www.twitter.com/owpgame"><img src="http://twitter-badges.s3.amazonaws.com/t_logo-c.png" alt="Follow owp on Twitter"/></a></p>
+
 <p><?php echo htmlspecialchars($map['text']); ?></p>
 
 <div id="playfield">
