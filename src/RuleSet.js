@@ -258,12 +258,12 @@ define('RuleSet', [ 'Util/util', 'mapObject', 'Util/History' ], function (util, 
             // Should this be here?
 
             var imageNames = {
-                300: 'hit300',
-                100: 'hit100',
-                50: 'hit50',
-                30: 'sliderpoint30',
-                10: 'sliderpoint10',
-                0: 'hit0'
+                300: 'hit300.png',
+                100: 'hit100.png',
+                50: 'hit50.png',
+                30: 'sliderpoint30.png',
+                10: 'sliderpoint10.png',
+                0: 'hit0.png'
             };
 
             var ignore = mapObject.match(hitMarker.hitObject, {

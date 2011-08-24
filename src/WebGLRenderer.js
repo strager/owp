@@ -1200,19 +1200,19 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
             }
 
             function makeSkinTexture(name) {
-                return makeTexture(skin.assetManager.get(name, 'image-set')[0]);
+                return makeTexture(skin.assetManager.get(name, 'image'));
             }
 
-            textures.hitCircle = makeSkinTexture('hitcircle');
-            textures.hitCircleOverlay = makeSkinTexture('hitcircleoverlay');
-            textures.approachCircle = makeSkinTexture('approachcircle');
-            textures.sliderBall = makeSkinTexture('sliderb0');
-            textures.cursor = makeSkinTexture('cursor');
-            textures.cursorTrail = makeSkinTexture('cursortrail');
-            textures.sliderTick = makeSkinTexture('sliderscorepoint');
-            textures.repeatArrow = makeSkinTexture('reversearrow');
+            textures.hitCircle = makeSkinTexture('hitcircle.png');
+            textures.hitCircleOverlay = makeSkinTexture('hitcircleoverlay.png');
+            textures.approachCircle = makeSkinTexture('approachcircle.png');
+            textures.sliderBall = makeSkinTexture('sliderb0.png');
+            textures.cursor = makeSkinTexture('cursor.png');
+            textures.cursorTrail = makeSkinTexture('cursortrail.png');
+            textures.sliderTick = makeSkinTexture('sliderscorepoint.png');
+            textures.repeatArrow = makeSkinTexture('reversearrow.png');
 
-            var cursorImage = skin.assetManager.get('cursor', 'image-set')[0];
+            var cursorImage = skin.assetManager.get('cursor.png', 'image');
             util.setCursorImage(canvas, cursorImage.src, cursorImage.width / 2, cursorImage.height / 2);
 
             var i;
@@ -1221,19 +1221,19 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
             textures.scoreDigits = [ ];
 
             for (i = 0; i < 10; ++i) {
-                textures.digits[i] = makeSkinTexture('default-' + i);
-                textures.scoreDigits[i] = makeSkinTexture('score-' + i);
+                textures.digits[i] = makeSkinTexture('default-' + i + '.png');
+                textures.scoreDigits[i] = makeSkinTexture('score-' + i + '.png');
             }
 
-            textures.digits[','] = makeSkinTexture('default-comma');
-            textures.digits['.'] = makeSkinTexture('default-dot');
+            textures.digits[','] = makeSkinTexture('default-comma.png');
+            textures.digits['.'] = makeSkinTexture('default-dot.png');
 
-            textures.scoreDigits[','] = makeSkinTexture('score-comma');
-            textures.scoreDigits['.'] = makeSkinTexture('score-dot');
-            textures.scoreDigits['%'] = makeSkinTexture('score-percent');
-            textures.scoreDigits['x'] = makeSkinTexture('score-x');
+            textures.scoreDigits[','] = makeSkinTexture('score-comma.png');
+            textures.scoreDigits['.'] = makeSkinTexture('score-dot.png');
+            textures.scoreDigits['%'] = makeSkinTexture('score-percent.png');
+            textures.scoreDigits['x'] = makeSkinTexture('score-x.png');
 
-            var hitMarkerImageNames = [
+            var hitMarkerNames = [
                 'hit300',
                 'hit100',
                 'hit50',
@@ -1244,8 +1244,8 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
 
             textures.hitMarkers = [ ];
 
-            hitMarkerImageNames.forEach(function (imageName) {
-                textures.hitMarkers[imageName] = makeSkinTexture(imageName);
+            hitMarkerNames.forEach(function (name) {
+                textures.hitMarkers[name + '.png'] = makeSkinTexture(name + '.png');
             });
 
             gl.bindTexture(gl.TEXTURE_2D, null);
@@ -1305,7 +1305,7 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
                 return;
             }
 
-            textures.readyToPlay = makeTexture(skin.assetManager.get('ready-to-play', 'image-set')[0]);
+            textures.readyToPlay = makeTexture(skin.assetManager.get('ready-to-play.png', 'image'));
 
             readyToPlayInitd = true;
         }
