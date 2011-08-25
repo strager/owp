@@ -4,6 +4,7 @@ define('RuleSet', [ 'Util/util', 'mapObject', 'Util/History' ], function (util, 
         this.overallDifficulty = 5;
         this.hpDrain = 5;
         this.circleSize = 5;
+        this.stackLeniency = 1;
         this.sliderMultiplier = 1;
         this.sliderTickRate = 1;
         this.uninheritedTimingPointHistory = new History();
@@ -14,7 +15,7 @@ define('RuleSet', [ 'Util/util', 'mapObject', 'Util/History' ], function (util, 
         var ruleSet = new RuleSet();
 
         var fields = (
-            'approachRate,overallDifficulty,hpDrain,circleSize,sliderMultiplier,sliderTickRate'
+            'approachRate,overallDifficulty,hpDrain,circleSize,sliderMultiplier,sliderTickRate,stackLeniency'
         ).split(',');
 
         util.extendObjectWithFields(ruleSet, fields, settings);
@@ -583,6 +584,111 @@ define('RuleSet', [ 'Util/util', 'mapObject', 'Util/History' ], function (util, 
 
         getHitSoundVolume: function (time) {
             return this.getLastTimingSection(time).hitSoundVolume;
+        },
+
+        getObjectStartPosition: function (object) {
+            return {
+                x: object.x,
+                y: object.y
+            };
+        },
+
+        getObjectEndPosition: mapObject.matcher({
+            Slider: function (object) {
+                if (object.repeats % 2) {
+                    // Odd number of repeats => end of slider
+                    var end = object.curve.points.slice(-1)[0];
+
+                    return {
+                        x: end[0],
+                        y: end[1]
+                    };
+                } else {
+                    // Even number of repeats => start of slider
+                    return {
+                        x: object.x,
+                        y: object.y
+                    };
+                }
+            },
+            _: function (object) {
+                return {
+                    x: object.x,
+                    y: object.y
+                };
+            }
+        }),
+
+        applyNoteStacking: function (objects) {
+            // Maximum number of osu!pixels between two objects
+            var leniencyDistance = 3;
+
+            // Maximum number of milliseconds between two objects
+            // XXX TODO XXX Find what 2000 actually is
+            var leniencyTime = this.stackLeniency * 2000;
+
+            var i = objects.length - 1;
+            while (i > 0) {
+                var object = objects[i];
+
+                var stackSize = 1;
+
+                while (i --> 0) {
+                    // Here, we are checking if testObject stacks on top of object
+                    var testObject = objects[i];
+
+                    var timeDistance = this.getObjectStartTime(object) - this.getObjectEndTime(testObject);
+                    if (timeDistance > leniencyTime) {
+                        // Outside of stack time range
+                        break;
+                    }
+
+                    var objectStartPosition = this.getObjectStartPosition(object);
+                    var testObjectEndPosition = this.getObjectEndPosition(testObject);
+                    var distance = Math.pow(objectStartPosition.x - testObjectEndPosition.x, 2) + Math.pow(objectStartPosition.y - testObjectEndPosition.y, 2);
+                    if (distance > leniencyDistance * leniencyDistance) {
+                        // Outside of stack distance range
+                        break;
+                    }
+
+                    // Stack testObject on top of object
+                    if (testObject.stackHeight) {
+                        ++testObject.stackHeight;
+                    } else {
+                        testObject.stackHeight = 1;
+                    }
+                    testObject.stackHeight = stackSize;
+
+                    // Treat testObject as the object to stack onto next
+                    object = testObject;
+
+                    ++stackSize;
+                }
+            }
+
+            // How much to move objects when stacking
+            var stackOffset = this.getCircleSize() / 20;
+
+            objects.forEach(function (object) {
+                if (!object.stackHeight) return;
+
+                mapObject.match(object, {
+                    HitCircle: function (object) {
+                        object.x -= stackOffset * object.stackHeight;
+                        object.y -= stackOffset * object.stackHeight;
+                    },
+                    Slider: function (object) {
+                        object.x -= stackOffset * object.stackHeight;
+                        object.y -= stackOffset * object.stackHeight;
+
+                        // HACK HACK HACK!
+                        object.curve.points.forEach(function (point) {
+                            point[0] -= stackOffset * object.stackHeight;
+                            point[1] -= stackOffset * object.stackHeight;
+                        });
+                    }
+                });
+            });
         }
     };
 

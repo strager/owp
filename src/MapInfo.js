@@ -20,29 +20,27 @@ define('MapInfo', [ 'Util/util', 'mapObject' ], function (util, mapObject) {
     };
 
     MapInfo.prototype.getAllObjects = function () {
-        var allObjects = [ ];
+        var objects = this.map.objects.map(mapObject.proto);
 
-        this.map.objects.forEach(function (object) {
-            object = mapObject.proto(object);
+        // Apply note stacking *before* generating ticks, ends, etc.
+        this.ruleSet.applyNoteStacking(objects);
 
-            mapObject.match(object, {
+        objects = objects.reduce(function (acc, object) {
+            return mapObject.match(object, {
                 Slider: function () {
                     var ticks = this.ruleSet.getSliderTicks(object);
                     object.ticks = ticks;
-                    allObjects.push.apply(allObjects, ticks);
 
                     var ends = this.ruleSet.getSliderEnds(object);
                     object.ends = ends;
-                    allObjects.push.apply(allObjects, ends);
-                }
+
+                    return acc.concat([ object ]).concat(ticks).concat(ends);
+                },
+                _: acc.concat([ object ])
             }, this);
+        }.bind(this), [ ]);
 
-            allObjects.push(object);
-        }, this);
-
-        // TODO Apply note stacking
-
-        return allObjects;
+        return objects;
     };
 
     return MapInfo;
