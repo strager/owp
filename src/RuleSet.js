@@ -627,6 +627,40 @@ define('RuleSet', [ 'Util/util', 'mapObject', 'Util/History' ], function (util, 
             // XXX TODO XXX Find what 2000 actually is
             var leniencyTime = this.stackLeniency * 2000;
 
+            function canStack(top, bottom) {
+                var timeDistance = this.getObjectStartTime(bottom) - this.getObjectEndTime(top);
+                if (timeDistance > leniencyTime) {
+                    // Outside of stack time range
+                    return false;
+                }
+
+                var bottomStartPosition = this.getObjectStartPosition(bottom);
+                var topEndPosition = this.getObjectEndPosition(top);
+                var distance = Math.pow(bottomStartPosition.x - topEndPosition.x, 2) + Math.pow(bottomStartPosition.y - topEndPosition.y, 2);
+                if (distance > leniencyDistance * leniencyDistance) {
+                    // Outside of stack distance range
+                    return mapObject.match(top, {
+                        Slider: function () {
+                            // Weird special case: if the top is a slider, allow
+                            // stacking if the start positions are approximately equal.
+                            var topStartPosition = this.getObjectStartPosition(top);
+                            var distance2 = Math.pow(bottomStartPosition.x - topStartPosition.x, 2) + Math.pow(bottomStartPosition.y - topStartPosition.y, 2);
+
+                            if (distance2 > leniencyDistance * leniencyDistance) {
+                                // Outside of stack distance range
+                                return false;
+                            } else {
+                                // Special case
+                                return true;
+                            }
+                        },
+                        _: false
+                    }, this);
+                }
+
+                return true;
+            }
+
             var i = objects.length - 1;
             while (i > 0) {
                 var object = objects[i];
@@ -637,26 +671,11 @@ define('RuleSet', [ 'Util/util', 'mapObject', 'Util/History' ], function (util, 
                     // Here, we are checking if testObject stacks on top of object
                     var testObject = objects[i];
 
-                    var timeDistance = this.getObjectStartTime(object) - this.getObjectEndTime(testObject);
-                    if (timeDistance > leniencyTime) {
-                        // Outside of stack time range
-                        break;
-                    }
-
-                    var objectStartPosition = this.getObjectStartPosition(object);
-                    var testObjectEndPosition = this.getObjectEndPosition(testObject);
-                    var distance = Math.pow(objectStartPosition.x - testObjectEndPosition.x, 2) + Math.pow(objectStartPosition.y - testObjectEndPosition.y, 2);
-                    if (distance > leniencyDistance * leniencyDistance) {
-                        // Outside of stack distance range
+                    if (!canStack.call(this, testObject, object)) {
                         break;
                     }
 
                     // Stack testObject on top of object
-                    if (testObject.stackHeight) {
-                        ++testObject.stackHeight;
-                    } else {
-                        testObject.stackHeight = 1;
-                    }
                     testObject.stackHeight = stackSize;
 
                     // Treat testObject as the object to stack onto next
