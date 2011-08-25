@@ -1,4 +1,18 @@
-define('mapObject', [ ], function () {
+define('mapObject', [ 'Util/util' ], function (util) {
+    function proto(obj) {
+        // Fake Object.create + extend
+        // Object.create (or similar techniques) isn't used because it's slow.
+        var neoObj = util.clone(obj);
+
+        // Clone won't copy stuff on the prototype, so we do it ourselves.
+        neoObj.type = obj.type;
+
+        // Keep the original available
+        neoObj.orig = obj;
+
+        return neoObj;
+    }
+
     function HitCircle(time, x, y) {
         this.time = time;
         this.x = x;
@@ -67,7 +81,7 @@ define('mapObject', [ ], function () {
 
     var hasOwnProperty = Object.prototype.hasOwnProperty;
 
-    classes.match = function (object, callbacks, context) {
+    function match(object, callbacks, context) {
         var type = object.type;
 
         if (!hasOwnProperty.call(callbacks, type)) {
@@ -83,11 +97,15 @@ define('mapObject', [ ], function () {
         return value;
     };
 
-    classes.matcher = function (callbacks) {
+    function matcher(callbacks) {
         return function (object) {
-            return classes.match(object, callbacks, this);
+            return match(object, callbacks, this);
         };
     };
 
-    return classes;
+    return util.extend({ }, classes, {
+        match: match,
+        matcher: matcher,
+        proto: proto
+    });
 });
