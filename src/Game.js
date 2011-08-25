@@ -109,7 +109,6 @@ define('Game', [ 'q', 'MapState', 'AssetManager', 'Util/PubSub', 'Soundboard', '
                     },
                     enter: function () {
                         audio.play();
-                        audio.volume = 0;
 
                         boundEvents.push(mousePubSub.subscribe(function (e) {
                             var time = currentTime();
