@@ -82,7 +82,7 @@ define('mapObject', [ 'Util/util' ], function (util) {
     var hasOwnProperty = Object.prototype.hasOwnProperty;
 
     function match(object, callbacks, context) {
-        var type = object.type;
+        var type = object ? object.type : '_';
 
         if (!hasOwnProperty.call(callbacks, type)) {
             type = '_';
@@ -95,13 +95,13 @@ define('mapObject', [ 'Util/util' ], function (util) {
         }
 
         return value;
-    };
+    }
 
     function matcher(callbacks) {
         return function (object) {
             return match(object, callbacks, this);
         };
-    };
+    }
 
     return util.extend({ }, classes, {
         match: match,

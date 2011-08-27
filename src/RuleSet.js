@@ -624,8 +624,7 @@ define('RuleSet', [ 'Util/util', 'mapObject', 'Util/History' ], function (util, 
             var leniencyDistance = 3;
 
             // Maximum number of milliseconds between two objects
-            // XXX TODO XXX Find what 2000 actually is
-            var leniencyTime = this.stackLeniency * 2000;
+            var leniencyTime = this.stackLeniency * this.getAppearTime();
 
             function canStack(top, bottom) {
                 var timeDistance = this.getObjectStartTime(bottom) - this.getObjectEndTime(top);
