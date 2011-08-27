@@ -60,7 +60,6 @@ define('Util/audioTimer', [ ], function () {
 
             if ((diff >  diffThreshold && lastDiff >  diffThreshold)
              || (diff < -diffThreshold && lastDiff < -diffThreshold)) {
-                console.log('diff', diff, 'last', lastDiff);
                 update();
                 lastDiff = 0;
             } else {

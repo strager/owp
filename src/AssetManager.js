@@ -57,13 +57,6 @@ define('AssetManager', [ 'MapInfo', 'mapFile', 'assetConfig', 'Util/Map', 'Util/
     }
 
     AssetManager.typeHandlers = {
-        'image-set': function (assetManager, name) {
-            // TODO Support animations
-            return Q.when(assetManager.load(name + '.png', 'image'), function (image) {
-                return [ image ];
-            });
-        },
-
         image: function (assetManager, name) {
             var ret = Q.defer();
 
@@ -88,11 +81,7 @@ define('AssetManager', [ 'MapInfo', 'mapFile', 'assetConfig', 'Util/Map', 'Util/
             var ret = Q.defer();
 
             function loadSheet(sheetDefinition) {
-                var assetName = sheetDefinition.file.replace(/\.png$/, ''); // HACK
-
-                return Q.when(assetManager.load(assetName, 'image-set'), function (sheetImage) {
-                    sheetImage = sheetImage[0]; // HACK
-
+                return Q.when(assetManager.load(sheetDefinition.file, 'image'), function (sheetImage) {
                     sheetDefinition.images.forEach(function (imageDefinition) {
                         var width = imageDefinition.dest[2];
                         var height = imageDefinition.dest[3];
@@ -125,11 +114,11 @@ define('AssetManager', [ 'MapInfo', 'mapFile', 'assetConfig', 'Util/Map', 'Util/
                         var image = document.createElement('img');
                         image.src = canvas.toDataURL();
 
-                        var assetName = imageDefinition.file.replace(/\.png$/, ''); // HACK
+                        var assetName = imageDefinition.file;
 
                         // Le hack to inject a loaded asset into an AssetManager
-                        assetManager.cache.get([ assetName, 'image-set' ], function () {
-                            return [ image ];
+                        assetManager.cache.get([ assetName, 'image' ], function () {
+                            return image;
                         });
                     });
 

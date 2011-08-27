@@ -4,10 +4,38 @@ define('MapState', [ 'mapObject', 'Util/Timeline', 'Util/Map', 'Util/PubSub' ], 
         this.timeline = timeline;
         this.events = new PubSub();
 
-        this.objects = [ ];
         this.unhitObjects = [ ];
 
-        objects.forEach(this.addHitObject, this);
+        function addClickable(object) {
+            var earliestHitTime = this.ruleSet.getObjectEarliestHitTime(object);
+            var latestHitTime = this.ruleSet.getObjectLatestHitTime(object);
+            this.timeline.add(MapState.HIT_OBJECT_HITABLE, object, earliestHitTime, latestHitTime);
+        }
+
+        function addRenderable(object) {
+            var appearTime = this.ruleSet.getObjectStartAppearTime(object);
+            var disappearTime = this.ruleSet.getObjectEndDisappearTime(object);
+            this.timeline.add(MapState.HIT_OBJECT_VISIBILITY, object, appearTime, disappearTime);
+        }
+
+        objects.forEach(function (object) {
+            mapObject.match(object, {
+                HitCircle: addRenderable,
+                Slider: addRenderable
+            }, this);
+
+            mapObject.match(object, {
+                HitCircle: addClickable,
+                Slider: addClickable
+            }, this);
+        }, this);
+
+        // TODO History object?
+        this.unhitObjects = objects.map(function (object) {
+            return [ object, this.ruleSet.getObjectLatestHitTime(object) ]
+        }, this).sort(function (a, b) {
+            return a[1] < b[1] ? -1 : 1;
+        });
     }
 
     MapState.HIT_OBJECT_VISIBILITY = 'hit object visibility';
@@ -16,45 +44,16 @@ define('MapState', [ 'mapObject', 'Util/Timeline', 'Util/Map', 'Util/PubSub' ], 
     MapState.HIT_MARKER_CREATION = 'hitmarker creation';
 
     MapState.fromMapInfo = function (mapInfo, timeline) {
-        return new MapState(mapInfo.ruleSet, mapInfo.map.objects, timeline);
+        return new MapState(mapInfo.ruleSet, mapInfo.getAllObjects(), timeline);
     };
 
     MapState.prototype = {
-        addHitObject: function (hitObject) {
-            var appearTime = this.ruleSet.getObjectStartAppearTime(hitObject);
-            var disappearTime = this.ruleSet.getObjectEndDisappearTime(hitObject);
-            this.timeline.add(MapState.HIT_OBJECT_VISIBILITY, hitObject, appearTime, disappearTime);
+        addHitObject: function (object) {
+            object = mapObject.proto(object);
 
-            this.objects.push(hitObject);
-
-            mapObject.match(hitObject, {
-                Slider: function (slider) {
-                    var ticks = this.ruleSet.getSliderTicks(hitObject);
-                    ticks.forEach(this.addHittableObject, this);
-                    slider.ticks = ticks; // Temporary (I hope)
-
-                    var ends = this.ruleSet.getSliderEnds(hitObject);
-                    ends.forEach(this.addHittableObject, this);
-                    slider.ends = ends; // Temporary (I hope)
-
-                    this.addHittableObject(slider);
-                },
-                HitCircle: function (hitCircle) {
-                    this.addHittableObject(hitCircle);
-                }
-            }, this);
-
-            var earliestHitTime = this.ruleSet.getObjectEarliestHitTime(hitObject);
-            var latestHitTime = this.ruleSet.getObjectLatestHitTime(hitObject);
-            this.timeline.add(MapState.HIT_OBJECT_HITABLE, hitObject, earliestHitTime, latestHitTime);
         },
 
-        addHittableObject: function (hitObject) {
-            // TODO Proper insertion sort (History?)
-            this.unhitObjects.push([ hitObject, this.ruleSet.getObjectLatestHitTime(hitObject) ]);
-            this.unhitObjects = this.unhitObjects.sort(function (a, b) {
-                return a[1] < b[1] ? -1 : 1;
-            });
+        addHittableObject: function (object) {
         },
 
         getVisibleObjects: function (time) {
@@ -135,7 +134,6 @@ define('MapState', [ 'mapObject', 'Util/Timeline', 'Util/Map', 'Util/PubSub' ], 
 
             this.events.publishSync(hitMarker);
 
-            // Temporary (I hope)
             hitMarker.hitObject.hitMarker = hitMarker;
         },
 

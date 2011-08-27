@@ -1,4 +1,4 @@
-define('MapInfo', [ 'Util/util' ], function (util) {
+define('MapInfo', [ 'Util/util', 'mapObject' ], function (util, mapObject) {
     function MapInfo(ruleSet, map, storyboard) {
         this.ruleSet = ruleSet;
         this.map = map;
@@ -17,6 +17,30 @@ define('MapInfo', [ 'Util/util' ], function (util) {
         util.extendObjectWithFields(mapInfo, fields, settings);
 
         return mapInfo;
+    };
+
+    MapInfo.prototype.getAllObjects = function () {
+        var objects = this.map.objects.map(mapObject.proto);
+
+        // Apply note stacking *before* generating ticks, ends, etc.
+        this.ruleSet.applyNoteStacking(objects);
+
+        objects = objects.reduce(function (acc, object) {
+            return mapObject.match(object, {
+                Slider: function () {
+                    var ticks = this.ruleSet.getSliderTicks(object);
+                    object.ticks = ticks;
+
+                    var ends = this.ruleSet.getSliderEnds(object);
+                    object.ends = ends;
+
+                    return acc.concat([ object ]).concat(ticks).concat(ends);
+                },
+                _: acc.concat([ object ])
+            }, this);
+        }.bind(this), [ ]);
+
+        return objects;
     };
 
     return MapInfo;

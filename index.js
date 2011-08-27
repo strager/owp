@@ -3,7 +3,7 @@ define('index', [ 'WebGLRenderer', 'CanvasRenderer', 'AssetManager', 'q', 'Game'
 
     if (DEBUG) {
         agentInfo.crashHandler.subscribe(function (crashInfo) {
-            console.error && console.error(crashInfo.exception);
+            console.error && console.error(crashInfo.exception.stack);
             throw crashInfo.exception;
         });
     } else {
