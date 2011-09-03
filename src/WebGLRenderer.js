@@ -500,7 +500,7 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
                 var key = [ object, ruleSet, skin ];
 
                 var c = caches.sliderTrack.get(key, function () {
-                    var points = object.curve.flattenCentrePoints();
+                    var points = object.curve.flattenContourPoints(ruleSet.getCircleSize() / 2);
 
                     var adjustmentScale = 128 / (128 - 10); // Don't ask...
 
