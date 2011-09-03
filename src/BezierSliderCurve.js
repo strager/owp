@@ -85,6 +85,71 @@ define('BezierSliderCurve', [ ], function () {
         });
     }
 
+    function contourArea(contour) {
+        contour = contour.concat([ contour[0] ]);
+
+        var i, a = 0;
+        for (i = 0; i < contour.length - 1; ++i) {
+            a += contour[i][1] * contour[i + 1][0] -
+                 contour[i][0] * contour[i + 1][1];
+        }
+
+        return a / 2;
+    }
+
+    function areBoundsIntersecting(a, b) {
+        // Accepts zero-width and zero-height bounds
+        return (
+            a[0][0] <= b[1][0] && // leftA <= rightB
+            a[1][0] >= b[0][0] && // rightA >= leftB
+            a[0][1] <= b[1][1] && // topA <= bottomB
+            a[1][1] >= b[0][1]    // bottomA >= topB
+        );
+    }
+
+    function getLineSegmentIntersections(segA, segB) {
+        // Helper variables to make copying from Wikipedia easier
+        var x1 = segA[0][0];
+        var y1 = segA[0][1];
+        var x2 = segA[1][0];
+        var y2 = segA[1][1];
+
+        var x3 = segB[0][0];
+        var y3 = segB[0][1];
+        var x4 = segB[1][0];
+        var y4 = segB[1][1];
+
+        var den = (x1 - x2) * (y3 - y4) - (y1 - y2) * (x3 - x4);
+        var m = (x1 * y2 - y1 * x2);
+        var n = (x3 * y4 - y3 * x4);
+
+        var x = (m * (x3 - x4) - n * (x1 - x2)) / den;
+        var y = (m * (y3 - y4) - n * (y1 - y2)) / den;
+
+        // Make sure we are part of the *segment*
+        var minXA = Math.min(x1, x2);
+        var minXB = Math.min(x3, x4);
+        var maxXA = Math.max(x1, x2);
+        var maxXB = Math.max(x3, x4);
+
+        if (x < minXA || x < minXB) return [ ];
+        if (x > maxXA || x > maxXB) return [ ];
+
+        var minYA = Math.min(y1, y2);
+        var minYB = Math.min(y3, y4);
+        var maxYA = Math.max(y1, y2);
+        var maxYB = Math.max(y3, y4);
+
+        if (y < minYA || y < minYB) return [ ];
+        if (y > maxYA || y > maxYB) return [ ];
+
+        return [ [ x, y ] ];
+    }
+
+    function areLineSegmentsIntersecting(a, b) {
+        return getLineSegmentIntersections(a, b).length > 0;
+    }
+
     var TOLERANCE = 1.0;
 
     function getBezierPointAt(t, bezier) {
@@ -413,6 +478,131 @@ define('BezierSliderCurve', [ ], function () {
         }
     }
 
+    function flattenBezierSetBbox(bezierSet, tolerance) {
+        var points = [ ];
+
+        bezierSet.forEach(function (bezier) {
+            flattenBezierBbox(bezier, tolerance).forEach(function (point) {
+                points.push(point);
+            });
+        });
+
+        return uniquePoints(points);
+    }
+
+    function flattenBezierSetsBbox(bezierSets, tolerance) {
+        var points = [ ];
+
+        bezierSets.forEach(function (set) {
+            points.push.apply(points, flattenBezierSetBbox(set, tolerance));
+        });
+
+        return uniquePoints(points);
+    }
+
+    function getBezierIntersectionTs(bezierA, bezierB) {
+        // Like getBezierIntersections, but instead of giving a point, we give the
+        // t values at which the Beziers intersect.
+        // [ bezierAIntersectionTs, bezierBIntersectionTs ]
+
+        var boundsA = getBezierBounds(bezierA);
+        var boundsB = getBezierBounds(bezierB);
+
+        if (!areBoundsIntersecting(boundsA, boundsB)) {
+            // If the bounds aren't intersecting, the Beziers certainly are not!
+            return [ [ ], [ ] ];
+        }
+
+        var boundsAArea = (boundsA[1][0] - boundsA[0][0]) * (boundsA[1][1] - boundsA[0][1]);
+        var boundsBArea = (boundsB[1][0] - boundsB[0][0]) * (boundsB[1][1] - boundsB[0][1]);
+
+        if (boundsAArea <= 4 && boundsBArea <= 4) {
+            if (areLineSegmentsIntersecting(
+                [ bezierA[0], bezierA[bezierA.length - 1] ],
+                [ bezierB[0], bezierB[bezierB.length - 1] ]
+            )) {
+                // TODO Moar accuracy!
+                return [ [ 0.5 ], [ 0.5 ] ];
+            } else {
+                return [ [ ], [ ] ];
+            }
+        }
+
+        var subBeziersA = splitBezierAt(0.5, bezierA);
+        var subBeziersB = splitBezierAt(0.5, bezierB);
+
+        function tScaler(side) {
+            if (side === 0) {
+                return function scaleT(t) {
+                    return t * 0.5;
+                };
+            } else {
+                return function scaleT(t) {
+                    return t * 0.5 + 0.5;
+                };
+            }
+        }
+
+        // Get intersection lists among the four split beziers
+        return [
+            [ 0, 0 ],
+            [ 0, 1 ],
+            [ 1, 0 ],
+            [ 1, 1 ]
+        ].reduce(function (acc, pair) {
+            var subBezierA = subBeziersA[pair[0]];
+            var subBezierB = subBeziersB[pair[1]];
+
+            var subTs = getBezierIntersectionTs(subBezierA, subBezierB);
+
+            // t's need to be scaled to bezierA/bezierB t space
+            var subATs = subTs[0].map(tScaler(pair[0]));
+            var subBTs = subTs[1].map(tScaler(pair[1]));
+
+            return [
+                acc[0].concat(subATs),
+                acc[1].concat(subBTs)
+            ];
+        }, [ [ ], [ ] ]);
+    }
+
+    function clipBezierSetsAtIntersection(bezierSetA, bezierSetB) {
+        var tAs = [ ];
+        var tBs = [ ];
+
+        var i, j;
+        for (i = 0; i < bezierSetA.length; ++i) {
+            for (j = 0; j < bezierSetB.length; ++j) {
+                var ts = getBezierIntersectionTs(bezierSetA[i], bezierSetB[j]);
+                tAs = tAs.concat(ts[0].map(function (t) { return t + i; }));
+                tBs = tBs.concat(ts[1].map(function (t) { return t + j; }));
+            }
+        }
+
+        var tA = Math.min.apply(Math, tAs);
+        var tB = tBs[tAs.indexOf(tA)];
+
+        var newSetA, newSetB;
+
+        if (tA < bezierSetA.length) {
+            newSetA = bezierSetA.slice(0, Math.floor(tA)).concat([
+                splitBezierAt(tA % 1, bezierSetA[Math.floor(tA)])[0]
+            ])
+        } else {
+            newSetA = bezierSetA;
+        }
+
+        if (tB < bezierSetB.length) {
+            newSetB = bezierSetB.slice(0, Math.floor(tB)).concat([
+                splitBezierAt(tB % 1, bezierSetB[Math.floor(tB)])[0]
+            ])
+        } else {
+            newSetB = bezierSetB;
+        }
+
+        return [ newSetA, newSetB ];
+    }
+
     function offsetBezierNaive(bezier, distance) {
         return bezier.map(function (point, i) {
             var t = i / (bezier.length - 1);
@@ -465,7 +655,6 @@ define('BezierSliderCurve', [ ], function () {
         }
 
         function joint(centre, left, right) {
-            return [ ]; // XXX!
             // Y is inverted because Y is in screen space, not trig space
             var radius = Math.abs(distance);
             var leftAngle  = Math.atan2(-( left[1] - centre[1]),  left[0] - centre[0]);
@@ -517,25 +706,12 @@ define('BezierSliderCurve', [ ], function () {
             }
         }
 
-        var points = [ ];
-        outputSets.forEach(function (set) {
-            set.forEach(function (bezier) {
-                flattenBezierBbox(bezier, tolerance).forEach(function (point) {
-                    points.push(point);
-                });
-            });
-        });
-
-        return uniquePoints(points);
+        return flattenBezierSetsBbox(outputSets, tolerance);
     }
 
-    function BezierSliderCurve(rawPoints, sliderLength) {
-        this.length = sliderLength;
-
-        // Split rawPoints into a set of curves by `linear` points
-        /*
-        var sets = [ ];
-        var currentSet = [ ];
+    function rawPointsToBezierSet(rawPoints) {
+        var set = [ ];
+        var currentBezier = [ ];
         var lastPoint = null, thisPoint;
         var i;
 
@@ -543,18 +719,31 @@ define('BezierSliderCurve', [ ], function () {
             thisPoint = rawPoints[i];
 
             if (lastPoint && lastPoint[0] === thisPoint[0] && lastPoint[1] === thisPoint[1]) {
-                sets.push(currentSet);
-                currentSet = [ thisPoint ];
+                set.push(currentBezier);
+                currentBezier = [ ];
             }
+
+            currentBezier.push(thisPoint);
+            lastPoint = thisPoint;
         }
-        */
+
+        if (currentBezier.length) {
+            set.push(currentBezier);
+        }
+
+        return set;
+    }
+
+    function BezierSliderCurve(rawPoints, sliderLength) {
+        this.length = sliderLength;
+
+        var beziers = rawPointsToBezierSet(rawPoints);
 
         this.flattenCentrePoints = function () {
-            return flattenBezierBbox(rawPoints, TOLERANCE);
+            return flattenBezierSetBbox(beziers, TOLERANCE);
         };
 
         this.flattenContourPoints = function (radius) {
-            var beziers = [ rawPoints ];
             var offsetPointsA = offsetBezierBboxWithCircleCapJoint(beziers, radius, TOLERANCE);
             var offsetPointsB = offsetBezierBboxWithCircleCapJoint(reverseBeziers(beziers), radius, TOLERANCE);
 
@@ -569,8 +758,6 @@ define('BezierSliderCurve', [ ], function () {
             // TODO XXX
             return rawPoints[rawPoints.length - 1];
         };
-
-        //this.points = render(rawPoints, rawPoints.length, this.length);
     }
 
     function getSliderBallPercentage(repeatLength, timeOffset) {
