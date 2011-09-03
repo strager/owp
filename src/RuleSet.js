@@ -475,6 +475,7 @@ define('RuleSet', [ 'Util/util', 'mapObject', 'Util/History' ], function (util, 
         },
 
         getSliderTicks: function (slider) {
+return [ ]; // XXX!
             var startTime = this.getObjectStartTime(slider);
             var repeatDuration = this.getSliderRepeatLength(slider.time, slider.length);
 
@@ -510,8 +511,8 @@ define('RuleSet', [ 'Util/util', 'mapObject', 'Util/History' ], function (util, 
             var startTime = this.getObjectStartTime(slider);
             var repeatDuration = this.getSliderRepeatLength(slider.time, slider.length);
 
-            var startPosition = slider.curve.points[0];
-            var endPosition = slider.curve.points.slice(-1)[0];
+            var startPosition = slider.curve.getStartPoint();
+            var endPosition = slider.curve.getEndPoint();
 
             var ends = [ ];
 
@@ -597,7 +598,7 @@ define('RuleSet', [ 'Util/util', 'mapObject', 'Util/History' ], function (util, 
             Slider: function (object) {
                 if (object.repeats % 2) {
                     // Odd number of repeats => end of slider
-                    var end = object.curve.points.slice(-1)[0];
+                    var end = object.curve.getEndPoint();
 
                     return {
                         x: end[0],
@@ -699,11 +700,12 @@ define('RuleSet', [ 'Util/util', 'mapObject', 'Util/History' ], function (util, 
                         object.x -= stackOffset * object.stackHeight;
                         object.y -= stackOffset * object.stackHeight;
 
+// XXX!
                         // HACK HACK HACK!
-                        object.curve.points.forEach(function (point) {
-                            point[0] -= stackOffset * object.stackHeight;
-                            point[1] -= stackOffset * object.stackHeight;
-                        });
+                        //object.curve.points.forEach(function (point) {
+                        //    point[0] -= stackOffset * object.stackHeight;
+                        //    point[1] -= stackOffset * object.stackHeight;
+                        //});
                     }
                 });
             });

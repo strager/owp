@@ -49,8 +49,8 @@ define('mapObject', [ 'Util/util' ], function (util) {
         this.isFinal = isFinal;
 
         var position = repeatIndex % 2
-            ? slider.curve.points.slice(-1)[0]
-            : slider.curve.points[0];
+            ? slider.curve.getEndPoint()
+            : slider.curve.getStartPoint();
 
         this.x = position[0];
         this.y = position[1];

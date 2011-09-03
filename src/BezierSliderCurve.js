@@ -35,26 +35,25 @@ define('BezierSliderCurve', [ ], function () {
         return choose(n, v) * Math.pow(x, v) * Math.pow((1 - x), (n - v));
     }
 
-    function renderImpl(rawPoints, stepCount, startLength, maxLength) {
-        // Estimates a bezier curve
-        // TODO Adaptive rendering (http://antigrain.com/research/adaptive_bezier/)
+    function approxEqual(a, b) {
+        return Math.abs(a - b) < 0.001;
+    }
 
-        var derivativePoints = [ ];
+    function uniquePoints(xs) {
+        var nxs = [ xs[0] ];
         var i;
-        for (i = 1; i < rawPoints.length; ++i) {
-            derivativePoints.push([
-                (rawPoints[i][0] - rawPoints[i - 1][0]) * rawPoints.length,
-                (rawPoints[i][1] - rawPoints[i - 1][1]) * rawPoints.length
-            ]);
+        for (i = 1; i < xs.length; ++i) {
+            if (!approxEqual(xs[i - 1][0], xs[i][0]) || !approxEqual(xs[i - 1][1], xs[i][1])) {
+                nxs.push(xs[i]);
+            }
         }
+        return nxs;
+    }
 
-        var out = [ ];
+    var TOLERANCE = 1.0;
 
-        var step, curPoint;
-        var t = 0;
-
-        var pointCountMinusOne = rawPoints.length - 1;
-        var pointCountMinusTwo = rawPoints.length - 2;
+    function getBezierPointAt(t, bezier) {
+        var pointCountMinusOne = bezier.length - 1;
 
         function processPoint(acc, point, pointIndex) {
             var basis = bernstein(pointCountMinusOne, pointIndex, t);
@@ -65,125 +64,68 @@ define('BezierSliderCurve', [ ], function () {
             ];
         }
 
-        function processDerivative(acc, point, pointIndex) {
-            var basis = bernstein(pointCountMinusTwo, pointIndex, t);
+        if (bezier.length === 3) {
+            // Special case for speed
+            var b0 = bernstein(pointCountMinusOne, 0, t);
+            var b1 = bernstein(pointCountMinusOne, 1, t);
+            var b2 = bernstein(pointCountMinusOne, 2, t);
 
             return [
-                basis * point[0] + acc[0],
-                basis * point[1] + acc[1]
+                b0 * bezier[0][0] + b1 * bezier[1][0] + b2 * bezier[2][0],
+                b0 * bezier[0][1] + b1 * bezier[1][1] + b2 * bezier[2][1]
             ];
         }
 
-        var lastPoint = null;
-
-        var currentLength = startLength;
-
-        for (step = 0; step <= stepCount; ++step) {
-            t = step / stepCount; // Affects processPoint, processDerivative
-
-            curPoint = rawPoints.reduce(processPoint, [ 0, 0 ]);
-
-            var derivative = derivativePoints.reduce(processDerivative, [ 0, 0 ]);
-            var derivativeLength = Math.sqrt(derivative[0] * derivative[0] + derivative[1] * derivative[1]);
-            curPoint[3] = derivative[0] / derivativeLength;
-            curPoint[4] = derivative[1] / derivativeLength;
-
-            if (lastPoint) {
-                var deltaX = curPoint[0] - lastPoint[0];
-                var deltaY = curPoint[1] - lastPoint[1];
-
-                var length = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
-
-                currentLength += length;
-            }
-
-            curPoint[2] = currentLength;
-
-            // WTB generators/coroutines/yield/whatever...
-            if (currentLength >= maxLength) {
-                break;
-            }
-
-            out.push(curPoint);
-
-            lastPoint = curPoint;
-        }
-
-        return out;
+        return bezier.reduce(processPoint, [ 0, 0 ]);
     }
 
-    function render(rawPoints, stepCount, maxLength) {
-        var i, lastCurveStart = 0;
-        var curves = [ ];
+    function flattenBezierNaive(bezier, step) {
+        var segs = [ ];
 
-        for (i = 1; i < rawPoints.length; ++i) {
-            var lastPoint = rawPoints[i - 1];
-            var thisPoint = rawPoints[i];
-
-            if (lastPoint[0] === thisPoint[0] && lastPoint[1] === thisPoint[1]) {
-                // Double point => linear
-                // We split the beziers into two curves and process them individually
-                curves.push(rawPoints.slice(lastCurveStart, i));
-                lastCurveStart = i;
-            }
+        var t;
+        for (t = 0; t < 1; t += step) {
+            segs.push(getBezierPointAt(t, bezier));
         }
 
-        if (i !== lastCurveStart) {
-            curves.push(rawPoints.slice(lastCurveStart));
-        }
+        segs.push(getBezierPointAt(1, bezier));
 
-        var renderedPoints = [ ];
-        var currentLength = 0;
-
-        curves.forEach(function (curvePoints) {
-            if (currentLength >= maxLength) {
-                return;
-            }
-
-            var ps = renderImpl(curvePoints, (curvePoints.length - 1) * 50, currentLength, maxLength);
-
-            // Fill out a nice round corner with nice hacky code.
-            // This totally doesn't work, but no one needs to know that yet.
-            if (renderedPoints.length && ps.length) {
-                var left = renderedPoints[renderedPoints.length - 1];
-                var right = ps[0];
-
-                var p = [
-                    (left[0] + right[0]) / 2,
-                    (left[1] + right[1]) / 2,
-                    (left[2] + right[2]) / 2,
-                    0,
-                    0
-                ];
-
-                var leftAngle = Math.atan2(left[4], left[3]);
-                var rightAngle = Math.atan2(right[4], right[3]);
-
-                var j, m = 100;
-
-                for (j = 0; j < m; ++j) {
-                    var angle = (leftAngle * (j / m)) + (rightAngle * (1 - j / m));
-                    p[3] = Math.cos(angle);
-                    p[4] = Math.sin(angle);
-                    renderedPoints.push(p.slice());
-                }
-            }
-
-            renderedPoints.push.apply(renderedPoints, ps);
-
-            var last = ps[ps.length - 1];
-
-            if (last) {
-                currentLength = last[2];
-            }
-        });
-
-        return renderedPoints;
+        return uniquePoints(segs);
     }
 
     function BezierSliderCurve(rawPoints, sliderLength) {
         this.length = sliderLength;
-        this.points = render(rawPoints, rawPoints.length, this.length);
+
+        // Split rawPoints into a set of curves by `linear` points
+        /*
+        var sets = [ ];
+        var currentSet = [ ];
+        var lastPoint = null, thisPoint;
+        var i;
+
+        for (i = 0; i < rawPoints.length; ++i) {
+            thisPoint = rawPoints[i];
+
+            if (lastPoint && lastPoint[0] === thisPoint[0] && lastPoint[1] === thisPoint[1]) {
+                sets.push(currentSet);
+                currentSet = [ thisPoint ];
+            }
+        }
+        */
+
+        this.flattenCentrePoints = function () {
+            return flattenBezierNaive(rawPoints, 0.1);
+        };
+
+        this.getStartPoint = function () {
+            return rawPoints[0];
+        };
+
+        this.getEndPoint = function () {
+            // TODO XXX
+            return rawPoints[rawPoints.length - 1];
+        };
+
+        //this.points = render(rawPoints, rawPoints.length, this.length);
     }
 
     function getSliderBallPercentage(repeatLength, timeOffset) {
@@ -219,6 +161,7 @@ define('BezierSliderCurve', [ ], function () {
         return -1;
     }
 
+    /*
     var tolerance = 0.1;
 
     BezierSliderCurve.prototype.getTickPositions = function (tickLength) {
@@ -260,6 +203,7 @@ define('BezierSliderCurve', [ ], function () {
             return this.points.slice();
         }
     };
+    */
 
     return BezierSliderCurve;
 });
