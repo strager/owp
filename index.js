@@ -285,17 +285,46 @@ define('index', [ 'WebGLRenderer', 'CanvasRenderer', 'AssetManager', 'q', 'Game'
             }, 50);
         }
 
+        function fullscreenCancelHandler(e) {
+            if (e.which === 27) { // ESC key
+                disableFullscreen();
+
+                document.removeEventListener('keydown', fullscreenCancelHandler, false);
+
+                e.preventDefault();
+                e.stopPropagation();
+                return false;
+            }
+        }
+
+        function enableFullscreen() {
+            if (inFullscreen) throw new Error('Bad state');
+
+            playfield.className += ' fullscreen';
+            window.addEventListener('resize', resizeHandler, false);
+            document.addEventListener('keydown', fullscreenCancelHandler, false);
+
+            resizeHandler();
+
+            inFullscreen = true;
+        }
+
+        function disableFullscreen() {
+            if (!inFullscreen) throw new Error('Bad state');
+
+            playfield.className = playfield.className.replace(/(^| )fullscreen\b/g, '');
+            window.removeEventListener('resize', resizeHandler, false);
+
+            renderer.resize(PLAYAREA_WIDTH, PLAYAREA_HEIGHT);
+
+            inFullscreen = false;
+        }
+
         window.toggleFullscreen = function () {
             if (inFullscreen) {
-                playfield.className = playfield.className.replace(/(^| )fullscreen\b/g, '');
-                window.removeEventListener('resize', resizeHandler, false);
-
-                renderer.resize(PLAYAREA_WIDTH, PLAYAREA_HEIGHT);
+                disableFullscreen();
             } else {
-                playfield.className += ' fullscreen';
-                window.addEventListener('resize', resizeHandler, false);
-
-                resizeHandler();
+                enableFullscreen();
             }
         };
     }
