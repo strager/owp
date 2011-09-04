@@ -1152,9 +1152,49 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
             gl.blendEquationSeparate(gl.FUNC_ADD, gl.FUNC_ADD);
             gl.blendFuncSeparate(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA, gl.SRC_ALPHA, gl.ONE);
 
+            resize(640, 480);
+        }
+
+        function makeTexture(image) {
+            var texture = gl.createTexture();
+            texture.image = image;
+
+            gl.bindTexture(gl.TEXTURE_2D, texture);
+            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, texture.image);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+
+            return texture;
+        }
+
+        function nextPot(v) {
+            // http://graphics.stanford.edu/~seander/bithacks.html#RoundUpPowerOf2
+            v--;
+            v |= v >> 1;
+            v |= v >> 2;
+            v |= v >> 4;
+            v |= v >> 8;
+            v |= v >> 16;
+            v++;
+            return v;
+        }
+
+        function initObjectTarget() {
+            if (misc.objectTarget) {
+                if (misc.objectTarget.width  === viewport.nwidth
+                 && misc.objectTarget.height === viewport.nheight) {
+                    return;
+                }
+
+                gl.deleteFramebuffer(misc.objectTarget.framebuffer);
+                gl.deleteTexture(misc.objectTarget.texture);
+            }
+
             misc.objectTarget = {
-                width: 1024,  // XXX TEMPORARY XXX
-                height: 1024, // XXX TEMPORARY XXX
+                width: viewport.nwidth,
+                height: viewport.nheight,
                 framebuffer: gl.createFramebuffer(),
                 texture: gl.createTexture()
             };
@@ -1174,22 +1214,6 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
             }
 
             gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-
-            resize(640, 480);
-        }
-
-        function makeTexture(image) {
-            var texture = gl.createTexture();
-            texture.image = image;
-
-            gl.bindTexture(gl.TEXTURE_2D, texture);
-            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, texture.image);
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-
-            return texture;
         }
 
         var skinInitd = false;
@@ -1322,16 +1346,25 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
 
             var rect = util.fitRectangle(width, height, 640, 480);
 
+            var x = Math.max(0, rect.x);
+            var y = Math.max(0, rect.y);
+            var width = Math.min(width, rect.width);
+            var height = Math.min(height, rect.height);
+
             viewport = {
-                x: Math.max(0, rect.x),
-                y: Math.max(0, rect.y),
-                width: Math.min(width, rect.width),
-                height: Math.min(height, rect.height)
+                x: x,
+                y: y,
+                width: width,
+                height: height,
+                nwidth: nextPot(width),
+                nheight: nextPot(height)
             };
 
             if (videoElement) {
                 // TODO Resize video element
             }
+
+            initObjectTarget();
 
             r.consts({
                 buffers: buffers,
