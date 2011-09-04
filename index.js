@@ -241,28 +241,56 @@ define('index', [ 'WebGLRenderer', 'CanvasRenderer', 'AssetManager', 'q', 'Game'
     var leftKeys  = 'ZAQCDEBGTMJU02468'.split('').map(charToKey);
     var rightKeys = 'XSWVFRNHY,ki13579'.split('').map(charToKey);
 
-    document.addEventListener('keydown', function (e) {
-        if (leftKeys.indexOf(e.which) >= 0) {
-            isLeftDown = true;
-            e.preventDefault();
-        } else if (rightKeys.indexOf(e.which) >= 0) {
-            isRightDown = true;
-            e.preventDefault();
+    function keyType(e) {
+        if (e.repeat || e.metaKey || e.altKey || e.ctrlKey) {
+            return 'none';
         }
 
-        mouseStateChanged();
+        if (leftKeys.indexOf(e.which) >= 0) {
+            return 'left';
+        } else if (rightKeys.indexOf(e.which) >= 0) {
+            return 'right';
+        }
+
+        return 'none';
+    }
+
+    document.addEventListener('keydown', function (e) {
+        switch (keyType(e)) {
+        case 'left':
+            isLeftDown = true;
+            e.preventDefault();
+            mouseStateChanged();
+            break;
+        case 'right':
+            isRightDown = true;
+            e.preventDefault();
+            mouseStateChanged();
+            break;
+        case 'none':
+        default:
+            // Ignore
+            break;
+        }
     }, false);
 
     document.addEventListener('keyup', function (e) {
-        if (leftKeys.indexOf(e.which) >= 0) {
+        switch (keyType(e)) {
+        case 'left':
             isLeftDown = false;
             e.preventDefault();
-        } else if (rightKeys.indexOf(e.which) >= 0) {
+            mouseStateChanged();
+            break;
+        case 'right':
             isRightDown = false;
             e.preventDefault();
+            mouseStateChanged();
+            break;
+        case 'none':
+        default:
+            // Ignore
+            break;
         }
-
-        mouseStateChanged();
     }, false);
 
     var playfield = document.getElementById('playfield');
