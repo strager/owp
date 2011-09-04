@@ -12,7 +12,7 @@ fi
 case "$1" in
     demo)  HOST="train" ; AREA="~/owp/demo" ;;
     stage) HOST="train" ; AREA="~/owp/staging" ;;
-    local) HOST=""      ; AREA="$DIR/demo/" ;;
+    local) HOST=""      ; AREA="$ROOT/demo/" ;;
     *) echo "ERROR: unknown area: $1" 2>&1 ; exit 2 ;;
 esac
 
@@ -25,8 +25,8 @@ ln -s "map-select.php" "$OUTPUT/index.php" || exit
 
 if [ "$HOST" == "" ]; then
     mkdir -p "$AREA" || exit
-    rsync -rl -v "$OUTPUT/" "$AREA" || exit
+    rsync -rlt -v "$OUTPUT/" "$AREA" || exit
 else
     ssh "$HOST" mkdir -p "$AREA" || exit
-    rsync -rl -zv "$OUTPUT/" "$HOST:$AREA" || exit
+    rsync -rlt -zv "$OUTPUT/" "$HOST:$AREA" || exit
 fi
