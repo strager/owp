@@ -135,6 +135,10 @@ define('index', [ 'WebGLRenderer', 'CanvasRenderer', 'AssetManager', 'q', 'Game'
         }
     }
 
+    var PLAYAREA_WIDTH = 640;
+    var PLAYAREA_HEIGHT = 480;
+    renderer.resize(PLAYAREA_WIDTH, PLAYAREA_HEIGHT);
+
     var renderFps = new FramerateCounter();
     var gameUpdateFps = new FramerateCounter();
 
@@ -265,6 +269,35 @@ define('index', [ 'WebGLRenderer', 'CanvasRenderer', 'AssetManager', 'q', 'Game'
     if (playfield) {
         playfield.innerHTML = '';
         playfield.appendChild(playArea);
+
+        var inFullscreen = false;
+        var resizeTimeout = null;
+
+        function resizeHandler() {
+            if (resizeTimeout !== null) {
+                window.clearTimeout(resizeTimeout);
+            }
+
+            resizeTimeout = window.setTimeout(function () {
+                resizeTimeout = null;
+
+                renderer.resize(playfield.clientWidth, playfield.clientHeight);
+            }, 50);
+        }
+
+        window.toggleFullscreen = function () {
+            if (inFullscreen) {
+                playfield.className = playfield.className.replace(/(^| )fullscreen\b/g, '');
+                window.removeEventListener('resize', resizeHandler, false);
+
+                renderer.resize(PLAYAREA_WIDTH, PLAYAREA_HEIGHT);
+            } else {
+                playfield.className += ' fullscreen';
+                window.addEventListener('resize', resizeHandler, false);
+
+                resizeHandler();
+            }
+        };
     }
 
     if (DEBUG) {
