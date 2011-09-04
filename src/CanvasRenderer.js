@@ -1,4 +1,56 @@
 define('CanvasRenderer', [ 'mapObject', 'Util/Cache', 'canvasShaders', 'MapState', 'Util/gPubSub', 'Util/util', 'View', 'loading' ], function (mapObject, Cache, shaders, MapState, gPubSub, util, View, loadingImageSrc) {
+    var transformOriginStyleProperty, transformStyleProperty;
+    var transformTranslatePrefix, transformTranslateSuffix;
+    var matrixTranslateSuffix;
+
+    (function () {
+        // Feature detection based off of
+        // http://andrew-hoyer.com/experiments/rain/
+        // Public domain
+
+        var style = document.createElement('div').style;
+
+        function getStyleName(propertyNames) {
+            return propertyNames.filter(function(name) {
+                return name in style;
+            }).shift();
+        }
+
+        transformOriginStyleProperty = getStyleName([
+            'transformOrigin',
+            'WebkitTransformOrigin',
+            'MozTransformOrigin',
+            'msTransformOrigin',
+            'OTransformOrigin'
+        ]);
+
+        transformStyleProperty = getStyleName([
+            'transform',
+            'WebkitTransform',
+            'MozTransform',
+            'msTransform',
+            'OTransform'
+        ]);
+
+        var supportsTransform3D = !!getStyleName([
+            'perspectiveProperty',
+            'WebkitPerspective',
+            'MozPerspective',
+            'msPerspective',
+            'OPerspective'
+        ]);
+
+        transformTranslatePrefix = supportsTransform3D ? 'translate3D(' : 'translate(';
+        transformTranslateSuffix = supportsTransform3D ? ',0) ' : ') ';
+
+        transformScalePrefix = supportsTransform3D ? 'scale3D(' : 'scale(';
+        transformScaleSuffix = supportsTransform3D ? ',0) ' : ') ';
+
+        // Firefox has a bug where it requires 'px' for translate matrix
+        // elements (where it should accept plain numbers).
+        matrixTranslateSuffix = transformStyleProperty === 'MozTransform' ? 'px' : '';
+    }());
+
     function DOMAllocator(container) {
         this.container = container;
 
@@ -872,11 +924,13 @@ define('CanvasRenderer', [ 'mapObject', 'Util/Cache', 'canvasShaders', 'MapState
     function CanvasRenderer() {
         var front = document.createElement('div');
         front.style.display = 'block';
-        front.style.position = 'relative';
+        front.style.overflow = 'hidden';
+        front.style.position = 'absolute';
         var frontDom = new DOMAllocator(front);
 
         var container = document.createElement('div');
         container.style.display = 'block';
+        container.style.overflow = 'hidden';
         container.style.position = 'relative';
         container.appendChild(front);
 
@@ -901,7 +955,10 @@ define('CanvasRenderer', [ 'mapObject', 'Util/Cache', 'canvasShaders', 'MapState
         function resize(width, height) {
             container.style.width = width + 'px';
             container.style.height = height + 'px';
+            front.style.width = '640px';
+            front.style.height = '480px';
 
+            var factor = util.fitRectangleScale(width, height, 640, 480);
             var rect = util.fitRectangle(width, height, 640, 480);
 
             viewport = {
@@ -910,6 +967,12 @@ define('CanvasRenderer', [ 'mapObject', 'Util/Cache', 'canvasShaders', 'MapState
                 width: Math.min(width, rect.width),
                 height: Math.min(height, rect.height)
             };
+
+            front.style[transformOriginStyleProperty] = '0 0';
+            front.style[transformStyleProperty] =
+                transformScalePrefix + factor + ',' + factor + transformScaleSuffix;
+            front.style.marginLeft = rect.x + 'px';
+            //front.style.marginTop = rect.y + 'px';
         }
 
         resize(640, 480);
