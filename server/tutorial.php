@@ -22,8 +22,9 @@ require 'header.php';
 
 <script src="<?php echo htmlspecialchars($owpScriptPath); ?>"></script>
 <script>
-game.loadSkin(<?php echo json_encode($skinsRoot); ?>);
-game.tutorial(<?php echo json_encode($mapsRoot . '/tutorial'); ?>, "Jeez Louise Lou Ease Le Ooz.mp3");
+owp.init(document.getElementById('playfield'));
+owp.game.loadSkin(<?php echo json_encode($skinsRoot); ?>);
+owp.game.tutorial(<?php echo json_encode($mapsRoot . '/tutorial'); ?>, "Jeez Louise Lou Ease Le Ooz.mp3");
 </script>
 
 </body>

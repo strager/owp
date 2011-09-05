@@ -20,7 +20,7 @@ require 'header.php';
 <script src="<?php echo htmlspecialchars($owpScriptPath); ?>"></script>
 <script>
 // Try to preload to reduce map load time
-game.loadSkin(<?php echo json_encode($skinsRoot); ?>);
+owp.game.loadSkin(<?php echo json_encode($skinsRoot); ?>);
 </script>
 
 </body>

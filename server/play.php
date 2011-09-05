@@ -28,8 +28,9 @@ require 'header.php';
 
 <script src="<?php echo htmlspecialchars($owpScriptPath); ?>"></script>
 <script>
-game.loadSkin(<?php echo json_encode($skinsRoot); ?>);
-game.startMap(<?php echo json_encode($mapsRoot . '/' . $map['root']); ?>, <?php echo json_encode($map['name']); ?>);
+owp.init(document.getElementById('playfield'))
+owp.game.loadSkin(<?php echo json_encode($skinsRoot); ?>);
+owp.game.startMap(<?php echo json_encode($mapsRoot . '/' . $map['root']); ?>, <?php echo json_encode($map['name']); ?>);
 </script>
 
 </body>

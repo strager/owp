@@ -13,7 +13,7 @@ define('debugConsole', [ 'util/FramerateCounter', 'util/util' ], function (Frame
             lastPaintCount = currentPaintCount;
 
             return util.clone({
-                'paint fps': paintFps.framerate,
+                'paint fps': paintFps.framerate
             }, options.debugInfo());
         }
 
