@@ -1,4 +1,4 @@
-define('BezierSliderCurve', [ ], function () {
+define('game/BezierSliderCurve', [ ], function () {
     var factorialTable = (function () {
         // Precalculate factorials into a look-up table
         var lutSize = 16;

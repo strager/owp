@@ -1,4 +1,4 @@
-define('Combo', [ ], function () {
+define('game/Combo', [ ], function () {
     function Combo(color) {
         // TODO Make nicer (color class?)
 

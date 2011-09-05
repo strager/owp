@@ -1,4 +1,4 @@
-define('CatmullSliderCurve', [ ], function () {
+define('game/CatmullSliderCurve', [ ], function () {
     function render(rawPoints, stepCount, maxLength) {
         // Estimates a Catmull-Rom curve
         // TODO Adaptive rendering

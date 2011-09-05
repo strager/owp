@@ -1,4 +1,4 @@
-define('Util/FramerateCounter', [ ], function () {
+define('util/FramerateCounter', [ ], function () {
     function FramerateCounter() {
         this.ticks = 0;
 

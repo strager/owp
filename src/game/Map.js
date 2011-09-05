@@ -1,4 +1,4 @@
-define('Map', [ ], function () {
+define('game/Map', [ ], function () {
     function Map() {
         this.objects = [ ];
     }

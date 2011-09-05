@@ -1,4 +1,4 @@
-define('Util/SortedMap', [ ], function () {
+define('util/SortedMap', [ ], function () {
     function SortedMap() {
         this.keys = [ ];
         this.values = [ ];

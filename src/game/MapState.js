@@ -1,4 +1,4 @@
-define('MapState', [ 'mapObject', 'Util/Timeline', 'Util/Map', 'Util/PubSub' ], function (mapObject, Timeline, Map, PubSub) {
+define('game/MapState', [ 'game/mapObject', 'util/Timeline', 'util/Map', 'util/PubSub' ], function (mapObject, Timeline, Map, PubSub) {
     function MapState(ruleSet, objects, timeline) {
         this.ruleSet = ruleSet;
         this.timeline = timeline;
@@ -32,7 +32,7 @@ define('MapState', [ 'mapObject', 'Util/Timeline', 'Util/Map', 'Util/PubSub' ], 
 
         // TODO History object?
         this.unhitObjects = objects.map(function (object) {
-            return [ object, this.ruleSet.getObjectLatestHitTime(object) ]
+            return [ object, this.ruleSet.getObjectLatestHitTime(object) ];
         }, this).sort(function (a, b) {
             return a[1] < b[1] ? -1 : 1;
         });

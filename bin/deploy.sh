@@ -25,8 +25,8 @@ ln -s "map-select.php" "$OUTPUT/index.php" || exit
 
 if [ "$HOST" == "" ]; then
     mkdir -p "$AREA" || exit
-    rsync -rl -v "$OUTPUT/" "$AREA" || exit
+    rsync -rlt -v "$OUTPUT/" "$AREA" || exit
 else
     ssh "$HOST" mkdir -p "$AREA" || exit
-    rsync -rl -zv "$OUTPUT/" "$HOST:$AREA" || exit
+    rsync -rlt -zv "$OUTPUT/" "$HOST:$AREA" || exit
 fi

@@ -1,4 +1,4 @@
-define('TimingPoint', [ ], function () {
+define('game/TimingPoint', [ ], function () {
     function TimingPoint(options) {
         this.time = options.time;
         this.bpm = options.bpm;

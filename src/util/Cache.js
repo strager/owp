@@ -1,4 +1,4 @@
-define('Util/Cache', [ 'Util/Map' ], function (Map) {
+define('util/Cache', [ 'util/Map' ], function (Map) {
     // TODO Actual caching
 
     function Cache() {

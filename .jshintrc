@@ -1,7 +1,7 @@
 {
-    "predef": [ "define", "require" ],
+    "predef": [ "define", "require", "DEBUG", "VERSION" ],
     "browser": true,
-    "devel": false,
+    "devel": true,
     "rhino": false,
     "es5": true,
     "widget": false,
@@ -16,7 +16,9 @@
     "newcap": true,
     "immed": true,
     "white": true,
+    "laxbreak": true,
     "undef": true,
+    "sub": true,
     "eqeq": true,
     "eqeqeq": true
 }

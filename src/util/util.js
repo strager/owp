@@ -1,4 +1,4 @@
-define('Util/util', [ ], function () {
+define('util/util', [ ], function () {
     function fitRectangleScale(containerW, containerH, innerW, innerH) {
         var containerAR = containerW / containerH;
         var innerAR = innerW / innerH;
@@ -46,20 +46,23 @@ define('Util/util', [ ], function () {
     }
 
     function extend(obj /* extensions... */) {
-        var i;
+        var i, extension;
 
-        for (i = 0; i < arguments.length; ++i) {
-            var extension = arguments[i];
-            Object.keys(extension).forEach(function (key) {
-                obj[key] = extension[key];
-            });
+        function extendProperty(key) {
+            obj[key] = extension[key];
+        }
+
+        for (i = 1; i < arguments.length; ++i) {
+            extension = arguments[i];
+            Object.keys(extension || { }).forEach(extendProperty);
         }
 
         return obj;
     }
 
-    function clone(obj) {
-        return extend({ }, obj);
+    function clone(obj /* extensions... */) {
+        var args = Array.prototype.slice.call(arguments);
+        return extend.apply(null, [ { } ].concat(args));
     }
 
     function setCursorImage(element, src, centreX, centreY) {

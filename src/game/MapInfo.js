@@ -1,4 +1,4 @@
-define('MapInfo', [ 'Util/util', 'mapObject' ], function (util, mapObject) {
+define('game/MapInfo', [ 'util/util', 'game/mapObject' ], function (util, mapObject) {
     function MapInfo(ruleSet, map, storyboard) {
         this.ruleSet = ruleSet;
         this.map = map;

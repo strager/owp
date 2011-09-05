@@ -1,4 +1,4 @@
-define('Util/Map', [ ], function () {
+define('util/Map', [ ], function () {
     function Map() {
         this.keys = [ ];
         this.arrayKeyStrings = { };

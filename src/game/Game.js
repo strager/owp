@@ -1,4 +1,4 @@
-define('Game', [ 'q', 'MapState', 'AssetManager', 'Util/PubSub', 'Soundboard', 'Util/Timeline', 'Util/gPubSub', 'Util/History', 'agentInfo', 'Util/audioTimer', 'RuleSet', 'mapObject', 'Combo', 'TimingPoint', 'BezierSliderCurve' ], function (Q, MapState, AssetManager, PubSub, Soundboard, Timeline, gPubSub, History, agentInfo, audioTimer, RuleSet, mapObject, Combo, TimingPoint, BezierSliderCurve) {
+define('game/Game', [ 'q', 'game/MapState', 'AssetManager', 'util/PubSub', 'Soundboard', 'util/Timeline', 'util/gPubSub', 'util/History', 'agentInfo', 'util/audioTimer', 'game/RuleSet', 'game/mapObject', 'game/Combo', 'game/TimingPoint', 'game/BezierSliderCurve' ], function (Q, MapState, AssetManager, PubSub, Soundboard, Timeline, gPubSub, History, agentInfo, audioTimer, RuleSet, mapObject, Combo, TimingPoint, BezierSliderCurve) {
     function Game() {
         var currentState = null;
         var skin = null;
@@ -422,7 +422,7 @@ define('Game', [ 'q', 'MapState', 'AssetManager', 'Util/PubSub', 'Soundboard', '
                     var toTime = hitObject.time;
 
                     for (var j = fromTime; j < toTime; j += 10) {
-                        var p = (j - fromTime) / (toTime - fromTime)
+                        var p = (j - fromTime) / (toTime - fromTime);
 
                         if (p < 0.2) {
                             p = p * Math.pow(0.2, 0.6) / 0.2;
@@ -534,7 +534,7 @@ define('Game', [ 'q', 'MapState', 'AssetManager', 'Util/PubSub', 'Soundboard', '
                     var toTime = hitObject.time;
 
                     for (var j = fromTime; j < toTime; j += 10) {
-                        var p = (j - fromTime) / (toTime - fromTime)
+                        var p = (j - fromTime) / (toTime - fromTime);
 
                         if (p < 0.2) {
                             p = p * Math.pow(0.2, 0.6) / 0.2;

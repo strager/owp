@@ -1,4 +1,4 @@
-define('Util/History', [ 'Util/SortedMap' ], function (SortedMap) {
+define('util/History', [ 'util/SortedMap' ], function (SortedMap) {
     function History() {
         this.map = new SortedMap();
     }

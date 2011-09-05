@@ -1,4 +1,4 @@
-define('mapObject', [ 'Util/util' ], function (util) {
+define('game/mapObject', [ 'util/util' ], function (util) {
     function proto(obj) {
         // Fake Object.create + extend
         // Object.create (or similar techniques) isn't used because it's slow.

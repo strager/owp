@@ -1,4 +1,4 @@
-define('Skin', [ 'Util/util' ], function (util) {
+define('game/Skin', [ 'util/util' ], function (util) {
     function Skin(assetManager) {
         this.assetManager = assetManager;
     }

@@ -1,5 +1,5 @@
 /*global window: false */
-define('AssetManager', [ 'MapInfo', 'mapFile', 'assetConfig', 'Util/Map', 'Util/Cache', 'q' ], function (MapInfo, mapFile, assetConfig, Map, Cache, Q) {
+define('AssetManager', [ 'game/MapInfo', 'game/mapFile', 'assetConfig', 'util/Map', 'util/Cache', 'q' ], function (MapInfo, mapFile, assetConfig, Map, Cache, Q) {
     function setAudioSourceType(source) {
         // Safari hates it when you put .wav here, and Midori throws up when
         // you put .ogg here.  Guess this method isn't as useful as I thought
@@ -156,6 +156,15 @@ define('AssetManager', [ 'MapInfo', 'mapFile', 'assetConfig', 'Util/Map', 'Util/
             audio.autobuffer = true;
             audio.preload = 'auto';
 
+            // Work around Webkit bug (present in Chrome <= 15, Safari <= 5, at
+            // time of writing) where the browser will decide it doesn't /need/
+            // to download all these pesky audio files.
+            var globalName = randomGlobal();
+            window[globalName] = audio;
+            function cleanup() {
+                delete window[globalName];
+            }
+
             function fail(event) {
                 if (audio.networkState === audio.NETWORK_NO_SOURCE) {
                     cleanup();
@@ -188,15 +197,6 @@ define('AssetManager', [ 'MapInfo', 'mapFile', 'assetConfig', 'Util/Map', 'Util/
 
             audio.load();
 
-            // Work around Webkit bug (present in Chrome <= 15, Safari <= 5, at
-            // time of writing) where the browser will decide it doesn't /need/
-            // to download all these pesky audio files.
-            var globalName = randomGlobal();
-            window[globalName] = audio;
-            function cleanup() {
-                delete window[globalName];
-            }
-
             // Note that we can't do ret.promise.then(..., ...) to execute
             // cleanup() because of some weird Firefox quirk I can't be
             // bothered to investigate.
@@ -217,6 +217,13 @@ define('AssetManager', [ 'MapInfo', 'mapFile', 'assetConfig', 'Util/Map', 'Util/
             var video = document.createElement('video');
             video.autobuffer = true;
             video.preload = 'auto';
+
+            // Workaround for Webkit; see audio for details
+            var globalName = randomGlobal();
+            window[globalName] = video;
+            function cleanup() {
+                delete window[globalName];
+            }
 
             function fail(event) {
                 if (video.networkState === video.NETWORK_NO_SOURCE) {
@@ -252,13 +259,6 @@ define('AssetManager', [ 'MapInfo', 'mapFile', 'assetConfig', 'Util/Map', 'Util/
             video.appendChild(theoraTrack);
 
             video.load();
-
-            // Workaround for Webkit; see audio for details
-            var globalName = randomGlobal();
-            window[globalName] = video;
-            function cleanup() {
-                delete window[globalName];
-            }
 
             return ret.promise;
         },

@@ -1,5 +1,5 @@
 /*jshint bitwise: false */
-define('mapFile', [ 'RuleSet', 'Map', 'Combo', 'MapInfo', 'mapObject', 'Storyboard', 'Skin', 'BezierSliderCurve', 'CatmullSliderCurve', 'TimingPoint' ], function (RuleSet, Map, Combo, MapInfo, mapObject, Storyboard, Skin, BezierSliderCurve, CatmullSliderCurve, TimingPoint) {
+define('game/mapFile', [ 'game/RuleSet', 'game/Map', 'game/Combo', 'game/MapInfo', 'game/mapObject', 'game/Storyboard', 'game/Skin', 'game/BezierSliderCurve', 'game/CatmullSliderCurve', 'game/TimingPoint' ], function (RuleSet, Map, Combo, MapInfo, mapObject, Storyboard, Skin, BezierSliderCurve, CatmullSliderCurve, TimingPoint) {
     function readSkin(assetConfig, assetManager) {
         return Skin.fromSettings(assetManager, {
             name:   assetConfig.General.values.Name,

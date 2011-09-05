@@ -1,4 +1,4 @@
-define('View', [ ], function () {
+define('gfx/View', [ ], function () {
     function View(mat) {
         this.mat = mat;
     }

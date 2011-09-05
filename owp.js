@@ -13,7 +13,8 @@ document.write('<script>(' + function () {
         }
     }, [ '../index' ], function () {
         // Load a debug map
-        game.loadSkin('.');
-        game.startMap('assets', 'map');
+        owp.init(document.getElementById('playfield'));
+        owp.game.loadSkin('.');
+        owp.game.startMap('assets', 'map');
     });
 } + '())</script>');

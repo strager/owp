@@ -1,4 +1,4 @@
-define('Util/audioTimer', [ ], function () {
+define('util/audioTimer', [ ], function () {
     // These functions give the current time of an audio element to the best
     // accuracy and precision we can provide.
 
