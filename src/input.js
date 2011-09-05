@@ -17,7 +17,9 @@ define('input', [ 'util/PubSub' ], function (PubSub) {
     function addRenderer(renderer) {
         var playArea = renderer.element;
 
-        function button(event, callbacks) {
+        var buttonNames = [ 'none', 'left', 'middle', 'right' ];
+
+        function buttonName(event, callbacks) {
             var button;
 
             // Taken from jQuery
@@ -27,12 +29,7 @@ define('input', [ 'util/PubSub' ], function (PubSub) {
                 button = event.which;
             }
 
-            var names = [ void 0, 'left', 'middle', 'right' ];
-            var name = names[button];
-
-            if (name && callbacks[name]) {
-                callbacks[name]();
-            }
+            return buttonNames[button];
         }
 
         function setMouseCoordinates(e, el) {
@@ -47,14 +44,16 @@ define('input', [ 'util/PubSub' ], function (PubSub) {
         playArea.addEventListener('mousedown', function (e) {
             setMouseCoordinates(e, this);
 
-            button(e, {
-                left: function () {
-                    isLeftDown = true;
-                },
-                right: function () {
-                    isRightDown = true;
-                }
-            });
+            switch (buttonName(e)) {
+            case 'left':
+                isLeftDown = true;
+                break;
+            case 'right':
+                isRightDown = true;
+                break;
+            default:
+                break;
+            }
 
             mouseStateChanged();
             e.preventDefault();
@@ -63,14 +62,16 @@ define('input', [ 'util/PubSub' ], function (PubSub) {
         playArea.addEventListener('mouseup', function (e) {
             setMouseCoordinates(e, this);
 
-            button(e, {
-                left: function () {
-                    isLeftDown = false;
-                },
-                right: function () {
-                    isRightDown = false;
-                }
-            });
+            switch (buttonName(e)) {
+            case 'left':
+                isLeftDown = false;
+                break;
+            case 'right':
+                isRightDown = false;
+                break;
+            default:
+                break;
+            }
 
             mouseStateChanged();
             e.preventDefault();
