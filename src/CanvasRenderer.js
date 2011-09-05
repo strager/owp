@@ -968,9 +968,21 @@ define('CanvasRenderer', [ 'mapObject', 'Util/Cache', 'canvasShaders', 'MapState
                 height: Math.min(height, rect.height)
             };
 
-            front.style[transformOriginStyleProperty] = '0 0';
-            front.style[transformStyleProperty] =
-                transformScalePrefix + factor + ',' + factor + transformScaleSuffix;
+            if (typeof window.opera !== 'undefined' && Object.prototype.toString.call(window.opera) === '[object Opera]') {
+                // FIXME Opera goes to shit if we scale!
+                if (factor !== 1) {
+                    throw new Error('Scaling in Opera is unsupported!');
+                }
+            }
+
+            if (factor === 1) {
+                front.style[transformStyleProperty] = '';
+            } else {
+                front.style[transformOriginStyleProperty] = '0 0';
+                front.style[transformStyleProperty] =
+                    transformScalePrefix + factor + ',' + factor + transformScaleSuffix;
+            }
+
             front.style.marginLeft = rect.x + 'px';
             //front.style.marginTop = rect.y + 'px';
         }

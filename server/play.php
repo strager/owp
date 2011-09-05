@@ -25,7 +25,6 @@ require 'header.php';
         <p><strong style="color: red;">Error</strong>: JavaScript must be enabled to play.</p>
     </noscript>
 </div>
-<p style="text-align: right;"><button onclick="toggleFullscreen();">Fullscreen</button></p>
 
 <script src="<?php echo htmlspecialchars($owpScriptPath); ?>"></script>
 <script>

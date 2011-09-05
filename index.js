@@ -348,6 +348,13 @@ define('index', [ 'WebGLRenderer', 'CanvasRenderer', 'AssetManager', 'q', 'Game'
             inFullscreen = false;
         }
 
+        window.canFullscreen = true;
+
+        if (typeof window.opera !== 'undefined' && Object.prototype.toString.call(window.opera) === '[object Opera]') {
+            // FIXME Opera goes to shit if we scale our pretty CanvasRenderer
+            window.canFullscreen = false;
+        }
+
         window.toggleFullscreen = function () {
             if (inFullscreen) {
                 disableFullscreen();
@@ -355,6 +362,23 @@ define('index', [ 'WebGLRenderer', 'CanvasRenderer', 'AssetManager', 'q', 'Game'
                 enableFullscreen();
             }
         };
+
+        if (window.canFullscreen) {
+            // HACK!
+            var fullscreenButton = document.createElement('button');
+            fullscreenButton.textContent = 'Fullscreen';
+            fullscreenButton.onclick = window.toggleFullscreen;
+
+            var fullscreenP = document.createElement('p');
+            fullscreenP.style.textAlign = 'right';
+            fullscreenP.appendChild(fullscreenButton);
+
+            if (playfield.nextSibling) {
+                playfield.parentNode.insertBefore(fullscreenP, playfield.nextSibling);
+            } else {
+                playfield.parentNode.appendChild(fullscreenP);
+            }
+        }
     }
 
     if (DEBUG) {
