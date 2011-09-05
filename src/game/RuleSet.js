@@ -1,4 +1,4 @@
-define('RuleSet', [ 'Util/util', 'mapObject', 'Util/History' ], function (util, mapObject, History) {
+define('game/RuleSet', [ 'util/util', 'game/mapObject', 'util/History' ], function (util, mapObject, History) {
     function RuleSet() {
         this.approachRate = 5;
         this.overallDifficulty = 5;

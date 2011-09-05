@@ -1,4 +1,4 @@
-define('Util/gPubSub', [ 'Util/PubSub' ], function (PubSub) {
+define('util/gPubSub', [ 'util/PubSub' ], function (PubSub) {
     var secret = 'gpubsub';
 
     var events = new PubSub();

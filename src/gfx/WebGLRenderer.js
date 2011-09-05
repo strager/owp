@@ -1,4 +1,4 @@
-define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache', 'Util/util', 'loading', 'View' ], function (MapState, mapObject, gPubSub, Cache, util, loadingImageSrc, View) {
+define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/gPubSub', 'util/Cache', 'util/util', 'loading', 'gfx/View' ], function (MapState, mapObject, gPubSub, Cache, util, loadingImageSrc, View) {
     function reportGLError(gl, error) {
         // Find the error name
         var key;

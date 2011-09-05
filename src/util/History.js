@@ -1,4 +1,4 @@
-define('Util/History', [ ], function () {
+define('util/History', [ ], function () {
     function History() {
         this.times = [ ];
         this.data = [ ];

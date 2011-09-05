@@ -1,4 +1,4 @@
-define('Util/Timeline', [ 'Util/PubSub' ], function (PubSub) {
+define('util/Timeline', [ 'util/PubSub' ], function (PubSub) {
     function CueList() {
         // Each array corresponds to each other (reverse object).
         // Arrays are sorted by cue start time.

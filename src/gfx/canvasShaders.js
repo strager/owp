@@ -1,4 +1,4 @@
-define('canvasShaders', [ ], function () {
+define('gfx/canvasShaders', [ ], function () {
     return {
         applyShaderToImage: function (shader, shaderData, image) {
             var newCanvas = document.createElement('canvas');

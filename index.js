@@ -1,4 +1,4 @@
-define('index', [ 'WebGLRenderer', 'CanvasRenderer', 'AssetManager', 'q', 'Game', 'Util/FramerateCounter', 'Util/gPubSub', 'agentInfo' ], function (WebGLRenderer, CanvasRenderer, AssetManager, Q, Game, FramerateCounter, gPubSub, agentInfo) {
+define('index', [ 'gfx/WebGLRenderer', 'gfx/CanvasRenderer', 'AssetManager', 'q', 'game/Game', 'util/FramerateCounter', 'util/gPubSub', 'agentInfo' ], function (WebGLRenderer, CanvasRenderer, AssetManager, Q, Game, FramerateCounter, gPubSub, agentInfo) {
     var oldOnError = window.onerror;
 
     if (DEBUG) {

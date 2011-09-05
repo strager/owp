@@ -1,4 +1,4 @@
-define('Game', [ 'q', 'MapState', 'AssetManager', 'Util/PubSub', 'Soundboard', 'Util/Timeline', 'Util/gPubSub', 'Util/History', 'agentInfo', 'Util/audioTimer', 'RuleSet', 'mapObject', 'Combo', 'TimingPoint', 'BezierSliderCurve' ], function (Q, MapState, AssetManager, PubSub, Soundboard, Timeline, gPubSub, History, agentInfo, audioTimer, RuleSet, mapObject, Combo, TimingPoint, BezierSliderCurve) {
+define('game/Game', [ 'q', 'game/MapState', 'AssetManager', 'util/PubSub', 'Soundboard', 'util/Timeline', 'util/gPubSub', 'util/History', 'agentInfo', 'util/audioTimer', 'game/RuleSet', 'game/mapObject', 'game/Combo', 'game/TimingPoint', 'game/BezierSliderCurve' ], function (Q, MapState, AssetManager, PubSub, Soundboard, Timeline, gPubSub, History, agentInfo, audioTimer, RuleSet, mapObject, Combo, TimingPoint, BezierSliderCurve) {
     function Game() {
         var currentState = null;
         var skin = null;

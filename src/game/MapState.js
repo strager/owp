@@ -1,4 +1,4 @@
-define('MapState', [ 'mapObject', 'Util/Timeline', 'Util/Map', 'Util/PubSub' ], function (mapObject, Timeline, Map, PubSub) {
+define('game/MapState', [ 'game/mapObject', 'util/Timeline', 'util/Map', 'util/PubSub' ], function (mapObject, Timeline, Map, PubSub) {
     function MapState(ruleSet, objects, timeline) {
         this.ruleSet = ruleSet;
         this.timeline = timeline;

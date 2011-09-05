@@ -1,4 +1,4 @@
-define('agentInfo', [ 'Util/PubSub', 'Util/util' ], function (PubSub, util) {
+define('agentInfo', [ 'util/PubSub', 'util/util' ], function (PubSub, util) {
     var agentInfo = { };
 
     agentInfo.crashHandler = new PubSub();

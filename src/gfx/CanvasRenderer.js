@@ -1,4 +1,4 @@
-define('CanvasRenderer', [ 'mapObject', 'Util/Cache', 'canvasShaders', 'MapState', 'Util/gPubSub', 'Util/util', 'View', 'loading' ], function (mapObject, Cache, shaders, MapState, gPubSub, util, View, loadingImageSrc) {
+define('gfx/CanvasRenderer', [ 'game/mapObject', 'util/Cache', 'gfx/canvasShaders', 'game/MapState', 'util/gPubSub', 'util/util', 'gfx/View', 'loading' ], function (mapObject, Cache, shaders, MapState, gPubSub, util, View, loadingImageSrc) {
     var transformOriginStyleProperty, transformStyleProperty;
     var transformTranslatePrefix, transformTranslateSuffix;
     var matrixTranslateSuffix;

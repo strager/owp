@@ -1,4 +1,4 @@
-define('Util/util', [ ], function () {
+define('util/util', [ ], function () {
     function fitRectangleScale(containerW, containerH, innerW, innerH) {
         var containerAR = containerW / containerH;
         var innerAR = innerW / innerH;

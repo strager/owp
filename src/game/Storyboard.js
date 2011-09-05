@@ -1,4 +1,4 @@
-define('Storyboard', [ ], function () {
+define('game/Storyboard', [ ], function () {
     function Storyboard() {
         this.sounds = [ ];
         this.backgrounds = [ ];

@@ -1,4 +1,4 @@
-define('Util/PubSub', [ ], function () {
+define('util/PubSub', [ ], function () {
     return function () {
         var subscribers = [ ];
 

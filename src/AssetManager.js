@@ -1,5 +1,5 @@
 /*global window: false */
-define('AssetManager', [ 'MapInfo', 'mapFile', 'assetConfig', 'Util/Map', 'Util/Cache', 'q' ], function (MapInfo, mapFile, assetConfig, Map, Cache, Q) {
+define('AssetManager', [ 'game/MapInfo', 'game/mapFile', 'assetConfig', 'util/Map', 'util/Cache', 'q' ], function (MapInfo, mapFile, assetConfig, Map, Cache, Q) {
     function setAudioSourceType(source) {
         // Safari hates it when you put .wav here, and Midori throws up when
         // you put .ogg here.  Guess this method isn't as useful as I thought
