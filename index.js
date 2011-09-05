@@ -1,4 +1,4 @@
-define('index', [ 'gfx/WebGLRenderer', 'gfx/CanvasRenderer', 'AssetManager', 'q', 'game/Game', 'util/FramerateCounter', 'util/gPubSub', 'agentInfo' ], function (WebGLRenderer, CanvasRenderer, AssetManager, Q, Game, FramerateCounter, gPubSub, agentInfo) {
+define('index', [ 'gfx/WebGLRenderer', 'gfx/CanvasRenderer', 'AssetManager', 'q', 'game/Game', 'util/FramerateCounter', 'util/gPubSub', 'agentInfo', 'debugConsole', 'util/util' ], function (WebGLRenderer, CanvasRenderer, AssetManager, Q, Game, FramerateCounter, gPubSub, agentInfo, debugConsole, util) {
     var oldOnError = window.onerror;
 
     if (DEBUG) {
@@ -382,62 +382,15 @@ define('index', [ 'gfx/WebGLRenderer', 'gfx/CanvasRenderer', 'AssetManager', 'q'
     }
 
     if (DEBUG) {
-        function getPaintCount() {
-            return window.mozPaintCount || 0;
-        }
+        debugConsole({
+            debugInfo: function () {
+                var gameDebugInfo = game && game.debugInfo();
 
-        var lastPaintCount = 0;
-        var paintFps = new FramerateCounter();
-
-        function debugInfo() {
-            var currentPaintCount = getPaintCount();
-            paintFps.addTicks(currentPaintCount - lastPaintCount);
-            lastPaintCount = currentPaintCount;
-
-            var debug = {
-                'paint fps': paintFps.framerate,
-                'game update fps': gameUpdateFps.framerate,
-                'render fps': renderFps.framerate
-            };
-
-            var gameDebug = game.debugInfo();
-            var key;
-
-            for (key in gameDebug) {
-                if (Object.prototype.hasOwnProperty.call(gameDebug, key)) {
-                    debug[key] = gameDebug[key];
-                }
+                return util.clone(gameDebugInfo, {
+                    'game update fps': gameUpdateFps.framerate,
+                    'render fps': renderFps.framerate
+                });
             }
-
-            return debug;
-        }
-
-        function updateDebugInfo() {
-            if (!game) {
-                return;
-            }
-
-            var debugElement = document.getElementById('debug');
-
-            if (!debugElement) {
-                return;
-            }
-
-            var debug = debugInfo();
-
-            var text = Object.keys(debug).map(function (key) {
-                var value = debug[key];
-
-                if (typeof value === 'number') {
-                    value = value.toFixed(2);
-                }
-
-                return key + ': ' + value;
-            }).join('\n');
-
-            debugElement.textContent = text;
-        }
-
-        loop(updateDebugInfo, 100);
+        });
     }
 });

@@ -47,10 +47,9 @@ define('util/util', [ ], function () {
 
     function extend(obj /* extensions... */) {
         var i;
-
-        for (i = 0; i < arguments.length; ++i) {
+        for (i = 1; i < arguments.length; ++i) {
             var extension = arguments[i];
-            Object.keys(extension).forEach(function (key) {
+            Object.keys(extension || { }).forEach(function (key) {
                 obj[key] = extension[key];
             });
         }
@@ -58,8 +57,9 @@ define('util/util', [ ], function () {
         return obj;
     }
 
-    function clone(obj) {
-        return extend({ }, obj);
+    function clone(obj /* extensions... */) {
+        var args = Array.prototype.slice.call(arguments);
+        return extend.apply(null, [ { } ].concat(args));
     }
 
     function setCursorImage(element, src, centreX, centreY) {
