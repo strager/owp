@@ -1,4 +1,4 @@
-define('index', [ 'gfx/WebGLRenderer', 'gfx/CanvasRenderer', 'AssetManager', 'q', 'game/Game', 'util/FramerateCounter', 'util/gPubSub', 'agentInfo', 'debugConsole', 'util/util' ], function (WebGLRenderer, CanvasRenderer, AssetManager, Q, Game, FramerateCounter, gPubSub, agentInfo, debugConsole, util) {
+define('index', [ 'gfx/WebGLRenderer', 'gfx/CanvasRenderer', 'AssetManager', 'q', 'game/Game', 'util/FramerateCounter', 'util/gPubSub', 'agentInfo', 'debugConsole', 'util/util', 'input' ], function (WebGLRenderer, CanvasRenderer, AssetManager, Q, Game, FramerateCounter, gPubSub, agentInfo, debugConsole, util, input) {
     var oldOnError = window.onerror;
 
     if (DEBUG) {
@@ -157,141 +157,10 @@ define('index', [ 'gfx/WebGLRenderer', 'gfx/CanvasRenderer', 'AssetManager', 'q'
         gameUpdateFps.addTick();
     });
 
-    var mouseX, mouseY;
-    var isLeftDown = false;
-    var isRightDown = false;
-
-    function mouseStateChanged() {
-        var pos = renderer.mouseToGame(mouseX, mouseY);
-
-        game.mouse({
-            x: pos.x,
-            y: pos.y,
-            left: isLeftDown,
-            right: isRightDown
-        });
-    }
-
-    function button(event, callbacks) {
-        var button;
-
-        // Taken from jQuery
-        if (!event.which && typeof event.button !== undefined) {
-            button = event.button & 1 ? 1 : (event.button & 2 ? 3 : (event.button & 4 ? 2 : 0));
-        } else {
-            button = event.which;
-        }
-
-        var names = [ /* */, 'left', 'middle', 'right' ];
-        var name = names[button];
-
-        if (name && callbacks[name]) {
-            callbacks[name]();
-        }
-    }
-
-    playArea.addEventListener('mousedown', function (e) {
-        mouseX = e.pageX - this.offsetLeft;
-        mouseY = e.pageY - this.offsetTop;
-
-        button(e, {
-            left: function () {
-                isLeftDown = true;
-            },
-            right: function () {
-                isRightDown = true;
-            }
-        });
-
-        mouseStateChanged();
-        e.preventDefault();
-    }, false);
-
-    playArea.addEventListener('mouseup', function (e) {
-        mouseX = e.pageX - this.offsetLeft;
-        mouseY = e.pageY - this.offsetTop;
-
-        button(e, {
-            left: function () {
-                isLeftDown = false;
-            },
-            right: function () {
-                isRightDown = false;
-            }
-        });
-
-        mouseStateChanged();
-        e.preventDefault();
-    }, false);
-
-    playArea.addEventListener('contextmenu', function (e) {
-        e.preventDefault();
-    }, false);
-
-    playArea.addEventListener('mousemove', function (e) {
-        mouseX = e.pageX - this.offsetLeft;
-        mouseY = e.pageY - this.offsetTop;
-        mouseStateChanged();
-    }, false);
-
-    function charToKey(c) {
-        return c.charCodeAt(0);
-    }
-
-    var leftKeys  = 'ZAQCDEBGTMJU02468'.split('').map(charToKey);
-    var rightKeys = 'XSWVFRNHY,ki13579'.split('').map(charToKey);
-
-    function keyType(e) {
-        if (e.repeat || e.metaKey || e.altKey || e.ctrlKey) {
-            return 'none';
-        }
-
-        if (leftKeys.indexOf(e.which) >= 0) {
-            return 'left';
-        } else if (rightKeys.indexOf(e.which) >= 0) {
-            return 'right';
-        }
-
-        return 'none';
-    }
-
-    document.addEventListener('keydown', function (e) {
-        switch (keyType(e)) {
-        case 'left':
-            isLeftDown = true;
-            e.preventDefault();
-            mouseStateChanged();
-            break;
-        case 'right':
-            isRightDown = true;
-            e.preventDefault();
-            mouseStateChanged();
-            break;
-        case 'none':
-        default:
-            // Ignore
-            break;
-        }
-    }, false);
-
-    document.addEventListener('keyup', function (e) {
-        switch (keyType(e)) {
-        case 'left':
-            isLeftDown = false;
-            e.preventDefault();
-            mouseStateChanged();
-            break;
-        case 'right':
-            isRightDown = false;
-            e.preventDefault();
-            mouseStateChanged();
-            break;
-        case 'none':
-        default:
-            // Ignore
-            break;
-        }
-    }, false);
+    input.addRenderer(renderer);
+    input.mouse.subscribe(function (mouseState) {
+        game.mouse(mouseState);
+    });
 
     var playfield = document.getElementById('playfield');
     if (playfield) {
