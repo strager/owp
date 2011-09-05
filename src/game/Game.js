@@ -422,7 +422,7 @@ define('game/Game', [ 'q', 'game/MapState', 'AssetManager', 'util/PubSub', 'Soun
                     var toTime = hitObject.time;
 
                     for (var j = fromTime; j < toTime; j += 10) {
-                        var p = (j - fromTime) / (toTime - fromTime)
+                        var p = (j - fromTime) / (toTime - fromTime);
 
                         if (p < 0.2) {
                             p = p * Math.pow(0.2, 0.6) / 0.2;
@@ -534,7 +534,7 @@ define('game/Game', [ 'q', 'game/MapState', 'AssetManager', 'util/PubSub', 'Soun
                     var toTime = hitObject.time;
 
                     for (var j = fromTime; j < toTime; j += 10) {
-                        var p = (j - fromTime) / (toTime - fromTime)
+                        var p = (j - fromTime) / (toTime - fromTime);
 
                         if (p < 0.2) {
                             p = p * Math.pow(0.2, 0.6) / 0.2;

@@ -32,7 +32,7 @@ define('game/MapState', [ 'game/mapObject', 'util/Timeline', 'util/Map', 'util/P
 
         // TODO History object?
         this.unhitObjects = objects.map(function (object) {
-            return [ object, this.ruleSet.getObjectLatestHitTime(object) ]
+            return [ object, this.ruleSet.getObjectLatestHitTime(object) ];
         }, this).sort(function (a, b) {
             return a[1] < b[1] ? -1 : 1;
         });

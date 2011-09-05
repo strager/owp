@@ -80,7 +80,7 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/gPubSub',
             accuracyHistory = v.accuracyHistory;
             comboHistory = v.comboHistory;
             mouseHistory = v.mouseHistory;
-            objects = v.objects
+            objects = v.objects;
             ruleSet = v.ruleSet;
             scoreHistory = v.scoreHistory;
             skin = v.skin;

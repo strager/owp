@@ -1,6 +1,7 @@
 define('gfx/CanvasRenderer', [ 'game/mapObject', 'util/Cache', 'gfx/canvasShaders', 'game/MapState', 'util/gPubSub', 'util/util', 'gfx/View', 'loading' ], function (mapObject, Cache, shaders, MapState, gPubSub, util, View, loadingImageSrc) {
     var transformOriginStyleProperty, transformStyleProperty;
     var transformTranslatePrefix, transformTranslateSuffix;
+    var transformScalePrefix, transformScaleSuffix;
     var matrixTranslateSuffix;
 
     (function () {
@@ -11,7 +12,7 @@ define('gfx/CanvasRenderer', [ 'game/mapObject', 'util/Cache', 'gfx/canvasShader
         var style = document.createElement('div').style;
 
         function getStyleName(propertyNames) {
-            return propertyNames.filter(function(name) {
+            return propertyNames.filter(function (name) {
                 return name in style;
             }).shift();
         }
@@ -142,6 +143,8 @@ define('gfx/CanvasRenderer', [ 'game/mapObject', 'util/Cache', 'gfx/canvasShader
             time = v.time;
         }
 
+        var z = 0;
+
         // Views {{{
         var currentView;
 
@@ -166,8 +169,6 @@ define('gfx/CanvasRenderer', [ 'game/mapObject', 'util/Cache', 'gfx/canvasShader
         // Views }}}
 
         // Rendering helpers {{{
-        var z = 0;
-
         function setZ(node) {
             node.style.zIndex = z;
             ++z;

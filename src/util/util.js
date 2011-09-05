@@ -46,12 +46,15 @@ define('util/util', [ ], function () {
     }
 
     function extend(obj /* extensions... */) {
-        var i;
+        var i, extension;
+
+        function extendProperty(key) {
+            obj[key] = extension[key];
+        }
+
         for (i = 1; i < arguments.length; ++i) {
-            var extension = arguments[i];
-            Object.keys(extension || { }).forEach(function (key) {
-                obj[key] = extension[key];
-            });
+            extension = arguments[i];
+            Object.keys(extension || { }).forEach(extendProperty);
         }
 
         return obj;
