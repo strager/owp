@@ -21,7 +21,8 @@ define('game/MapState', [ 'game/mapObject', 'util/Timeline', 'util/Map', 'util/P
         objects.forEach(function (object) {
             mapObject.match(object, {
                 HitCircle: addRenderable,
-                Slider: addRenderable
+                Slider: addRenderable,
+                Spinner: addRenderable
             }, this);
 
             mapObject.match(object, {

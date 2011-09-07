@@ -68,6 +68,14 @@ define('game/Skin', [ 'util/util' ], function (util) {
                     'score-percent.png',
                     'score-x.png',
 
+                    'spinner-approachcircle.png',
+                    'spinner-background.png',
+                    'spinner-circle.png',
+                    'spinner-clear.png',
+                    'spinner-metre.png',
+                    'spinner-osu.png',
+                    'spinner-spin.png',
+
                     'ready-to-play.png'
                 ],
                 'sound': [

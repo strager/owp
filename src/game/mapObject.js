@@ -21,6 +21,13 @@ define('game/mapObject', [ 'util/util' ], function (util) {
 
     HitCircle.prototype.type = 'HitCircle';
 
+    function Spinner(time, duration) {
+        this.time = time;
+        this.duration = duration;
+    }
+
+    Spinner.prototype.type = 'Spinner';
+
     function Slider(time, x, y) {
         this.time = time;
         this.x = x;
@@ -74,7 +81,8 @@ define('game/mapObject', [ 'util/util' ], function (util) {
         Slider: Slider,
         HitMarker: HitMarker,
         SliderTick: SliderTick,
-        SliderEnd: SliderEnd
+        SliderEnd: SliderEnd,
+        Spinner: Spinner
     };
 
     var classNames = 'HitCircle,Slider,HitMarker,SliderTick,SliderEnd'.split(',');

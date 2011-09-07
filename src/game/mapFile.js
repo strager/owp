@@ -131,7 +131,7 @@ define('game/mapFile', [ 'game/RuleSet', 'game/Map', 'game/Combo', 'game/MapInfo
 
         var object;
 
-        switch (flags1 & 0x03) {
+        switch (flags1 & 0x07) {
         case 1:
             // Hit circle
             object = new mapObject.HitCircle();
@@ -142,7 +142,10 @@ define('game/mapFile', [ 'game/RuleSet', 'game/Map', 'game/Combo', 'game/MapInfo
             object = new mapObject.Slider();
             break;
 
-        // TODO Spinner support
+        case 4:
+            // Spinner
+            object = new mapObject.Spinner();
+            break;
 
         default:
             return null;
@@ -167,6 +170,9 @@ define('game/mapFile', [ 'game/RuleSet', 'game/Map', 'game/Combo', 'game/MapInfo
                     return readHitSounds(parseInt(hitSoundNumber, 10));
                 }) : [ ];
                 object.endHitSounds = [ object.hitSounds ].concat(extraHitSounds);
+            },
+            Spinner: function (object) {
+                object.duration = parseInt(list[5], 10);
             },
             _: false
         });

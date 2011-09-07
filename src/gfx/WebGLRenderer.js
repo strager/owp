@@ -117,6 +117,7 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/gPubSub',
                 gl.uniform2f(programs.sprite.uni.position, sprite.x, sprite.y);
                 gl.uniform4fv(programs.sprite.uni.color, sprite.color);
                 gl.uniform1f(programs.sprite.uni.scale, sprite.scale);
+                gl.uniform1f(programs.sprite.uni.angle, sprite.rotation || 0);
 
                 gl.uniform2f(programs.sprite.uni.size, sprite.texture.image.width, sprite.texture.image.height);
                 gl.activeTexture(gl.TEXTURE0);
@@ -635,11 +636,25 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/gPubSub',
             });
         }
 
+        function renderSpinner(object) {
+            var alpha = ruleSet.getObjectOpacity(object, time);
+
+            sprite({
+                x: 512 / 2,
+                y: 386 / 2,
+                color: [ 255, 255, 255, alpha * 255 ],
+                scale: 1,
+                texture: textures.spinnerCircle,
+                rotation: time - object.time
+            });
+        }
+
         function renderObject(object) {
             mapObject.match(object, {
                 HitCircle:  renderHitCircleObject,
                 HitMarker:  renderHitMarkerObject,
                 Slider:     renderSliderObject,
+                Spinner:    renderSpinner,
                 _: function () {
                     throw new TypeError('Unknown object type');
                 }
@@ -878,6 +893,7 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/gPubSub',
             'uniform vec2 uSize;',
             'uniform vec2 uPosition;',
             'uniform float uScale;',
+            'uniform float uAngle;',
 
             'varying vec2 vTextureCoord;',
 
@@ -889,7 +905,8 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/gPubSub',
             ');',
 
             'void main(void) {',
-                'gl_Position = (vec4(aVertexCoord / 2.0, 0.0, 1.0) * vec4(uSize * uScale, 1.0, 1.0) + vec4(uView + uPosition, 0.0, 0.0)) * projection;',
+                'mat2 rotation = mat2(cos(uAngle), -sin(uAngle), sin(uAngle), cos(uAngle));',
+                'gl_Position = (vec4(rotation * (aVertexCoord / 2.0), 0.0, 1.0) * vec4(uSize * uScale, 1.0, 1.0) + vec4(uView + uPosition, 0.0, 0.0)) * projection;',
                 'vTextureCoord = aTextureCoord;',
             '}'
         ].join('\n');
@@ -1111,7 +1128,8 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/gPubSub',
                 size: gl.getUniformLocation(programs.sprite, 'uSize'),
                 position: gl.getUniformLocation(programs.sprite, 'uPosition'),
                 scale: gl.getUniformLocation(programs.sprite, 'uScale'),
-                color: gl.getUniformLocation(programs.sprite, 'uColor')
+                color: gl.getUniformLocation(programs.sprite, 'uColor'),
+                angle: gl.getUniformLocation(programs.sprite, 'uAngle')
             };
 
             programs.objectTarget = createProgram(gl, objectTargetVertexShader, objectTargetFragmentShader);
@@ -1235,6 +1253,14 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/gPubSub',
             textures.cursorTrail = makeSkinTexture('cursortrail.png');
             textures.sliderTick = makeSkinTexture('sliderscorepoint.png');
             textures.repeatArrow = makeSkinTexture('reversearrow.png');
+
+            textures.spinnerApproachCircle = makeSkinTexture('spinner-approachcircle.png');
+            textures.spinnerBackground = makeSkinTexture('spinner-background.png');
+            textures.spinnerCircle = makeSkinTexture('spinner-circle.png');
+            textures.spinnerClear = makeSkinTexture('spinner-clear.png');
+            textures.spinnerMeter = makeSkinTexture('spinner-metre.png');
+            textures.spinnerOsu = makeSkinTexture('spinner-osu.png');
+            textures.spinnerSpin = makeSkinTexture('spinner-spin.png');
 
             var cursorImage = skin.assetManager.get('cursor.png', 'image');
             util.setCursorImage(canvas, cursorImage.src, cursorImage.width / 2, cursorImage.height / 2);

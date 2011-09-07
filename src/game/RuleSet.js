@@ -111,6 +111,9 @@ define('game/RuleSet', [ 'util/util', 'game/mapObject', 'util/History' ], functi
             HitCircle: function (object) {
                 return this.getObjectStartTime(object);
             },
+            Spinner: function (object) {
+                return object.time + object.duration;
+            },
             _: function (object) {
                 return object.time;
             }
