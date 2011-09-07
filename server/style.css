@@ -2,6 +2,7 @@ html {
     color: #F0F0F0;
     background-color: #0E0E0E;
     font-family: Helvetica, sans-serif;
+    height: 100%;
 }
 
 a:link {
@@ -61,4 +62,11 @@ body {
     background-color: #DD2222;
     color: #FFFFFF;
     font-weight: normal;
+}
+
+.follow {
+    position: absolute;
+    top: 0;
+    margin-left: 604px;
+    margin-top: 0.5em;
 }
