@@ -245,7 +245,8 @@ define('game/RuleSet', [ 'util/util', 'game/mapObject', 'util/History' ], functi
                     var radius = this.getSliderSize() / 2;
 
                     return distance <= radius * radius;
-                }
+                },
+                Spinner: true
             }, this);
         },
 

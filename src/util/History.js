@@ -21,6 +21,10 @@ define('util/History', [ 'util/SortedMap' ], function (SortedMap) {
             }
 
             return this.map.values[index];
+        },
+
+        getHashBetweenTimes: function (start, end) {
+            return this.map.getHashBetweenKeys(start, end);
         }
     };
 

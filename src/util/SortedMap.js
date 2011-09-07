@@ -33,6 +33,37 @@ define('util/SortedMap', [ ], function () {
 
         getIndexForKey: function (key) {
             return sortIndex(this.keys, key);
+        },
+
+        forEach: function (callback, context) {
+            var keys = this.keys.slice();
+            var values = this.values.slice();
+
+            var i, shouldContinue = undefined;
+            for (i = 0; i < keys.length; ++i) {
+                shouldContinue = callback.call(context, values[i], keys[i], i);
+
+                if (shouldContinue === false) {
+                    // Explicit false; stop.
+                    // This is a bit different than Array#forEach, but
+                    // screw you all!
+                    break;
+                }
+            }
+        },
+
+        getHashBetweenKeys: function (lo, hi) {
+            var loIndex = this.getIndexForKey(lo);
+            var hiIndex = this.getIndexForKey(hi);
+
+            var hash = { };
+
+            var i;
+            for (i = loIndex; i < hiIndex; ++i) {
+                hash[this.keys[i]] = this.values[i];
+            }
+
+            return hash;
         }
     };
 

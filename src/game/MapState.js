@@ -1,4 +1,4 @@
-define('game/MapState', [ 'game/mapObject', 'util/Timeline', 'util/Map', 'util/PubSub' ], function (mapObject, Timeline, Map, PubSub) {
+define('game/MapState', [ 'game/mapObject', 'util/Timeline', 'util/Map', 'util/PubSub', 'game/SpinnerHistory' ], function (mapObject, Timeline, Map, PubSub, SpinnerHistory) {
     function MapState(ruleSet, objects, timeline) {
         this.ruleSet = ruleSet;
         this.timeline = timeline;
@@ -29,6 +29,12 @@ define('game/MapState', [ 'game/mapObject', 'util/Timeline', 'util/Map', 'util/P
                 HitCircle: addClickable,
                 Slider: addClickable
             }, this);
+
+            mapObject.match(object, {
+                Spinner: function () {
+                    object.history = new SpinnerHistory();
+                }
+            }, this);
         }, this);
 
         // TODO History object?
@@ -37,6 +43,8 @@ define('game/MapState', [ 'game/mapObject', 'util/Timeline', 'util/Map', 'util/P
         }, this).sort(function (a, b) {
             return a[1] < b[1] ? -1 : 1;
         });
+
+        this.lastProcessSlidesTime = 0;
     }
 
     MapState.HIT_OBJECT_VISIBILITY = 'hit object visibility';
@@ -234,6 +242,23 @@ define('game/MapState', [ 'game/mapObject', 'util/Timeline', 'util/Map', 'util/P
             for (i = 0; i < this.unhitObjects.length; ++i) {
                 unhitObject = this.unhitObjects[i];
 
+                mapObject.match(unhitObject[0], {
+                    Spinner: function (spinner) {
+                        var mouseEvents = mouseHistory.getHashBetweenTimes(this.lastProcessSlidesTime, time);
+
+                        Object.keys(mouseEvents).forEach(function (time) {
+                            var m = mouseEvents[time];
+                            time = +time;
+
+                            if (m.left || m.right) {
+                                spinner.history.move(time, m.x, m.y);
+                            } else {
+                                spinner.history.stop();
+                            }
+                        });
+                    }
+                });
+
                 if (unhitObject[1] >= time) {
                     break;
                 }
@@ -256,6 +281,8 @@ define('game/MapState', [ 'game/mapObject', 'util/Timeline', 'util/Map', 'util/P
             removedUnhitObjects.forEach(function (index) {
                 this.unhitObjects.splice(index, 1);
             }, this);
+
+            this.lastProcessSlidesTime = time;
         },
 
         processMisses: function (time) {
