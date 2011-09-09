@@ -257,7 +257,7 @@ define('game/MapState', [ 'game/mapObject', 'util/Timeline', 'util/Map', 'util/P
                             }
                         });
                     }
-                });
+                }, this);
 
                 if (unhitObject[1] >= time) {
                     break;
