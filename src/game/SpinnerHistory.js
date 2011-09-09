@@ -10,50 +10,47 @@ define('game/SpinnerHistory', [ 'util/SortedMap' ], function (SortedMap) {
         },
 
         move: function (time, x, y) {
-            this.map.set(time, [ x, y ]);
+            var angle = Math.atan2(y - this.centre[1], x - this.centre[0]);
+            this.map.set(time, angle);
         },
 
         getRotationAtTime: function (time) {
-            var cx = this.centre[0];
-            var cy = this.centre[1];
-
-            var angle = 0;
-            var start = null;
-            var last = null;
+            var rotationAngle = 0;
+            var startAngle = null;
+            var lastAngle = null;
 
             function end() {
-                if (!start) {
+                if (startAngle === null) {
                     return;
                 }
 
-                var startAngle = Math.atan2(start[1] - cy, start[0] - cx);
-                var endAngle = Math.atan2(last[1] - cy, last[0] - cx);
+                rotationAngle -= (lastAngle - startAngle);
 
-                angle -= (endAngle - startAngle);
-
-                start = null;
-                last = null;
+                startAngle = null;
+                lastAngle = null;
             }
 
-            this.map.forEach(function (point, pointTime) {
-                if (pointTime > time) {
+            this.map.forEach(function (angle, angleTime) {
+                if (angleTime > time) {
                     return false;
                 }
 
-                if (point) {
-                    if (!start) {
-                        start = point;
+                if (angle === null) {
+                    // Mouse lifted
+                    end();
+                } else {
+                    if (startAngle === null) {
+                        // Mouse just pressed
+                        startAngle = angle;
                     }
 
-                    last = point;
-                } else {
-                    end();
+                    lastAngle = angle;
                 }
             });
 
             end();
 
-            return angle;
+            return rotationAngle;
         }
     };
 

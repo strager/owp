@@ -253,7 +253,7 @@ define('game/MapState', [ 'game/mapObject', 'util/Timeline', 'util/Map', 'util/P
                             if (m.left || m.right) {
                                 spinner.history.move(time, m.x, m.y);
                             } else {
-                                spinner.history.stop();
+                                spinner.history.stop(time);
                             }
                         });
                     }
