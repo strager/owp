@@ -10,25 +10,20 @@ define('game/SpinnerHistory', [ 'util/SortedMap' ], function (SortedMap) {
         },
 
         move: function (time, x, y) {
-            var angle = Math.atan2(y - this.centre[1], x - this.centre[0]);
+            var angle = Math.atan2(-(y - this.centre[1]), x - this.centre[0]);
             this.map.set(time, angle);
         },
 
         getRotationAtTime: function (time) {
-            var rotationAngle = 0;
-            var startAngle = null;
-            var lastAngle = null;
+            // Pretend we're moving left/right in a 1D Newtonian universe
 
-            function end() {
-                if (startAngle === null) {
-                    return;
-                }
+            // Player's cursor's angle
+            var playerPosition = Math.PI;
 
-                rotationAngle -= (lastAngle - startAngle);
-
-                startAngle = null;
-                lastAngle = null;
-            }
+            // Position of the player's cursor at the time we press down the
+            // mouse, so we can get absolute coordinates from the relative
+            // mouse polar coordinates
+            var downPosition = null;
 
             this.map.forEach(function (angle, angleTime) {
                 if (angleTime > time) {
@@ -37,20 +32,20 @@ define('game/SpinnerHistory', [ 'util/SortedMap' ], function (SortedMap) {
 
                 if (angle === null) {
                     // Mouse lifted
-                    end();
+                    downPosition = null;
                 } else {
-                    if (startAngle === null) {
+                    if (downPosition === null) {
                         // Mouse just pressed
-                        startAngle = angle;
+                        downPosition = playerPosition + angle;
+                    } else {
+                        // Mouse dragged
+                        // TODO Handle wrapping (if diff is too big (sign change?), wrapped)
+                        playerPosition = angle - downPosition;
                     }
-
-                    lastAngle = angle;
                 }
             });
 
-            end();
-
-            return rotationAngle;
+            return playerPosition;
         }
     };
 
