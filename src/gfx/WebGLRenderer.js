@@ -645,7 +645,7 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/gPubSub',
                 color: [ 255, 255, 255, alpha * 255 ],
                 scale: 1,
                 texture: textures.spinnerCircle,
-                rotation: object.history.getRotationAtTime(time)
+                rotation: object.history.getStateAtTime(time).getRotation()
             });
         }
 
