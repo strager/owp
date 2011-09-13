@@ -4,8 +4,7 @@ define('util/SortedMap', [ ], function () {
         this.values = [ ];
     }
 
-    // Returns the index in array whose value is greater than or equal to
-    // value
+    // Returns the index in array whose value is greater than value
     function sortIndex(array, value) {
         var i;
 
@@ -32,6 +31,7 @@ define('util/SortedMap', [ ], function () {
         },
 
         getIndexForKey: function (key) {
+            // FIXME this gives *insertion* index, not *value* index
             return sortIndex(this.keys, key);
         },
 
