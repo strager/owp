@@ -1,4 +1,4 @@
-define('game/SpinnerHistory', [ 'util/SortedMap' ], function (SortedMap) {
+define('game/SpinnerHistory', [ 'util/History' ], function (History) {
     function SpinnerState(time) {
         // Pretend we're moving left/right in a 1D Newtonian universe
 
@@ -50,32 +50,51 @@ define('game/SpinnerHistory', [ 'util/SortedMap' ], function (SortedMap) {
     };
 
     function SpinnerHistory() {
-        this.map = new SortedMap();
+        this.mouseHistory = new History();
+        this.stateHistory = new History();
         this.centre = [ 512 / 2, 384 / 2 ];
     }
 
     SpinnerHistory.prototype = {
         stop: function (time) {
-            this.map.set(time, null);
+            this.mouseHistory.add(time, null);
+
+            this.update(time);
         },
 
         move: function (time, x, y) {
             var angle = Math.atan2(-(y - this.centre[1]), x - this.centre[0]);
-            this.map.set(time, angle);
+            this.mouseHistory.add(time, angle);
+
+            this.update(time);
+        },
+
+        update: function (time) {
+            // FIXME So hacky =[
+
+            var stateIndex = this.stateHistory.map.getIndexForKey(time);
+            var state;
+            if (stateIndex === 0) {
+                state = new SpinnerState(0);
+            } else {
+                state = this.stateHistory.map.values[stateIndex - 1];
+            }
+
+            // Remove future states, if any
+            this.stateHistory.map.keys.splice(stateIndex, Infinity);
+            this.stateHistory.map.values.splice(stateIndex, Infinity);
+
+            // [Re]build state[s]
+            var stateTime;
+            var mouseDatas = this.mouseHistory.getHashBetweenTimes(state.time, time);
+            for (stateTime in mouseDatas) {
+                state = state.updated(mouseDatas[stateTime], +stateTime);
+                this.stateHistory.add(+stateTime, state);
+            }
         },
 
         getStateAtTime: function (time) {
-            var state = new SpinnerState(0);
-
-            this.map.forEach(function (angle, angleTime) {
-                if (angleTime > time) {
-                    return false;
-                }
-
-                state = state.updated(angle, angleTime);
-            });
-
-            return state;
+            return this.stateHistory.getDataAtTime(time);
         }
     };
 
