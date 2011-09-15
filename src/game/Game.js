@@ -104,7 +104,8 @@ define('game/Game', [ 'q', 'game/MapState', 'AssetManager', 'util/PubSub', 'Soun
                             ruleSet: mapState.ruleSet,
                             scoreHistory: scoreHistory,
                             accuracyHistory: accuracyHistory,
-                            comboHistory: comboHistory
+                            comboHistory: comboHistory,
+                            mapProgress: mapState.ruleSet.getMapProgress(mapInfo.map, time)
                         }, time);
                     },
                     enter: function () {
