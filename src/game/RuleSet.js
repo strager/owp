@@ -707,6 +707,25 @@ define('game/RuleSet', [ 'util/util', 'game/mapObject', 'util/History' ], functi
                     }
                 });
             });
+        },
+
+        getMapStartTime: function (map) {
+            return this.getObjectStartAppearTime(map.objects[0]);
+        },
+
+        getMapEndTime: function (map) {
+            return this.getObjectStartDisappearTime(map.objects[map.objects.length - 1]);
+        },
+
+        getMapProgress: function (map, time) {
+            var startTime = this.getMapStartTime(map);
+            var endTime = this.getMapEndTime(map);
+
+            if (time < startTime) {
+                return -(time / startTime);
+            } else {
+                return (time - startTime) / (endTime - startTime);
+            }
         }
     };
 
