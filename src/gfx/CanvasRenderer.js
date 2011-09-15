@@ -837,10 +837,15 @@ define('gfx/CanvasRenderer', [ 'game/mapObject', 'util/Cache', 'gfx/canvasShader
                 return cloneAbsolute(backgroundGraphic);
             });
 
-            el.style.x = viewport.x + 'px';
-            el.style.y = viewport.y + 'px';
-            el.style.width = viewport.width + 'px';
-            el.style.height = viewport.height + 'px';
+            var rect = util.fitOuterRectangle(
+                viewport.width, viewport.height,
+                backgroundGraphic.width, backgroundGraphic.height
+            );
+
+            el.style.x = viewport.x - rect.x + 'px';
+            el.style.y = viewport.y - rect.y + 'px';
+            el.style.width = rect.width + 'px';
+            el.style.height = rect.height + 'px';
         }
 
         function renderStoryboard() {

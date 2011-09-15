@@ -831,7 +831,7 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/gPubSub',
             var innerW = backgroundImage.width;
             var innerH = backgroundImage.height;
 
-            var scale = util.fitRectangleScale(containerW, containerH, innerW, innerH);
+            var scale = util.fitOuterRectangleScale(containerW, containerH, innerW, innerH);
 
             sprite({
                 x: 320,
