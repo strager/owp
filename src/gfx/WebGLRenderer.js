@@ -75,6 +75,7 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/gPubSub',
         var scoreHistory, comboHistory, accuracyHistory;
         var videoElement;
         var mapProgress;
+        var breakiness;
         var time;
 
         function vars(v) {
@@ -88,6 +89,7 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/gPubSub',
             skin = v.skin;
             time = v.time;
             videoElement = v.videoElement;
+            breakiness = v.breakiness;
         }
 
         // Render batch {{{
@@ -833,10 +835,12 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/gPubSub',
 
             var scale = util.fitOuterRectangleScale(containerW, containerH, innerW, innerH);
 
+            var brightness = 1 - (1 - breakiness) * 0.125;
+
             sprite({
                 x: 320,
                 y: 240,
-                color: [ 255, 255, 255, 255 ],
+                color: [ brightness * 255, brightness * 255, brightness * 255, 255 ],
                 scale: scale,
                 texture: texture
             });
@@ -1536,12 +1540,13 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/gPubSub',
                 r.renderHud();
             },
 
-            renderStoryboard: function (storyboard, assetManager, time) {
-                initStoryboard(storyboard, assetManager);
+            renderStoryboard: function (state, time) {
+                initStoryboard(state.storyboard, state.assetManager);
 
                 r.vars({
                     videoElement: videoElement,
-                    storyboard: storyboard,
+                    storyboard: state.storyboard,
+                    breakiness: state.breakiness,
                     time: time
                 });
 

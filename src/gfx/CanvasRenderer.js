@@ -1068,10 +1068,11 @@ define('gfx/CanvasRenderer', [ 'game/mapObject', 'util/Cache', 'gfx/canvasShader
                 r.renderHud();
             },
 
-            renderStoryboard: function (storyboard, assetManager, time) {
+            renderStoryboard: function (state, time) {
                 r.vars({
-                    assetManager: assetManager,
-                    storyboard: storyboard,
+                    assetManager: state.assetManager,
+                    storyboard: state.storyboard,
+                    breakiness: state.breakiness,
                     time: time
                 });
 

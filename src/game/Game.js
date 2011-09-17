@@ -91,8 +91,13 @@ define('game/Game', [ 'q', 'game/MapState', 'AssetManager', 'util/PubSub', 'Soun
                 setState({
                     render: function (renderer) {
                         var time = currentTime();
+                        var breakiness = mapState.ruleSet.getBreakinessAt(time);
 
-                        renderer.renderStoryboard(mapInfo.storyboard, mapAssetManager, time);
+                        renderer.renderStoryboard({
+                            storyboard: mapInfo.storyboard,
+                            assetManager: mapAssetManager,
+                            breakiness: breakiness
+                        }, time);
                         renderer.renderMap({
                             ruleSet: mapState.ruleSet,
                             objects: mapState.getVisibleObjects(time),
@@ -212,7 +217,11 @@ define('game/Game', [ 'q', 'game/MapState', 'AssetManager', 'util/PubSub', 'Soun
                     render: function (renderer) {
                         var time = 0;
 
-                        renderer.renderStoryboard(mapInfo.storyboard, mapAssetManager, time);
+                        renderer.renderStoryboard({
+                            storyboard: mapInfo.storyboard,
+                            assetManager: mapAssetManager,
+                            breakiness: 0
+                        }, time);
                         renderer.renderReadyToPlay(skin.valueOf(), time);
                     },
                     enter: function () {

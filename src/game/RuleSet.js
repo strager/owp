@@ -1,4 +1,4 @@
-define('game/RuleSet', [ 'util/util', 'game/mapObject', 'util/History' ], function (util, mapObject, History) {
+define('game/RuleSet', [ 'util/util', 'game/mapObject', 'util/History', 'util/CueList' ], function (util, mapObject, History, CueList) {
     function RuleSet() {
         this.approachRate = 5;
         this.overallDifficulty = 5;
@@ -7,8 +7,13 @@ define('game/RuleSet', [ 'util/util', 'game/mapObject', 'util/History' ], functi
         this.stackLeniency = 1;
         this.sliderMultiplier = 1;
         this.sliderTickRate = 1;
+
         this.uninheritedTimingPointHistory = new History();
         this.inheritedTimingPointHistory = new History();
+
+        this.breakTimeline = new CueList();
+
+        this.breakinessTransitionDuration = 300;
     }
 
     RuleSet.fromSettings = function (settings) {
@@ -31,6 +36,10 @@ define('game/RuleSet', [ 'util/util', 'game/mapObject', 'util/History' ], functi
             } else {
                 ruleSet.uninheritedTimingPointHistory.add(timingPoint.time, timingPoint);
             }
+        });
+
+        settings.breakRanges.forEach(function (breakRange) {
+            ruleSet.breakTimeline.add(breakRange, breakRange.startTime, breakRange.endTime);
         });
 
         return ruleSet;
@@ -725,6 +734,24 @@ define('game/RuleSet', [ 'util/util', 'game/mapObject', 'util/History' ], functi
                 return -(time / startTime);
             } else {
                 return (time - startTime) / (endTime - startTime);
+            }
+        },
+
+        getBreakinessAt: function (time) {
+            var d = this.breakinessTransitionDuration;
+
+            var breaks = this.breakTimeline.getAllAtTime(time);
+
+            if (breaks.length) {
+                return breaks.reduce(function (acc, breakRange) {
+                    return Math.min(
+                        acc,
+                        Math.abs(time - breakRange.startTime),
+                        Math.abs(time - breakRange.endTime)
+                    );
+                }, d) / d;
+            } else {
+                return 0;
             }
         }
     };
