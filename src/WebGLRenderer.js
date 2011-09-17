@@ -184,25 +184,20 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
                 gl.useProgram(programs.curve);
 
                 // Buffers
-                // Vertex and UV are interleaved
-                //var stride = 2 * 4 * 2;
                 var stride = 2 * 4;
 
                 gl.bindBuffer(gl.ARRAY_BUFFER, buffers.curves[curve.id]);
                 gl.vertexAttribPointer(programs.curve.attr.vertexCoord, 2, gl.FLOAT, false, stride, 0);
-                //gl.vertexAttribPointer(programs.curve.attr.textureCoord, 2, gl.FLOAT, false, stride, 2 * 4);
                 gl.enableVertexAttribArray(programs.curve.attr.vertexCoord);
-                //gl.enableVertexAttribArray(programs.curve.attr.textureCoord);
 
                 // Uniforms
                 gl.uniform2fv(programs.curve.uni.view, curve.view.mat);
                 gl.uniform4fv(programs.curve.uni.color, curve.color);
 
                 // Draw
-                gl.drawArrays(gl.LINE_STRIP, 0, curve.vertexCount);
+                gl.drawArrays(gl.TRIANGLE_STRIP, 0, curve.vertexCount);
 
                 // Cleanup
-                gl.disableVertexAttribArray(programs.curve.attr.textureCoord);
                 gl.disableVertexAttribArray(programs.curve.attr.vertexCoord);
                 gl.bindBuffer(gl.ARRAY_BUFFER, null);
 
@@ -349,49 +344,15 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
 
         // Map rendering {{{
         function createSliderTrack(points, radius) {
-//            var data = [ ];
-//
-//            function extrude(point) {
-//                // [ x, y, _, dx, dy ] => [ x1, y1, x2, y2 ]
-//
-//                var x = point[0];
-//                var y = point[1];
-//                var dx = point[3];
-//                var dy = point[4];
-//
-//                return [
-//                    x - dy * radius,
-//                    y + dx * radius,
-//                    x + dy * radius,
-//                    y - dx * radius
-//                ];
-//            }
-//
-//            function mark(a) {
-//                /*jshint white: false */
-//
-//                // Vertex, UV, vertex, UV
-//                data.push(a[0]); data.push(a[1]);
-//                data.push(0);    data.push(0);
-//
-//                data.push(a[2]); data.push(a[3]);
-//                data.push(0);    data.push(1);
-//            }
-//
-//            points.forEach(function (point) {
-//                mark(extrude(point));
-//            });
-
-            var points2 = points.reduce(function (acc, point) {
+            var floats = points.reduce(function (acc, point) {
                 return acc.concat(point);
             }, [ ]);
 
             var buffer = gl.createBuffer();
             gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
-            gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(points2), gl.STATIC_DRAW);
+            gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(floats), gl.STATIC_DRAW);
 
             return {
-                //vertexCount: data.length / 4,
                 vertexCount: points.length,
                 buffer: buffer
             };
@@ -530,7 +491,6 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
 
                 var visibility = ruleSet.getObjectVisibilityAtTime(object, time);
 
-return;
                 // XXX!
                 //var lastPoint = object.curve.render(growPercentage).slice(-1)[0];
                 var lastPoint = object.curve.getEndPoint();
@@ -956,11 +916,11 @@ return;
 
         curveVertexShader = [
             'attribute vec2 aVertexCoord;',
-            'attribute vec2 aTextureCoord;',
+            //'attribute vec2 aTextureCoord;',
 
             'uniform vec2 uView;',
 
-            'varying vec2 vTextureCoord;',
+            //'varying vec2 vTextureCoord;',
 
             'mat4 projection = mat4(',
                 '2.0 / 640.0, 0.0, 0.0, -1.0,',
@@ -971,7 +931,7 @@ return;
 
             'void main(void) {',
                 'gl_Position = (vec4(aVertexCoord, 0.0, 1.0) + vec4(uView, 0.0, 0.0)) * projection;',
-                'vTextureCoord = aTextureCoord;',
+                //'vTextureCoord = aTextureCoord;',
             '}'
         ].join('\n');
 
@@ -996,7 +956,7 @@ return;
 
             'void main(void) {',
                 //'gl_FragColor = getSliderColor(vTextureCoord.t, vec4(uColor) / 255.0);',
-                'gl_FragColor = uColor;',
+                'gl_FragColor = uColor / vec4(255.0, 255.0, 255.0, 1.0);',
             '}'
         ].join('\n');
 

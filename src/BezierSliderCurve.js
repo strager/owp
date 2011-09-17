@@ -293,30 +293,23 @@ define('BezierSliderCurve', [ ], function () {
             return Math.max(Math.min(v, max), min);
         }
 
-        var q1ta = 0;
-        var q1tb = clamp(0, angle, 1) - 0;
-
-        var q2ta = 0;
-        var q2tb = clamp(1, angle, 2) - 1;
-
-        var q3ta = 0;
-        var q3tb = clamp(2, angle, 3) - 2;
-
-        var q4ta = 0;
-        var q4tb = clamp(3, angle, 4) - 3;
+        var quads = [
+            quad( 1, -1),
+            quad(-1, -1).reverse(),
+            quad(-1,  1),
+            quad( 1,  1).reverse()
+        ];
 
         var beziers = [ ];
+        var q;
+        for (q = 0; q < 4; ++q) {
+            var ta = 0;
+            var tb = clamp(q, angle, q + 1) - q;
 
-        function addQuad(ta, tb, q) {
             if (ta !== tb) {
-                beziers.push(splitBezierAtMany([ ta, tb ], q)[1]);
+                beziers.push(splitBezierAtMany([ ta, tb ], quads[q])[1]);
             }
         }
-
-        addQuad(q1ta, q1tb, quad( 1, -1));
-        addQuad(q2ta, q2tb, quad(-1, -1).reverse());
-        addQuad(q3ta, q3tb, quad(-1,  1));
-        addQuad(q4ta, q4tb, quad( 1,  1).reverse());
 
         var sin = Math.sin(-fromAngle);
         var cos = Math.cos(-fromAngle);
@@ -614,21 +607,27 @@ define('BezierSliderCurve', [ ], function () {
         });
     }
 
-    function offsetBezierBbox(bezier, distance, threshold) {
-        // This is similar to the algorithm used in flattenBezierBbox.
+    function simplifyBezierBboxTransport(bezier, distance, threshold, offsetThreshold) {
+        // Similar to the simplifyBezierBbox algorithm, except we compare the
+        // derivatives of the start and end as well.
         var bbox = getBezierBestFitBounds(bezier);
         var vx = bbox[0][0] - bbox[1][0];
         var vy = bbox[0][1] - bbox[1][1];
 
         if (Math.abs(vx) < threshold || Math.abs(vy) < threshold) {
-            var offsetBezier = offsetBezierNaive(bezier, distance);
-
-            var bbox2 = getBezierBestFitBounds(offsetBezier);
+            var offsetBezier2 = offsetBezierNaive(bezier, distance);
+            var bbox2 = getBezierBestFitBounds(offsetBezier2);
             var vx2 = bbox2[0][0] - bbox2[1][0];
             var vy2 = bbox2[0][1] - bbox2[1][1];
 
-            if (Math.abs(vx2) < threshold || Math.abs(vy2) < threshold) {
-                return [ offsetBezier ];
+            var offsetBezier3 = offsetBezierNaive(reverseBezier(bezier), distance);
+            var bbox3 = getBezierBestFitBounds(offsetBezier3);
+            var vx3 = bbox3[0][0] - bbox3[1][0];
+            var vy3 = bbox3[0][1] - bbox3[1][1];
+
+            if ((Math.abs(vx2) < offsetThreshold || Math.abs(vy2) < offsetThreshold)
+             && (Math.abs(vx3) < offsetThreshold || Math.abs(vy3) < offsetThreshold)) {
+                return [ bezier ];
             } else {
                 // Fall through
             }
@@ -636,13 +635,40 @@ define('BezierSliderCurve', [ ], function () {
 
         // TODO Split somewhere smarter than the middle
         var split = splitBezierAt(0.5, bezier);
-        var segs = offsetBezierBbox(split[0], distance, threshold)
-            .concat(offsetBezierBbox(split[1], distance, threshold));
-
-        return segs;
+        return simplifyBezierBboxTransport(split[0], distance, threshold, offsetThreshold)
+            .concat(simplifyBezierBboxTransport(split[1], distance, threshold, offsetThreshold));
     }
 
-    function offsetBezierBboxWithCircleCapJoint(beziers, distance, tolerance) {
+    function transportStripBezier(centre, bezier, distance, tolerance, offsetThreshold) {
+        var nbeziers = simplifyBezierBboxTransport(bezier, distance, tolerance, offsetThreshold);
+
+        return nbeziers.reduce(function (acc, nbezier) {
+            var p = getBezierPointAt(1, nbezier);
+
+            return acc.concat([ centre, p ]);
+        }, [ ]);
+    }
+
+    function transportStrokeBezier(bezier, distance, tolerance, offsetThreshold) {
+        var nbeziers = simplifyBezierBboxTransport(bezier, distance, tolerance, offsetThreshold);
+
+        var t = getBezierDerivativeAt(0, nbeziers[0]);
+        var p = getBezierPointAt(0, nbeziers[0]);
+        var extrudedA = [ p[0] +  t[1] * distance, p[1] + -t[0] * distance ];
+        var extrudedB = [ p[0] + -t[1] * distance, p[1] +  t[0] * distance ];
+        var init = [ extrudedA, extrudedB ];
+
+        return nbeziers.reduce(function (acc, nbezier) {
+            var t = getBezierDerivativeAt(1, nbezier);
+            var p = getBezierPointAt(1, nbezier);
+            var extrudedA = [ p[0] +  t[1] * distance, p[1] + -t[0] * distance ];
+            var extrudedB = [ p[0] + -t[1] * distance, p[1] +  t[0] * distance ];
+
+            return acc.concat([ extrudedA, extrudedB ]);
+        }, init);
+    }
+
+    function transportStrokeBeziers(beziers, distance, tolerance, offsetThreshold) {
         function cap(centre, nDir) {
             var radius = Math.abs(distance);
             var rootAngle = -Math.atan2(nDir[1] - centre[1], nDir[0] - centre[0]);
@@ -651,62 +677,72 @@ define('BezierSliderCurve', [ ], function () {
             var rightAngle = rootAngle - Math.PI / 2;
 
             var circleBeziers = circleToBeziers(radius, leftAngle, rightAngle);
-            return translatedBeziersBy(centre[0], centre[1], circleBeziers);
+            var points = circleBeziers.reduce(function (acc, bezier) {
+                return acc.concat(transportStripBezier([ 0, 0 ], bezier, distance, tolerance, offsetThreshold));
+            }, [ ]);
+
+            return points.map(function (point) {
+                return [
+                    point[0] + centre[0],
+                    point[1] + centre[1],
+                ];
+            });
         }
 
-        function joint(centre, left, right) {
+        function joint(centre, left, right, distance) {
             // Y is inverted because Y is in screen space, not trig space
             var radius = Math.abs(distance);
             var leftAngle  = Math.atan2(-( left[1] - centre[1]),  left[0] - centre[0]);
             var rightAngle = Math.atan2(-(right[1] - centre[1]), right[0] - centre[0]);
 
             var circleBeziers = circleToBeziers(radius, leftAngle, rightAngle);
-            return translatedBeziersBy(centre[0], centre[1], circleBeziers);
+            var points = circleBeziers.reduce(function (acc, bezier) {
+                return acc.concat(transportStripBezier([ 0, 0 ], bezier, distance, tolerance, offsetThreshold));
+            }, [ ]);
+
+            return points.map(function (point) {
+                return [
+                    point[0] + centre[0],
+                    point[1] + centre[1],
+                ];
+            });
         }
 
-        var output = [ ];
-
-        function add(beziers) {
-            output.push.apply(output, beziers);
-        }
-
-        // Offset curves (no joints or caps yet)
-        var bezierSets = beziers.map(function (bezier) {
-            return offsetBezierBbox(bezier, distance, tolerance);
+        var transportPoints = beziers.map(function (bezier) {
+            return transportStrokeBezier(bezier, distance, tolerance, offsetThreshold);
         });
 
-        // Add joints and clip curves
-        var outputSets = [ ];
-        outputSets.push(cap(beziers[0][0], beziers[0][1]));
-        outputSets.push(bezierSets[0]);
+        var outputPoints = [ ];
+        outputPoints.push.apply(outputPoints, cap(beziers[0][0], beziers[0][1]));
+        outputPoints.push.apply(outputPoints, transportPoints[0]);
 
         var i;
-        for (i = 1; i < bezierSets.length; ++i) {
-            var leftSet = bezierSets[i - 1];
-            var rightSet = bezierSets[i];
-
-            var leftBezier = leftSet[leftSet.length - 1];
-            var rightBezier = rightSet[0];
-
+        for (i = 1; i < transportPoints.length; ++i) {
+            // Add a joint
             var centre = beziers[i][0];
-            var left = leftBezier[leftBezier.length - 1];
-            var right = rightBezier[0];
+
+            var leftA = transportPoints[i][0];
+            var rightA = transportPoints[i - 1].slice(-2)[0];
 
             // Area is inverted because Y is inverted
-            if (-contourArea([ left, centre, right ]) <= 0) {
-                // Intersection somewhere
-                outputSets.pop();
-                var clipped = clipBezierSetsAtIntersection(leftSet, reverseBeziers(rightSet));
-                outputSets.push(clipped[0]);
-                outputSets.push(reverseBeziers(clipped[1]));
-            } else {
-                // No intersection; joint away!
-                outputSets.push(joint(centre, left, right));
-                outputSets.push(rightSet);
+            if (-contourArea([ leftA, centre, rightA ]) > 0) {
+                outputPoints.push.apply(outputPoints, joint(centre, leftA, rightA, distance).reverse());
             }
+
+            var leftB = transportPoints[i - 1].slice(-1)[0];
+            var rightB = transportPoints[i][1];
+
+            // Area is inverted because Y is inverted
+            if (-contourArea([ leftB, centre, rightB ]) > 0) {
+                outputPoints.push.apply(outputPoints, joint(centre, leftB, rightB, distance).reverse());
+            }
+
+            outputPoints.push.apply(outputPoints, transportPoints[i]);
         }
 
-        return flattenBezierSetsBbox(outputSets, tolerance);
+        outputPoints.push.apply(outputPoints, cap(beziers[beziers.length - 1].slice(-1)[0], beziers[beziers.length - 1].slice(-2)[0]));
+
+        return outputPoints;
     }
 
     function rawPointsToBezierSet(rawPoints) {
@@ -744,8 +780,8 @@ define('BezierSliderCurve', [ ], function () {
         };
 
         this.flattenContourPoints = function (radius) {
-            var offsetPointsA = offsetBezierBboxWithCircleCapJoint(beziers, radius, TOLERANCE);
-            var offsetPointsB = offsetBezierBboxWithCircleCapJoint(reverseBeziers(beziers), radius, TOLERANCE);
+            var offsetPointsA = transportStrokeBeziers(beziers, radius, TOLERANCE, TOLERANCE);
+            var offsetPointsB = transportStrokeBeziers(reverseBeziers(beziers), radius, TOLERANCE, TOLERANCE);
 
             return offsetPointsA.concat(offsetPointsB);
         };
