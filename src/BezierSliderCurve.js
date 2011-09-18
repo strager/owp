@@ -665,7 +665,7 @@ define('BezierSliderCurve', [ ], function () {
         // TODO Use bbox method instead
 
         var nbeziers = beziers.reduce(function (acc, bezier) {
-            return simplifyBezierBboxTransport(bezier, distance, tolerance, offsetThreshold);
+            return acc.concat(simplifyBezierBboxTransport(bezier, distance, tolerance, offsetThreshold));
         }, [ ]);
 
         var output = [ ];
