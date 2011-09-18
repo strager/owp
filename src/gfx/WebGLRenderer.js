@@ -392,46 +392,19 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/gPubSub',
         // Rendering helpers }}}
 
         // Map rendering {{{
-        function createSliderTrack(points, radius) {
-            var data = [ ];
+        function createSliderTrack(curve, radius) {
+            var points = curve.flattenContourPoints(radius);
 
-            function extrude(point) {
-                // [ x, y, _, dx, dy ] => [ x1, y1, x2, y2 ]
-
-                var x = point[0];
-                var y = point[1];
-                var dx = point[3];
-                var dy = point[4];
-
-                return [
-                    x - dy * radius,
-                    y + dx * radius,
-                    x + dy * radius,
-                    y - dx * radius
-                ];
-            }
-
-            function mark(a) {
-                /*jshint white: false */
-
-                // Vertex, UV, vertex, UV
-                data.push(a[0]); data.push(a[1]);
-                data.push(0);    data.push(0);
-
-                data.push(a[2]); data.push(a[3]);
-                data.push(0);    data.push(1);
-            }
-
-            points.forEach(function (point) {
-                mark(extrude(point));
-            });
+            var floats = points.reduce(function (acc, point) {
+                return acc.concat([ point[0], point[1], point[2], 0 ]);
+            }, [ ]);
 
             var buffer = gl.createBuffer();
             gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
-            gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(data), gl.STATIC_DRAW);
+            gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(floats), gl.STATIC_DRAW);
 
             return {
-                vertexCount: data.length / 4,
+                vertexCount: points.length,
                 buffer: buffer
             };
         }
@@ -478,11 +451,7 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/gPubSub',
         }
 
         function renderSliderBall(object) {
-            var sliderBallPosition = object.curve.getSliderBallPosition(object, time, ruleSet);
-
-            if (!sliderBallPosition) {
-                return;
-            }
+            var sliderBallPosition = object.getSliderBallPosition(time, ruleSet);
 
             var scale = ruleSet.getCircleSize() / 128;
 
@@ -531,17 +500,16 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/gPubSub',
         }
 
         function renderSliderObject(object) {
-            var alpha = ruleSet.getObjectOpacity(object, time)
+            var alpha = ruleSet.getObjectOpacity(object, time);
 
             renderUnit({ alpha: alpha }, function () {
                 var key = [ object, ruleSet, skin ];
 
                 var c = caches.sliderTrack.get(key, function () {
-                    var points = object.curve.points;
-
                     var adjustmentScale = 128 / (128 - 10); // Don't ask...
+                    var radius = ruleSet.getCircleSize() / adjustmentScale / 2;
 
-                    var b = createSliderTrack(points, ruleSet.getCircleSize() / adjustmentScale / 2);
+                    var b = createSliderTrack(object.curve, radius);
                     var buffer = b.buffer;
                     buffers.curves.push(buffer);
 
@@ -554,7 +522,8 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/gPubSub',
 
                 var color = object.combo.color;
                 var scale = ruleSet.getCircleSize() / 128;
-                var growPercentage = ruleSet.getSliderGrowPercentage(object, time);
+                //var growPercentage = ruleSet.getSliderGrowPercentage(object, time);
+                var growPercentage = 1;
 
                 curve({
                     id: c.id,
@@ -566,7 +535,9 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/gPubSub',
 
                 var visibility = ruleSet.getObjectVisibilityAtTime(object, time);
 
-                var lastPoint = object.curve.render(growPercentage).slice(-1)[0];
+                // XXX!
+                //var lastPoint = object.curve.render(growPercentage).slice(-1)[0];
+                var lastPoint = object.curve.getEndPoint();
 
                 if (lastPoint) {
                     // End
@@ -1058,7 +1029,7 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/gPubSub',
             'varying vec2 vTextureCoord;',
 
             'vec4 getSliderColor(float t, vec4 baseColor) {',
-                'float u = abs(t - 0.5) / 0.5;',
+                'float u = abs(t);',
                 'float intensity = 1.0;',
 
                 'if (u > 0.85) {',
@@ -1071,7 +1042,7 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/gPubSub',
             '}',
 
             'void main(void) {',
-                'gl_FragColor = getSliderColor(vTextureCoord.t, vec4(uColor) / 255.0);',
+                'gl_FragColor = getSliderColor(vTextureCoord.x, uColor / 255.0);',
             '}'
         ].join('\n');
 

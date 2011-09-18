@@ -1,5 +1,5 @@
 /*jshint bitwise: false */
-define('game/mapFile', [ 'game/RuleSet', 'game/Map', 'game/Combo', 'game/MapInfo', 'game/mapObject', 'game/Storyboard', 'game/Skin', 'game/BezierSliderCurve', 'game/CatmullSliderCurve', 'game/TimingPoint', 'game/BreakRange' ], function (RuleSet, Map, Combo, MapInfo, mapObject, Storyboard, Skin, BezierSliderCurve, CatmullSliderCurve, TimingPoint, BreakRange) {
+define('game/mapFile', [ 'game/RuleSet', 'game/Map', 'game/Combo', 'game/MapInfo', 'game/mapObject', 'game/Storyboard', 'game/Skin', 'game/BezierSliderCurve', 'game/TimingPoint', 'game/BreakRange' ], function (RuleSet, Map, Combo, MapInfo, mapObject, Storyboard, Skin, BezierSliderCurve, TimingPoint, BreakRange) {
     function readSkin(assetConfig, assetManager) {
         return Skin.fromSettings(assetManager, {
             name:   assetConfig.General.values.Name,
@@ -123,9 +123,20 @@ define('game/mapFile', [ 'game/RuleSet', 'game/Map', 'game/Combo', 'game/MapInfo
             // Bezier
             return new BezierSliderCurve(curvePoints, maxLength);
 
-        case 'C':
-            // Catmull
-            return new CatmullSliderCurve(curvePoints, maxLength);
+        case 'L':
+            // Linear
+            // Convert to Bezier by doubling intermediate points
+            var bezierPoints = [ ];
+            var i;
+
+            bezierPoints.push(curvePoints[0]);
+            for (i = 1; i < curvePoints.length - 1; ++i) {
+                bezierPoints.push(curvePoints[i]);
+                bezierPoints.push(curvePoints[i]);
+            }
+            bezierPoints.push(curvePoints[curvePoints.length - 1]);
+
+            return new BezierSliderCurve(bezierPoints, maxLength);
 
         default:
             throw new Error('Unknown slider type: ' + curveType);
