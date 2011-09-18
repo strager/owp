@@ -187,17 +187,21 @@ define('gfx/CanvasRenderer', [ 'game/mapObject', 'util/Cache', 'gfx/canvasShader
             var x = styles.x;
             var y = styles.y;
 
-            if (typeof styles.alpha !== 'undefined') {
-                el.style.opacity = styles.alpha;
-            } else {
-                el.style.opacity = '1';
+            var alpha = typeof styles.alpha === 'undefined' ? '1' : String(styles.alpha);
+
+            if (el.style.opacity !== alpha) {
+                el.style.opacity = alpha;
             }
 
-            el.style[transformStyleProperty] =
+            var transform =
                 transformTranslatePrefix + (-owidth / 2) + 'px,' + (-oheight / 2) + 'px' + transformTranslateSuffix +
                 transformScalePrefix + scale + ',' + scale + transformScaleSuffix +
                 'rotate(' + rotation + 'rad) ' +
                 transformTranslatePrefix + (x / scale) + 'px,' + (y / scale) + 'px' + transformTranslateSuffix;
+
+            if (el.style[transformStyleProperty] !== transform) {
+                el.style[transformStyleProperty] = transform;
+            }
         }
 
         function getShadedGraphic(skin, graphicName, shader, shaderData) {
