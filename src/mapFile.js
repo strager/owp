@@ -114,10 +114,6 @@ define('mapFile', [ 'RuleSet', 'Map', 'Combo', 'MapInfo', 'mapObject', 'Storyboa
             // Bezier
             return new BezierSliderCurve(curvePoints, maxLength);
 
-        case 'C':
-            // Catmull
-            return new CatmullSliderCurve(curvePoints, maxLength);
-
         default:
             throw new Error('Unknown slider type: ' + curveType);
         }
