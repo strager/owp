@@ -484,14 +484,13 @@ define('game/RuleSet', [ 'util/util', 'game/mapObject', 'util/History', 'util/Cu
         },
 
         getSliderTicks: function (slider) {
-return [ ]; // XXX!
             var startTime = this.getObjectStartTime(slider);
             var repeatDuration = this.getSliderRepeatLength(slider.time, slider.length);
 
             var tickLength = this.getTickLength(startTime);
             var tickDuration = this.getTickDuration(startTime);
 
-            var rawTickPositions = slider.curve.getTickPositions(tickLength);
+            var rawTickPositions = slider.getTickPositions(tickLength);
 
             var ticks = [ ];
 

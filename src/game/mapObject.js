@@ -50,6 +50,19 @@ define('game/mapObject', [ 'util/util' ], function (util) {
         var targetLength = target * this.length;
         return this.curve.getPointAtLength(targetLength);
     };
+    Slider.prototype.getTickPositions = function (tickLength) {
+        // TODO Move to RuleSet
+
+        var tickPositions = [ ];
+
+        var len = tickLength;
+        while (len < this.curve.length) {
+            tickPositions.push(this.curve.getPointAtLength(len));
+            len += tickLength;
+        }
+
+        return tickPositions;
+    };
 
     function SliderTick(time, x, y, slider, repeatNumber) {
         this.time = time;
