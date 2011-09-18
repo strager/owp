@@ -652,7 +652,18 @@ define('BezierSliderCurve', [ ], function () {
             .concat(simplifyBezierBboxTransport(split[1], distance, threshold, offsetThreshold));
     }
 
+    function approxBezierLength(bezier) {
+        // This, of course, approximates length
+        var p1 = bezier[0];
+        var p2 = bezier[bezier.length - 1];
+        var dx = p1[0] - p2[0];
+        var dy = p1[1] - p2[1];
+        return Math.sqrt(dx * dx + dy * dy);
+    }
+
     function clipTransportBeziersAtLength(length, beziers, distance, tolerance, offsetThreshold) {
+        // TODO Use bbox method instead
+
         var nbeziers = beziers.reduce(function (acc, bezier) {
             return simplifyBezierBboxTransport(bezier, distance, tolerance, offsetThreshold);
         }, [ ]);
@@ -662,12 +673,7 @@ define('BezierSliderCurve', [ ], function () {
         var curLength = 0;
         var i;
         for (i = 0; i < nbeziers.length; ++i) {
-            // This, of course, approximates length
-            var p1 = nbeziers[i][0];
-            var p2 = nbeziers[i][nbeziers[i].length - 1];
-            var dx = p1[0] - p2[0];
-            var dy = p1[1] - p2[1];
-            var segLength = Math.sqrt(dx * dx + dy * dy);
+            var segLength = approxBezierLength(nbeziers[i]);
 
             if (curLength + segLength >= length) {
                 output.push(
@@ -838,6 +844,30 @@ define('BezierSliderCurve', [ ], function () {
         };
 
         this.getEndPoint = function () {
+            return endPoint;
+        };
+
+        this.getPointAtLength = function (length) {
+            if (length < 0) {
+                return startPoint;
+            }
+
+            if (length >= sliderLength) {
+                return endPoint;
+            }
+
+            var curLength = 0;
+            var i;
+            for (i = 0; i < beziers.length; ++i) {
+                var segLength = approxBezierLength(beziers[i]);
+
+                if (curLength + segLength >= length) {
+                    return getBezierPointAt((length - curLength) / segLength, beziers[i]);
+                }
+
+                curLength += segLength;
+            }
+
             return endPoint;
         };
     }

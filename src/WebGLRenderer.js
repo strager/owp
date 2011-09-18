@@ -400,13 +400,7 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
         }
 
         function renderSliderBall(object) {
-            // XXX!
-            return;
-            var sliderBallPosition = object.curve.getSliderBallPosition(object, time, ruleSet);
-
-            if (!sliderBallPosition) {
-                return;
-            }
+            var sliderBallPosition = object.getSliderBallPosition(time, ruleSet);
 
             var scale = ruleSet.getCircleSize() / 128;
 
