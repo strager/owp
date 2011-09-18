@@ -346,7 +346,9 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
         // Rendering helpers }}}
 
         // Map rendering {{{
-        function createSliderTrack(points, radius) {
+        function createSliderTrack(curve, radius) {
+            var points = curve.flattenContourPoints(radius);
+
             var floats = points.reduce(function (acc, point) {
                 return acc.concat([ point[0], point[1], point[2], 0 ]);
             }, [ ]);
@@ -458,11 +460,10 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
                 var key = [ object, ruleSet, skin ];
 
                 var c = caches.sliderTrack.get(key, function () {
-                    var points = object.curve.flattenContourPoints(ruleSet.getCircleSize() / 2);
-
                     var adjustmentScale = 128 / (128 - 10); // Don't ask...
+                    var radius = ruleSet.getCircleSize() / adjustmentScale / 2;
 
-                    var b = createSliderTrack(points, ruleSet.getCircleSize() / adjustmentScale / 2);
+                    var b = createSliderTrack(object.curve, radius);
                     var buffer = b.buffer;
                     buffers.curves.push(buffer);
 
