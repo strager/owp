@@ -128,6 +128,7 @@ define('gfx/CanvasRenderer', [ 'game/mapObject', 'util/Cache', 'gfx/canvasShader
         var scoreHistory, comboHistory, accuracyHistory;
         var storyboard;
         var assetManager;
+        var breakiness;
         var time;
 
         function vars(v) {
@@ -140,6 +141,7 @@ define('gfx/CanvasRenderer', [ 'game/mapObject', 'util/Cache', 'gfx/canvasShader
             scoreHistory = v.scoreHistory;
             skin = v.skin;
             storyboard = v.storyboard;
+            breakiness = v.breakiness;
             time = v.time;
         }
 
@@ -453,7 +455,9 @@ define('gfx/CanvasRenderer', [ 'game/mapObject', 'util/Cache', 'gfx/canvasShader
             setZ(el);
         }
 
-        function renderSliderTrack(points, color, c) {
+        function renderSliderTrack(curve, color, c) {
+            var points = curve.flattenCentrePoints();
+
             function draw() {
                 c.beginPath();
 
@@ -495,7 +499,7 @@ define('gfx/CanvasRenderer', [ 'game/mapObject', 'util/Cache', 'gfx/canvasShader
                 return cloneAbsolute(sliderBallGraphic);
             });
 
-            var sliderBallPosition = object.curve.getSliderBallPosition(object, time, ruleSet);
+            var sliderBallPosition = object.getSliderBallPosition(time, ruleSet);
 
             if (sliderBallPosition) {
                 var scale = ruleSet.getCircleSize() / 128;
@@ -561,11 +565,11 @@ define('gfx/CanvasRenderer', [ 'game/mapObject', 'util/Cache', 'gfx/canvasShader
 
                 context.translate(currentView.mat[0], currentView.mat[1]);
 
-                renderSliderTrack(object.curve.points, object.combo.color, context);
+                renderSliderTrack(object.curve, object.combo.color, context);
 
                 var scale = ruleSet.getCircleSize() / 128;
 
-                var lastPoint = object.curve.points.slice(-1)[0];
+                var lastPoint = object.curve.getEndPoint();
                 context.save();
                 context.translate(lastPoint[0], lastPoint[1]);
                 context.scale(scale, scale);
@@ -842,10 +846,13 @@ define('gfx/CanvasRenderer', [ 'game/mapObject', 'util/Cache', 'gfx/canvasShader
                 backgroundGraphic.width, backgroundGraphic.height
             );
 
+            var brightness = 1 - (1 - breakiness) * 0.125;
+
             el.style.x = viewport.x - rect.x + 'px';
             el.style.y = viewport.y - rect.y + 'px';
             el.style.width = rect.width + 'px';
             el.style.height = rect.height + 'px';
+            el.style.opacity = brightness;
         }
 
         function renderStoryboard() {
@@ -932,6 +939,7 @@ define('gfx/CanvasRenderer', [ 'game/mapObject', 'util/Cache', 'gfx/canvasShader
         front.style.display = 'block';
         front.style.overflow = 'hidden';
         front.style.position = 'absolute';
+        front.style.background = 'black';
         var frontDom = new DOMAllocator(front);
 
         var container = document.createElement('div');
