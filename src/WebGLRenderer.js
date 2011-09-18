@@ -180,15 +180,17 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
             },
 
             curve: function flushCurve(curve) {
-                // XXX!
                 gl.useProgram(programs.curve);
 
                 // Buffers
-                var stride = 2 * 4;
+                // Vertex and UV are interleaved
+                var stride = 2 * 4 * 2;
 
                 gl.bindBuffer(gl.ARRAY_BUFFER, buffers.curves[curve.id]);
                 gl.vertexAttribPointer(programs.curve.attr.vertexCoord, 2, gl.FLOAT, false, stride, 0);
+                gl.vertexAttribPointer(programs.curve.attr.textureCoord, 2, gl.FLOAT, false, stride, 2 * 4);
                 gl.enableVertexAttribArray(programs.curve.attr.vertexCoord);
+                gl.enableVertexAttribArray(programs.curve.attr.textureCoord);
 
                 // Uniforms
                 gl.uniform2fv(programs.curve.uni.view, curve.view.mat);
@@ -198,6 +200,7 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
                 gl.drawArrays(gl.TRIANGLE_STRIP, 0, curve.vertexCount);
 
                 // Cleanup
+                gl.disableVertexAttribArray(programs.curve.attr.textureCoord);
                 gl.disableVertexAttribArray(programs.curve.attr.vertexCoord);
                 gl.bindBuffer(gl.ARRAY_BUFFER, null);
 
@@ -345,7 +348,7 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
         // Map rendering {{{
         function createSliderTrack(points, radius) {
             var floats = points.reduce(function (acc, point) {
-                return acc.concat(point);
+                return acc.concat([ point[0], point[1], point[2], 0 ]);
             }, [ ]);
 
             var buffer = gl.createBuffer();
@@ -910,11 +913,11 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
 
         curveVertexShader = [
             'attribute vec2 aVertexCoord;',
-            //'attribute vec2 aTextureCoord;',
+            'attribute vec2 aTextureCoord;',
 
             'uniform vec2 uView;',
 
-            //'varying vec2 vTextureCoord;',
+            'varying vec2 vTextureCoord;',
 
             'mat4 projection = mat4(',
                 '2.0 / 640.0, 0.0, 0.0, -1.0,',
@@ -925,18 +928,17 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
 
             'void main(void) {',
                 'gl_Position = (vec4(aVertexCoord, 0.0, 1.0) + vec4(uView, 0.0, 0.0)) * projection;',
-                //'vTextureCoord = aTextureCoord;',
+                'vTextureCoord = aTextureCoord;',
             '}'
         ].join('\n');
 
         curveFragmentShader = [
-            // XXX!
             'uniform vec4 uColor;',
 
-            //'varying vec2 vTextureCoord;',
+            'varying vec2 vTextureCoord;',
 
             'vec4 getSliderColor(float t, vec4 baseColor) {',
-                'float u = abs(t - 0.5) / 0.5;',
+                'float u = abs(t);',
                 'float intensity = 1.0;',
 
                 'if (u > 0.85) {',
@@ -949,8 +951,7 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
             '}',
 
             'void main(void) {',
-                //'gl_FragColor = getSliderColor(vTextureCoord.t, vec4(uColor) / 255.0);',
-                'gl_FragColor = uColor / vec4(255.0, 255.0, 255.0, 1.0);',
+                'gl_FragColor = getSliderColor(vTextureCoord.x, uColor / 255.0);',
             '}'
         ].join('\n');
 
@@ -1098,7 +1099,7 @@ define('WebGLRenderer', [ 'MapState', 'mapObject', 'Util/gPubSub', 'Util/Cache',
             programs.curve = createProgram(gl, curveVertexShader, curveFragmentShader);
             programs.curve.attr = {
                 vertexCoord: gl.getAttribLocation(programs.curve, 'aVertexCoord'),
-                //textureCoord: gl.getAttribLocation(programs.curve, 'aTextureCoord')
+                textureCoord: gl.getAttribLocation(programs.curve, 'aTextureCoord')
             };
             programs.curve.uni = {
                 view: gl.getUniformLocation(programs.curve, 'uView'),

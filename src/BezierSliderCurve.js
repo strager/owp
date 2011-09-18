@@ -690,11 +690,16 @@ define('BezierSliderCurve', [ ], function () {
         return output;
     }
 
+    function uv(point, u) {
+        return point.slice(0, 2).concat([ u ]).concat(point.slice(3));
+    }
+
     function triangleStripBezier(centre, bezier, tolerance) {
         var points = flattenBezierBbox(bezier, tolerance);
+        var ncentre = uv(centre, 0);
 
         return points.reduce(function (acc, point) {
-            return acc.concat([ centre, point ]);
+            return acc.concat([ ncentre, uv(point, 1) ]);
         }, [ ]);
     }
 
@@ -703,15 +708,15 @@ define('BezierSliderCurve', [ ], function () {
 
         var t = getBezierDerivativeAt(0, nbeziers[0]);
         var p = getBezierPointAt(0, nbeziers[0]);
-        var extrudedA = [ p[0] +  t[1] * distance, p[1] + -t[0] * distance ];
-        var extrudedB = [ p[0] + -t[1] * distance, p[1] +  t[0] * distance ];
+        var extrudedA = [ p[0] +  t[1] * distance, p[1] + -t[0] * distance, -1 ];
+        var extrudedB = [ p[0] + -t[1] * distance, p[1] +  t[0] * distance,  1 ];
         var init = [ extrudedA, extrudedB ];
 
         return nbeziers.reduce(function (acc, nbezier) {
             var t = getBezierDerivativeAt(1, nbezier);
             var p = getBezierPointAt(1, nbezier);
-            var extrudedA = [ p[0] +  t[1] * distance, p[1] + -t[0] * distance ];
-            var extrudedB = [ p[0] + -t[1] * distance, p[1] +  t[0] * distance ];
+            var extrudedA = [ p[0] +  t[1] * distance, p[1] + -t[0] * distance, -1 ];
+            var extrudedB = [ p[0] + -t[1] * distance, p[1] +  t[0] * distance,  1 ];
 
             return acc.concat([ extrudedA, extrudedB ]);
         }, init);
@@ -734,6 +739,7 @@ define('BezierSliderCurve', [ ], function () {
                 return [
                     point[0] + centre[0],
                     point[1] + centre[1],
+                    point[2]
                 ];
             });
         }
@@ -753,6 +759,7 @@ define('BezierSliderCurve', [ ], function () {
                 return [
                     point[0] + centre[0],
                     point[1] + centre[1],
+                    point[2]
                 ];
             });
         }
@@ -833,10 +840,7 @@ define('BezierSliderCurve', [ ], function () {
         };
 
         this.flattenContourPoints = function (radius) {
-            var offsetPointsA = transportStrokeBeziers(beziers, radius, TOLERANCE, TOLERANCE);
-            var offsetPointsB = transportStrokeBeziers(reverseBeziers(beziers), radius, TOLERANCE, TOLERANCE);
-
-            return offsetPointsA.concat(offsetPointsB);
+            return transportStrokeBeziers(beziers, radius, TOLERANCE, TOLERANCE);
         };
 
         this.getStartPoint = function () {
