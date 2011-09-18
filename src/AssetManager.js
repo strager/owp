@@ -78,8 +78,6 @@ define('AssetManager', [ 'game/MapInfo', 'game/mapFile', 'assetConfig', 'util/Ma
         },
 
         'archive': function (assetManager, name) {
-            var ret = Q.defer();
-
             function loadSheet(sheetDefinition) {
                 return Q.when(assetManager.load(sheetDefinition.file, 'image'), function (sheetImage) {
                     sheetDefinition.images.forEach(function (imageDefinition) {
