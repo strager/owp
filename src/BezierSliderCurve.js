@@ -811,7 +811,10 @@ define('BezierSliderCurve', [ ], function () {
             thisPoint = rawPoints[i];
 
             if (lastPoint && lastPoint[0] === thisPoint[0] && lastPoint[1] === thisPoint[1]) {
-                set.push(currentBezier);
+                if (currentBezier.length > 1) {
+                    set.push(currentBezier);
+                }
+
                 currentBezier = [ ];
             }
 
@@ -819,7 +822,7 @@ define('BezierSliderCurve', [ ], function () {
             lastPoint = thisPoint;
         }
 
-        if (currentBezier.length) {
+        if (currentBezier.length > 1) {
             set.push(currentBezier);
         }
 

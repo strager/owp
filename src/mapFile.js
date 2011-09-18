@@ -114,6 +114,21 @@ define('mapFile', [ 'RuleSet', 'Map', 'Combo', 'MapInfo', 'mapObject', 'Storyboa
             // Bezier
             return new BezierSliderCurve(curvePoints, maxLength);
 
+        case 'L':
+            // Linear
+            // Convert to Bezier by doubling intermediate points
+            var bezierPoints = [ ];
+            var i;
+
+            bezierPoints.push(curvePoints[0]);
+            for (i = 1; i < curvePoints.length - 1; ++i) {
+                bezierPoints.push(curvePoints[i]);
+                bezierPoints.push(curvePoints[i]);
+            }
+            bezierPoints.push(curvePoints[curvePoints.length - 1]);
+
+            return new BezierSliderCurve(bezierPoints, maxLength);
+
         default:
             throw new Error('Unknown slider type: ' + curveType);
         }
