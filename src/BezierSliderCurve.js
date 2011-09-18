@@ -39,6 +39,19 @@ define('BezierSliderCurve', [ ], function () {
         return Math.abs(a - b) < 0.001;
     }
 
+    function isUnitBezier(bezier) {
+        var a = bezier[0];
+        var i, b;
+        for (i = 1; i < bezier.length; ++i) {
+            b = bezier[i];
+            if (!approxEqual(a[0], b[0]) || !approxEqual(a[1], b[1])) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
     function uniquePoints(xs) {
         var nxs = [ xs[0] ];
         var i;
@@ -639,13 +652,43 @@ define('BezierSliderCurve', [ ], function () {
             .concat(simplifyBezierBboxTransport(split[1], distance, threshold, offsetThreshold));
     }
 
-    function transportStripBezier(centre, bezier, distance, tolerance, offsetThreshold) {
-        var nbeziers = simplifyBezierBboxTransport(bezier, distance, tolerance, offsetThreshold);
+    function clipTransportBeziersAtLength(length, beziers, distance, tolerance, offsetThreshold) {
+        var nbeziers = beziers.reduce(function (acc, bezier) {
+            return simplifyBezierBboxTransport(bezier, distance, tolerance, offsetThreshold);
+        }, [ ]);
 
-        return nbeziers.reduce(function (acc, nbezier) {
-            var p = getBezierPointAt(1, nbezier);
+        var output = [ ];
 
-            return acc.concat([ centre, p ]);
+        var curLength = 0;
+        var i;
+        for (i = 0; i < nbeziers.length; ++i) {
+            // This, of course, approximates length
+            var p1 = nbeziers[i][0];
+            var p2 = nbeziers[i][nbeziers[i].length - 1];
+            var dx = p1[0] - p2[0];
+            var dy = p1[1] - p2[1];
+            var segLength = Math.sqrt(dx * dx + dy * dy);
+
+            if (curLength + segLength >= length) {
+                output.push(
+                    splitBezierAt((length - curLength) / segLength, nbeziers[i])[0]
+                );
+
+                break;
+            }
+
+            curLength += segLength;
+            output.push(nbeziers[i]);
+        }
+
+        return output;
+    }
+
+    function triangleStripBezier(centre, bezier, tolerance) {
+        var points = flattenBezierBbox(bezier, tolerance);
+
+        return points.reduce(function (acc, point) {
+            return acc.concat([ centre, point ]);
         }, [ ]);
     }
 
@@ -678,7 +721,7 @@ define('BezierSliderCurve', [ ], function () {
 
             var circleBeziers = circleToBeziers(radius, leftAngle, rightAngle);
             var points = circleBeziers.reduce(function (acc, bezier) {
-                return acc.concat(transportStripBezier([ 0, 0 ], bezier, distance, tolerance, offsetThreshold));
+                return acc.concat(triangleStripBezier([ 0, 0 ], bezier, tolerance));
             }, [ ]);
 
             return points.map(function (point) {
@@ -697,7 +740,7 @@ define('BezierSliderCurve', [ ], function () {
 
             var circleBeziers = circleToBeziers(radius, leftAngle, rightAngle);
             var points = circleBeziers.reduce(function (acc, bezier) {
-                return acc.concat(transportStripBezier([ 0, 0 ], bezier, distance, tolerance, offsetThreshold));
+                return acc.concat(triangleStripBezier([ 0, 0 ], bezier, tolerance));
             }, [ ]);
 
             return points.map(function (point) {
@@ -774,6 +817,10 @@ define('BezierSliderCurve', [ ], function () {
         this.length = sliderLength;
 
         var beziers = rawPointsToBezierSet(rawPoints);
+        beziers = clipTransportBeziersAtLength(sliderLength, beziers, 100, TOLERANCE, TOLERANCE);
+
+        var startPoint = beziers[0][0];
+        var endPoint = beziers.slice(-1)[0].slice(-1)[0];
 
         this.flattenCentrePoints = function () {
             return flattenBezierSetBbox(beziers, TOLERANCE);
@@ -787,12 +834,11 @@ define('BezierSliderCurve', [ ], function () {
         };
 
         this.getStartPoint = function () {
-            return rawPoints[0];
+            return startPoint;
         };
 
         this.getEndPoint = function () {
-            // TODO XXX
-            return rawPoints[rawPoints.length - 1];
+            return endPoint;
         };
     }
 
