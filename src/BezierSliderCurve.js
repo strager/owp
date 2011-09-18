@@ -98,6 +98,14 @@ define('BezierSliderCurve', [ ], function () {
         });
     }
 
+    function addPoints(a, b) {
+        return [
+            a[0] + b[0],
+            a[1] + b[1],
+            (a[2] || 0) + (b[2] || 0)
+        ];
+    }
+
     function contourArea(contour) {
         contour = contour.concat([ contour[0] ]);
 
@@ -736,11 +744,7 @@ define('BezierSliderCurve', [ ], function () {
             }, [ ]);
 
             return points.map(function (point) {
-                return [
-                    point[0] + centre[0],
-                    point[1] + centre[1],
-                    point[2]
-                ];
+                return addPoints(point, centre);
             });
         }
 
@@ -756,11 +760,7 @@ define('BezierSliderCurve', [ ], function () {
             }, [ ]);
 
             return points.map(function (point) {
-                return [
-                    point[0] + centre[0],
-                    point[1] + centre[1],
-                    point[2]
-                ];
+                return addPoints(point, centre);
             });
         }
 
@@ -824,14 +824,6 @@ define('BezierSliderCurve', [ ], function () {
         }
 
         return set;
-    }
-
-    function addPoints(a, b) {
-        return [
-            a[0] + b[0],
-            a[1] + b[1],
-            (a[2] || 0) + (b[2] || 0)
-        ];
     }
 
     function BezierSliderCurve(rawPoints, sliderLength) {
