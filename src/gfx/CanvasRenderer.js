@@ -128,6 +128,7 @@ define('gfx/CanvasRenderer', [ 'game/mapObject', 'util/Cache', 'gfx/canvasShader
         var scoreHistory, comboHistory, accuracyHistory;
         var storyboard;
         var assetManager;
+        var breakiness;
         var time;
 
         function vars(v) {
@@ -140,6 +141,7 @@ define('gfx/CanvasRenderer', [ 'game/mapObject', 'util/Cache', 'gfx/canvasShader
             scoreHistory = v.scoreHistory;
             skin = v.skin;
             storyboard = v.storyboard;
+            breakiness = v.breakiness;
             time = v.time;
         }
 
@@ -844,10 +846,13 @@ define('gfx/CanvasRenderer', [ 'game/mapObject', 'util/Cache', 'gfx/canvasShader
                 backgroundGraphic.width, backgroundGraphic.height
             );
 
+            var brightness = 1 - (1 - breakiness) * 0.125;
+
             el.style.x = viewport.x - rect.x + 'px';
             el.style.y = viewport.y - rect.y + 'px';
             el.style.width = rect.width + 'px';
             el.style.height = rect.height + 'px';
+            el.style.opacity = brightness;
         }
 
         function renderStoryboard() {
@@ -934,6 +939,7 @@ define('gfx/CanvasRenderer', [ 'game/mapObject', 'util/Cache', 'gfx/canvasShader
         front.style.display = 'block';
         front.style.overflow = 'hidden';
         front.style.position = 'absolute';
+        front.style.background = 'black';
         var frontDom = new DOMAllocator(front);
 
         var container = document.createElement('div');
