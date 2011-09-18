@@ -826,6 +826,14 @@ define('BezierSliderCurve', [ ], function () {
         return set;
     }
 
+    function addPoints(a, b) {
+        return [
+            a[0] + b[0],
+            a[1] + b[1],
+            (a[2] || 0) + (b[2] || 0)
+        ];
+    }
+
     function BezierSliderCurve(rawPoints, sliderLength) {
         this.length = sliderLength;
 
@@ -835,29 +843,37 @@ define('BezierSliderCurve', [ ], function () {
         var startPoint = beziers[0][0];
         var endPoint = beziers.slice(-1)[0].slice(-1)[0];
 
+        var self = this;
+        this.offset = [ 0, 0 ];
+        function offset(point) {
+            return addPoints(point, self.offset);
+        }
+
         this.flattenCentrePoints = function () {
-            return flattenBezierSetBbox(beziers, TOLERANCE);
+            var points = flattenBezierSetBbox(beziers, TOLERANCE);
+            return points.map(offset);
         };
 
         this.flattenContourPoints = function (radius) {
-            return transportStrokeBeziers(beziers, radius, TOLERANCE, TOLERANCE);
+            var points = transportStrokeBeziers(beziers, radius, TOLERANCE, TOLERANCE);
+            return points.map(offset);
         };
 
         this.getStartPoint = function () {
-            return startPoint;
+            return offset(startPoint);
         };
 
         this.getEndPoint = function () {
-            return endPoint;
+            return offset(endPoint);
         };
 
         this.getPointAtLength = function (length) {
             if (length < 0) {
-                return startPoint;
+                return offset(startPoint);
             }
 
             if (length >= sliderLength) {
-                return endPoint;
+                return offset(endPoint);
             }
 
             var curLength = 0;
@@ -866,13 +882,13 @@ define('BezierSliderCurve', [ ], function () {
                 var segLength = approxBezierLength(beziers[i]);
 
                 if (curLength + segLength >= length) {
-                    return getBezierPointAt((length - curLength) / segLength, beziers[i]);
+                    return offset(getBezierPointAt((length - curLength) / segLength, beziers[i]));
                 }
 
                 curLength += segLength;
             }
 
-            return endPoint;
+            return offset(endPoint);
         };
     }
 

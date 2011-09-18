@@ -693,19 +693,16 @@ return [ ]; // XXX!
 
                 mapObject.match(object, {
                     HitCircle: function (object) {
-                        object.x -= stackOffset * object.stackHeight;
-                        object.y -= stackOffset * object.stackHeight;
+                        var o = -stackOffset * object.stackHeight;
+                        object.x += o;
+                        object.y += o;
                     },
                     Slider: function (object) {
-                        object.x -= stackOffset * object.stackHeight;
-                        object.y -= stackOffset * object.stackHeight;
+                        var o = -stackOffset * object.stackHeight;
+                        object.x += o;
+                        object.y += o;
 
-// XXX!
-                        // HACK HACK HACK!
-                        //object.curve.points.forEach(function (point) {
-                        //    point[0] -= stackOffset * object.stackHeight;
-                        //    point[1] -= stackOffset * object.stackHeight;
-                        //});
+                        object.curve.offset = [ o, o ];
                     }
                 });
             });
