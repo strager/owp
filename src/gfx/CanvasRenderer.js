@@ -45,7 +45,7 @@ define('gfx/CanvasRenderer', [ 'game/mapObject', 'util/Cache', 'gfx/canvasShader
         transformTranslateSuffix = supportsTransform3D ? ',0) ' : ') ';
 
         transformScalePrefix = supportsTransform3D ? 'scale3D(' : 'scale(';
-        transformScaleSuffix = supportsTransform3D ? ',0) ' : ') ';
+        transformScaleSuffix = supportsTransform3D ? ',1) ' : ') ';
 
         // Firefox has a bug where it requires 'px' for translate matrix
         // elements (where it should accept plain numbers).
