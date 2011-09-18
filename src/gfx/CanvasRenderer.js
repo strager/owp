@@ -45,7 +45,7 @@ define('gfx/CanvasRenderer', [ 'game/mapObject', 'util/Cache', 'gfx/canvasShader
         transformTranslateSuffix = supportsTransform3D ? ',0) ' : ') ';
 
         transformScalePrefix = supportsTransform3D ? 'scale3D(' : 'scale(';
-        transformScaleSuffix = supportsTransform3D ? ',0) ' : ') ';
+        transformScaleSuffix = supportsTransform3D ? ',1) ' : ') ';
 
         // Firefox has a bug where it requires 'px' for translate matrix
         // elements (where it should accept plain numbers).
@@ -174,6 +174,34 @@ define('gfx/CanvasRenderer', [ 'game/mapObject', 'util/Cache', 'gfx/canvasShader
         function setZ(node) {
             node.style.zIndex = z;
             ++z;
+        }
+
+        function style(el, styles) {
+            var scale = styles.scale || 1;
+
+            var owidth = styles.owidth || el.width;
+            var oheight = styles.oheight || el.height;
+
+            var rotation = styles.rotation || 0;
+
+            var x = styles.x;
+            var y = styles.y;
+
+            var alpha = typeof styles.alpha === 'undefined' ? '1' : String(styles.alpha);
+
+            if (el.style.opacity !== alpha) {
+                el.style.opacity = alpha;
+            }
+
+            var transform =
+                transformTranslatePrefix + (-owidth / 2) + 'px,' + (-oheight / 2) + 'px' + transformTranslateSuffix +
+                transformScalePrefix + scale + ',' + scale + transformScaleSuffix +
+                'rotate(' + rotation + 'rad) ' +
+                transformTranslatePrefix + (x / scale) + 'px,' + (y / scale) + 'px' + transformTranslateSuffix;
+
+            if (el.style[transformStyleProperty] !== transform) {
+                el.style[transformStyleProperty] = transform;
+            }
         }
 
         function getShadedGraphic(skin, graphicName, shader, shaderData) {
@@ -330,17 +358,14 @@ define('gfx/CanvasRenderer', [ 'game/mapObject', 'util/Cache', 'gfx/canvasShader
 
             var g = skin.assetManager.get('approachcircle.png', 'image');
 
-            var scale = radius * ruleSet.getCircleSize() / 128;
-            var width = getCoord(g.width * scale);
-            var height = getCoord(g.height * scale);
-            x = getCoord(x - width / 2);
-            y = getCoord(y - height / 2);
-
-            el.style.left = x + 'px';
-            el.style.top = y + 'px';
-            el.style.width = width + 'px';
-            el.style.height = height + 'px';
-            el.style.opacity = alpha;
+            style(el, {
+                x: x,
+                y: y,
+                owidth: g.width,
+                oheight: g.height,
+                scale: radius * ruleSet.getCircleSize() / 128,
+                alpha: alpha
+            });
 
             setZ(el);
         }
@@ -404,18 +429,12 @@ define('gfx/CanvasRenderer', [ 'game/mapObject', 'util/Cache', 'gfx/canvasShader
                 return;
             }
 
-            var scale = ruleSet.getCircleSize() / 128;
-            var alpha = ruleSet.getObjectOpacity(object, time);
-            var width = getCoord(el.width * scale);
-            var height = getCoord(el.height * scale);
-            var x = getCoord(object.x - width / 2);
-            var y = getCoord(object.y - height / 2);
-
-            el.style.left = x + 'px';
-            el.style.top = y + 'px';
-            el.style.width = width + 'px';
-            el.style.height = height + 'px';
-            el.style.opacity = alpha;
+            style(el, {
+                x: object.x,
+                y: object.y,
+                alpha: ruleSet.getObjectOpacity(object, time),
+                scale: ruleSet.getCircleSize() / 128
+            });
 
             setZ(el);
         }
@@ -439,18 +458,14 @@ define('gfx/CanvasRenderer', [ 'game/mapObject', 'util/Cache', 'gfx/canvasShader
 
             var origSize = el.getAttribute('data-orig-size').split(',');
 
-            var scale = ruleSet.getHitMarkerScale(object, time);
-            var width = getCoord(origSize[0] * scale);
-            var height = getCoord(origSize[1] * scale);
-            var x = getCoord(object.hitObject.x - width / 2);
-            var y = getCoord(object.hitObject.y - height / 2);
-            var alpha = ruleSet.getObjectOpacity(object, time);
-
-            el.style.left = x + 'px';
-            el.style.top = y + 'px';
-            el.style.width = width + 'px';
-            el.style.height = height + 'px';
-            el.style.opacity = alpha;
+            style(el, {
+                x: object.hitObject.x,
+                y: object.hitObject.y,
+                owidth: origSize[0],
+                oheight: origSize[1],
+                alpha: ruleSet.getObjectOpacity(object, time),
+                scale: ruleSet.getHitMarkerScale(object, time)
+            });
 
             setZ(el);
         }
@@ -500,32 +515,18 @@ define('gfx/CanvasRenderer', [ 'game/mapObject', 'util/Cache', 'gfx/canvasShader
             });
 
             var sliderBallPosition = object.getSliderBallPosition(time, ruleSet);
+            var angle = Math.atan2(sliderBallPosition[4], sliderBallPosition[3]);
 
-            if (sliderBallPosition) {
-                var scale = ruleSet.getCircleSize() / 128;
-                var width = getCoord(sliderBallGraphic.width * scale);
-                var height = getCoord(sliderBallGraphic.height * scale);
-                var x = getCoord(sliderBallPosition[0] - width / 2);
-                var y = getCoord(sliderBallPosition[1] - height / 2);
+            style(el, {
+                x: sliderBallPosition[0],
+                y: sliderBallPosition[1],
+                owidth: sliderBallGraphic.width,
+                oheight: sliderBallGraphic.height,
+                rotation: angle,
+                scale: ruleSet.getCircleSize() / 128
+            });
 
-                var angle = Math.atan2(sliderBallPosition[4], sliderBallPosition[3]);
-                var transform = 'rotate(' + angle + 'rad)';
-
-                el.style.left = x + 'px';
-                el.style.top = y + 'px';
-                el.style.width = width + 'px';
-                el.style.height = height + 'px';
-                el.style.visibility = 'visible';
-
-                // TODO More testing (I only have webkit and moz on L here)
-                el.style.cssText += ';-moz-transform:' + transform + ';';
-                el.style.webkitTransform = transform;
-                el.style.transform = transform; // Let's get our hopes up
-
-                setZ(el);
-            } else {
-                el.style.visibility = 'hidden';
-            }
+            setZ(el);
         }
 
         function renderSliderTick(object) {
@@ -538,16 +539,13 @@ define('gfx/CanvasRenderer', [ 'game/mapObject', 'util/Cache', 'gfx/canvasShader
                 return cloneAbsolute(sliderTickGraphic);
             });
 
-            var scale = ruleSet.getCircleSize() / 128;
-            var width = getCoord(sliderTickGraphic.width * scale);
-            var height = getCoord(sliderTickGraphic.height * scale);
-            var x = getCoord(object.x - width / 2);
-            var y = getCoord(object.y - height / 2);
-
-            el.style.left = x + 'px';
-            el.style.top = y + 'px';
-            el.style.width = width + 'px';
-            el.style.height = height + 'px';
+            style(el, {
+                x: object.x,
+                y: object.y,
+                owidth: sliderTickGraphic.width,
+                oheight: sliderTickGraphic.height,
+                scale: ruleSet.getCircleSize() / 128
+            });
 
             setZ(el);
         }
@@ -605,16 +603,13 @@ define('gfx/CanvasRenderer', [ 'game/mapObject', 'util/Cache', 'gfx/canvasShader
                     return cloneAbsolute(reverseArrowGraphic);
                 });
 
-                var scale = ruleSet.getCircleSize() / 128;
-                var width = getCoord(reverseArrowGraphic.width * scale);
-                var height = getCoord(reverseArrowGraphic.height * scale);
-                var x = getCoord(repeatArrow.x - width / 2);
-                var y = getCoord(repeatArrow.y - height / 2);
-
-                repeatArrowEl.style.left = x + 'px';
-                repeatArrowEl.style.top = y + 'px';
-                repeatArrowEl.style.width = width + 'px';
-                repeatArrowEl.style.height = height + 'px';
+                style(repeatArrowEl, {
+                    x: repeatArrow.x,
+                    y: repeatArrow.y,
+                    owidth: reverseArrowGraphic.width,
+                    oheight: reverseArrowGraphic.height,
+                    scale: ruleSet.getCircleSize() / 128
+                });
 
                 setZ(repeatArrowEl);
             }
@@ -682,6 +677,7 @@ define('gfx/CanvasRenderer', [ 'game/mapObject', 'util/Cache', 'gfx/canvasShader
                 return cloneAbsolute(cursor);
             });
 
+            // TODO use style()
             var x = state.x - cursor.width / 2;
             var y = state.y - cursor.height / 2;
 
@@ -841,18 +837,22 @@ define('gfx/CanvasRenderer', [ 'game/mapObject', 'util/Cache', 'gfx/canvasShader
                 return cloneAbsolute(backgroundGraphic);
             });
 
-            var rect = util.fitOuterRectangle(
+            var scale = util.fitOuterRectangleScale(
                 viewport.width, viewport.height,
                 backgroundGraphic.width, backgroundGraphic.height
             );
 
             var brightness = 1 - (1 - breakiness) * 0.125;
 
-            el.style.x = viewport.x - rect.x + 'px';
-            el.style.y = viewport.y - rect.y + 'px';
-            el.style.width = rect.width + 'px';
-            el.style.height = rect.height + 'px';
-            el.style.opacity = brightness;
+            // FIXME CHROME BUGS OUT ON THIS
+            style(el, {
+                x: 320,
+                y: 240,
+                owidth: backgroundGraphic.width,
+                oheight: backgroundGraphic.height,
+                alpha: brightness,
+                scale: scale
+            });
         }
 
         function renderStoryboard() {
