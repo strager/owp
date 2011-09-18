@@ -163,7 +163,7 @@ define('BezierSliderCurve', [ ], function () {
         return getLineSegmentIntersections(a, b).length > 0;
     }
 
-    var TOLERANCE = 1.0;
+    var TOLERANCE = 0.3333;
 
     function getBezierPointAt(t, bezier) {
         var pointCountMinusOne = bezier.length - 1;
