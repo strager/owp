@@ -74,11 +74,14 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/gPubSub',
         var mouseHistory;
         var scoreHistory, comboHistory, accuracyHistory;
         var videoElement;
+        var mapProgress;
+        var breakiness;
         var time;
 
         function vars(v) {
             accuracyHistory = v.accuracyHistory;
             comboHistory = v.comboHistory;
+            mapProgress = v.mapProgress;
             mouseHistory = v.mouseHistory;
             objects = v.objects;
             ruleSet = v.ruleSet;
@@ -86,6 +89,7 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/gPubSub',
             skin = v.skin;
             time = v.time;
             videoElement = v.videoElement;
+            breakiness = v.breakiness;
         }
 
         // Render batch {{{
@@ -127,6 +131,43 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/gPubSub',
                 // Draw
                 gl.drawArrays(gl.TRIANGLES, 0, 6);
             },
+            endSprite: function flushEndSprite() {
+                // Cleanup
+                gl.disableVertexAttribArray(programs.sprite.attr.textureCoord);
+                gl.disableVertexAttribArray(programs.sprite.attr.vertexCoord);
+                gl.bindBuffer(gl.ARRAY_BUFFER, null);
+
+                gl.useProgram(null);
+            },
+
+            solidSprite: function flushSolidSprite(solidSprite) {
+                gl.useProgram(programs.solidSprite);
+
+                // Buffers
+                // Same as sprite
+                var vertexOffset = 0;
+
+                gl.bindBuffer(gl.ARRAY_BUFFER, buffers.sprite);
+                gl.vertexAttribPointer(programs.solidSprite.attr.vertexCoord, 2, gl.FLOAT, false, 0, vertexOffset);
+                gl.enableVertexAttribArray(programs.solidSprite.attr.vertexCoord);
+
+                // Uniforms
+                gl.uniform2fv(programs.solidSprite.uni.view, solidSprite.view.mat);
+                gl.uniform2f(programs.solidSprite.uni.position, solidSprite.x + solidSprite.width / 2, solidSprite.y + solidSprite.height / 2);
+                gl.uniform4fv(programs.solidSprite.uni.color, solidSprite.color);
+                gl.uniform2f(programs.solidSprite.uni.size, solidSprite.width, solidSprite.height);
+
+                // Draw
+                gl.drawArrays(gl.TRIANGLES, 0, 6);
+
+                // Cleanup
+                gl.disableVertexAttribArray(programs.solidSprite.attr.textureCoord);
+                gl.disableVertexAttribArray(programs.solidSprite.attr.vertexCoord);
+                gl.bindBuffer(gl.ARRAY_BUFFER, null);
+
+                gl.useProgram(null);
+            },
+
             endSprite: function flushEndSprite() {
                 // Cleanup
                 gl.disableVertexAttribArray(programs.sprite.attr.textureCoord);
@@ -263,6 +304,11 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/gPubSub',
             }
         }
 
+        function solidSprite(options) {
+            options.view = currentView;
+            renderBatch.push([ 'solidSprite', options ]);
+        }
+
         function curve(options) {
             options.view = currentView;
             renderBatch.push([ 'curve', options ]);
@@ -347,46 +393,19 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/gPubSub',
         // Rendering helpers }}}
 
         // Map rendering {{{
-        function createSliderTrack(points, radius) {
-            var data = [ ];
+        function createSliderTrack(curve, radius) {
+            var points = curve.flattenContourPoints(radius);
 
-            function extrude(point) {
-                // [ x, y, _, dx, dy ] => [ x1, y1, x2, y2 ]
-
-                var x = point[0];
-                var y = point[1];
-                var dx = point[3];
-                var dy = point[4];
-
-                return [
-                    x - dy * radius,
-                    y + dx * radius,
-                    x + dy * radius,
-                    y - dx * radius
-                ];
-            }
-
-            function mark(a) {
-                /*jshint white: false */
-
-                // Vertex, UV, vertex, UV
-                data.push(a[0]); data.push(a[1]);
-                data.push(0);    data.push(0);
-
-                data.push(a[2]); data.push(a[3]);
-                data.push(0);    data.push(1);
-            }
-
-            points.forEach(function (point) {
-                mark(extrude(point));
-            });
+            var floats = points.reduce(function (acc, point) {
+                return acc.concat([ point[0], point[1], point[2], 0 ]);
+            }, [ ]);
 
             var buffer = gl.createBuffer();
             gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
-            gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(data), gl.STATIC_DRAW);
+            gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(floats), gl.STATIC_DRAW);
 
             return {
-                vertexCount: data.length / 4,
+                vertexCount: points.length,
                 buffer: buffer
             };
         }
@@ -433,11 +452,7 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/gPubSub',
         }
 
         function renderSliderBall(object) {
-            var sliderBallPosition = object.curve.getSliderBallPosition(object, time, ruleSet);
-
-            if (!sliderBallPosition) {
-                return;
-            }
+            var sliderBallPosition = object.getSliderBallPosition(time, ruleSet);
 
             var scale = ruleSet.getCircleSize() / 128;
 
@@ -486,17 +501,16 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/gPubSub',
         }
 
         function renderSliderObject(object) {
-            var alpha = ruleSet.getObjectOpacity(object, time)
+            var alpha = ruleSet.getObjectOpacity(object, time);
 
             renderUnit({ alpha: alpha }, function () {
                 var key = [ object, ruleSet, skin ];
 
                 var c = caches.sliderTrack.get(key, function () {
-                    var points = object.curve.points;
-
                     var adjustmentScale = 128 / (128 - 10); // Don't ask...
+                    var radius = ruleSet.getCircleSize() / adjustmentScale / 2;
 
-                    var b = createSliderTrack(points, ruleSet.getCircleSize() / adjustmentScale / 2);
+                    var b = createSliderTrack(object.curve, radius);
                     var buffer = b.buffer;
                     buffers.curves.push(buffer);
 
@@ -509,7 +523,8 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/gPubSub',
 
                 var color = object.combo.color;
                 var scale = ruleSet.getCircleSize() / 128;
-                var growPercentage = ruleSet.getSliderGrowPercentage(object, time);
+                //var growPercentage = ruleSet.getSliderGrowPercentage(object, time);
+                var growPercentage = 1;
 
                 curve({
                     id: c.id,
@@ -521,7 +536,9 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/gPubSub',
 
                 var visibility = ruleSet.getObjectVisibilityAtTime(object, time);
 
-                var lastPoint = object.curve.render(growPercentage).slice(-1)[0];
+                // XXX!
+                //var lastPoint = object.curve.render(growPercentage).slice(-1)[0];
+                var lastPoint = object.curve.getEndPoint();
 
                 if (lastPoint) {
                     // End
@@ -760,11 +777,26 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/gPubSub',
             });
         }
 
+        function mapProgressColour(progress) {
+            var c = (progress * 32 + 192) / 255;
+            return [ c, c, c, 1 ];
+        }
+
         function renderHud() {
+            var MAP_PROGRESS_HEIGHT = 6;
+
             view(View.hud, function () {
                 renderScore();
                 renderCombo();
                 renderAccuracy();
+
+                solidSprite({
+                    x: 0,
+                    y: 480 - MAP_PROGRESS_HEIGHT,
+                    width: 640 * mapProgress,
+                    height: MAP_PROGRESS_HEIGHT,
+                    color: mapProgressColour(mapProgress)
+                });
             });
         }
         // HUD rendering }}}
@@ -787,12 +819,14 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/gPubSub',
             var innerW = backgroundImage.width;
             var innerH = backgroundImage.height;
 
-            var scale = util.fitRectangleScale(containerW, containerH, innerW, innerH);
+            var scale = util.fitOuterRectangleScale(containerW, containerH, innerW, innerH);
+
+            var brightness = 1 - (1 - breakiness) * 0.125;
 
             sprite({
                 x: 320,
                 y: 240,
-                color: [ 255, 255, 255, 255 ],
+                color: [ brightness * 255, brightness * 255, brightness * 255, 255 ],
                 scale: scale,
                 texture: texture
             });
@@ -922,6 +956,33 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/gPubSub',
             '}'
         ].join('\n');
 
+        solidSpriteVertexShader = [
+            'attribute vec2 aVertexCoord;',
+
+            'uniform vec2 uView;',
+            'uniform vec2 uSize;',
+            'uniform vec2 uPosition;',
+
+            'mat4 projection = mat4(',
+                '2.0 / 640.0, 0.0, 0.0, -1.0,',
+                '0.0, -2.0 / 480.0, 0.0, 1.0,',
+                '0.0, 0.0,-2.0,-0.0,',
+                '0.0, 0.0, 0.0, 1.0',
+            ');',
+
+            'void main(void) {',
+                'gl_Position = (vec4(aVertexCoord / 2.0, 0.0, 1.0) * vec4(uSize, 1.0, 1.0) + vec4(uView + uPosition, 0.0, 0.0)) * projection;',
+            '}'
+        ].join('\n');
+
+        solidSpriteFragmentShader = [
+            'uniform vec4 uColor;',
+
+            'void main(void) {',
+                'gl_FragColor = uColor;',
+            '}'
+        ].join('\n');
+
         objectTargetVertexShader = [
             'attribute vec2 aVertexCoord;',
             'attribute vec2 aTextureCoord;',
@@ -985,7 +1046,7 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/gPubSub',
             'varying vec2 vTextureCoord;',
 
             'vec4 getSliderColor(float t, vec4 baseColor) {',
-                'float u = abs(t - 0.5) / 0.5;',
+                'float u = abs(t);',
                 'float intensity = 1.0;',
 
                 'if (u > 0.85) {',
@@ -998,7 +1059,7 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/gPubSub',
             '}',
 
             'void main(void) {',
-                'gl_FragColor = getSliderColor(vTextureCoord.t, vec4(uColor) / 255.0);',
+                'gl_FragColor = getSliderColor(vTextureCoord.x, uColor / 255.0);',
             '}'
         ].join('\n');
 
@@ -1130,6 +1191,18 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/gPubSub',
                 scale: gl.getUniformLocation(programs.sprite, 'uScale'),
                 color: gl.getUniformLocation(programs.sprite, 'uColor'),
                 angle: gl.getUniformLocation(programs.sprite, 'uAngle')
+            };
+
+            programs.solidSprite = createProgram(gl, solidSpriteVertexShader, solidSpriteFragmentShader);
+            programs.solidSprite.attr = {
+                vertexCoord: gl.getAttribLocation(programs.solidSprite, 'aVertexCoord')
+            };
+            programs.solidSprite.uni = {
+                view: gl.getUniformLocation(programs.solidSprite, 'uView'),
+                size: gl.getUniformLocation(programs.solidSprite, 'uSize'),
+                position: gl.getUniformLocation(programs.solidSprite, 'uPosition'),
+                scale: gl.getUniformLocation(programs.solidSprite, 'uScale'),
+                color: gl.getUniformLocation(programs.solidSprite, 'uColor')
             };
 
             programs.objectTarget = createProgram(gl, objectTargetVertexShader, objectTargetFragmentShader);
@@ -1457,18 +1530,20 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/gPubSub',
                     scoreHistory: state.scoreHistory,
                     accuracyHistory: state.accuracyHistory,
                     comboHistory: state.comboHistory,
+                    mapProgress: state.mapProgress,
                     time: time
                 });
 
                 r.renderHud();
             },
 
-            renderStoryboard: function (storyboard, assetManager, time) {
-                initStoryboard(storyboard, assetManager);
+            renderStoryboard: function (state, time) {
+                initStoryboard(state.storyboard, state.assetManager);
 
                 r.vars({
                     videoElement: videoElement,
-                    storyboard: storyboard,
+                    storyboard: state.storyboard,
+                    breakiness: state.breakiness,
                     time: time
                 });
 

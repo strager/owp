@@ -2,10 +2,10 @@ define('game/mapObject', [ 'util/util' ], function (util) {
     function proto(obj) {
         // Fake Object.create + extend
         // Object.create (or similar techniques) isn't used because it's slow.
-        var neoObj = util.clone(obj);
-
         // Clone won't copy stuff on the prototype, so we do it ourselves.
-        neoObj.type = obj.type;
+        var neoObj = { };
+        util.extend(neoObj, obj.constructor.prototype);
+        util.extend(neoObj, obj);
 
         // Keep the original available
         neoObj.orig = obj;
@@ -36,6 +36,40 @@ define('game/mapObject', [ 'util/util' ], function (util) {
     }
 
     Slider.prototype.type = 'Slider';
+    Slider.prototype.getSliderBallPosition = function (time, ruleSet) {
+        // TODO Move to RuleSet
+
+        var repeatLength = ruleSet.getSliderRepeatLength(time, this.curve.length);
+        var timeOffset = time - this.time;
+
+        var rawTarget = timeOffset / repeatLength;
+
+        // Perform repeat:
+        // if rawTarget is oddish (e.g. [1,2) [3,4)), it's a reverse repeat
+        // and should be backwards (from 1 to 0) else, it's a forward repeat
+        // and should be forwards (from 0 to 1)
+        var isBackwards = Math.floor(rawTarget) % 2 === 1;
+        var target = rawTarget % 1;
+        if (isBackwards) {
+            target = 1 - target;
+        }
+
+        var targetLength = target * this.length;
+        return this.curve.getPointAtLength(targetLength);
+    };
+    Slider.prototype.getTickPositions = function (tickLength) {
+        // TODO Move to RuleSet
+
+        var tickPositions = [ ];
+
+        var len = tickLength;
+        while (len < this.curve.length) {
+            tickPositions.push(this.curve.getPointAtLength(len));
+            len += tickLength;
+        }
+
+        return tickPositions;
+    };
 
     function SliderTick(time, x, y, slider, repeatNumber) {
         this.time = time;
@@ -56,8 +90,8 @@ define('game/mapObject', [ 'util/util' ], function (util) {
         this.isFinal = isFinal;
 
         var position = repeatIndex % 2
-            ? slider.curve.points.slice(-1)[0]
-            : slider.curve.points[0];
+            ? slider.curve.getEndPoint()
+            : slider.curve.getStartPoint();
 
         this.x = position[0];
         this.y = position[1];

@@ -1,4 +1,4 @@
-define('game/RuleSet', [ 'util/util', 'game/mapObject', 'util/History' ], function (util, mapObject, History) {
+define('game/RuleSet', [ 'util/util', 'game/mapObject', 'util/History', 'util/CueList' ], function (util, mapObject, History, CueList) {
     function RuleSet() {
         this.approachRate = 5;
         this.overallDifficulty = 5;
@@ -7,8 +7,13 @@ define('game/RuleSet', [ 'util/util', 'game/mapObject', 'util/History' ], functi
         this.stackLeniency = 1;
         this.sliderMultiplier = 1;
         this.sliderTickRate = 1;
+
         this.uninheritedTimingPointHistory = new History();
         this.inheritedTimingPointHistory = new History();
+
+        this.breakTimeline = new CueList();
+
+        this.breakinessTransitionDuration = 300;
     }
 
     RuleSet.fromSettings = function (settings) {
@@ -31,6 +36,10 @@ define('game/RuleSet', [ 'util/util', 'game/mapObject', 'util/History' ], functi
             } else {
                 ruleSet.uninheritedTimingPointHistory.add(timingPoint.time, timingPoint);
             }
+        });
+
+        settings.breakRanges.forEach(function (breakRange) {
+            ruleSet.breakTimeline.add(breakRange, breakRange.startTime, breakRange.endTime);
         });
 
         return ruleSet;
@@ -485,7 +494,7 @@ define('game/RuleSet', [ 'util/util', 'game/mapObject', 'util/History' ], functi
             var tickLength = this.getTickLength(startTime);
             var tickDuration = this.getTickDuration(startTime);
 
-            var rawTickPositions = slider.curve.getTickPositions(tickLength);
+            var rawTickPositions = slider.getTickPositions(tickLength);
 
             var ticks = [ ];
 
@@ -514,8 +523,8 @@ define('game/RuleSet', [ 'util/util', 'game/mapObject', 'util/History' ], functi
             var startTime = this.getObjectStartTime(slider);
             var repeatDuration = this.getSliderRepeatLength(slider.time, slider.length);
 
-            var startPosition = slider.curve.points[0];
-            var endPosition = slider.curve.points.slice(-1)[0];
+            var startPosition = slider.curve.getStartPoint();
+            var endPosition = slider.curve.getEndPoint();
 
             var ends = [ ];
 
@@ -601,7 +610,7 @@ define('game/RuleSet', [ 'util/util', 'game/mapObject', 'util/History' ], functi
             Slider: function (object) {
                 if (object.repeats % 2) {
                     // Odd number of repeats => end of slider
-                    var end = object.curve.points.slice(-1)[0];
+                    var end = object.curve.getEndPoint();
 
                     return {
                         x: end[0],
@@ -696,21 +705,56 @@ define('game/RuleSet', [ 'util/util', 'game/mapObject', 'util/History' ], functi
 
                 mapObject.match(object, {
                     HitCircle: function (object) {
-                        object.x -= stackOffset * object.stackHeight;
-                        object.y -= stackOffset * object.stackHeight;
+                        var o = -stackOffset * object.stackHeight;
+                        object.x += o;
+                        object.y += o;
                     },
                     Slider: function (object) {
-                        object.x -= stackOffset * object.stackHeight;
-                        object.y -= stackOffset * object.stackHeight;
+                        var o = -stackOffset * object.stackHeight;
+                        object.x += o;
+                        object.y += o;
 
-                        // HACK HACK HACK!
-                        object.curve.points.forEach(function (point) {
-                            point[0] -= stackOffset * object.stackHeight;
-                            point[1] -= stackOffset * object.stackHeight;
-                        });
+                        object.curve.offset = [ o, o ];
                     }
                 });
             });
+        },
+
+        getMapStartTime: function (map) {
+            return this.getObjectStartAppearTime(map.objects[0]);
+        },
+
+        getMapEndTime: function (map) {
+            return this.getObjectStartDisappearTime(map.objects[map.objects.length - 1]);
+        },
+
+        getMapProgress: function (map, time) {
+            var startTime = this.getMapStartTime(map);
+            var endTime = this.getMapEndTime(map);
+
+            if (time < startTime) {
+                return -(time / startTime);
+            } else {
+                return (time - startTime) / (endTime - startTime);
+            }
+        },
+
+        getBreakinessAt: function (time) {
+            var d = this.breakinessTransitionDuration;
+
+            var breaks = this.breakTimeline.getAllAtTime(time);
+
+            if (breaks.length) {
+                return breaks.reduce(function (acc, breakRange) {
+                    return Math.min(
+                        acc,
+                        Math.abs(time - breakRange.startTime),
+                        Math.abs(time - breakRange.endTime)
+                    );
+                }, d) / d;
+            } else {
+                return 0;
+            }
         }
     };
 
