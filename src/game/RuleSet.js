@@ -350,7 +350,7 @@ define('game/RuleSet', [ 'util/util', 'game/mapObject', 'util/History', 'util/Cu
         },
 
         getMeasureBeatAtTime: function (time) {
-            var timingSection = this.getLastTimingSection(time);
+            var timingSection = this.uninheritedTimingPointHistory.getDataAtTime(time);
 
             // TODO Configurable measure length
             var measureLength = 4;
