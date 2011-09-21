@@ -346,12 +346,19 @@ define('game/RuleSet', [ 'util/util', 'game/mapObject', 'util/History', 'util/Cu
         getRepeatArrowScale: function (sliderEnd, time) {
             var beat = this.getMeasureBeatAtTime(time);
 
-            return 1 + (beat % 1) / 4;
+            return 1 + (beat % 1) / 6;
         },
 
         getMeasureBeatAtTime: function (time) {
-            // TODO
-            return (time % 1000) / 1000;
+            var timingSection = this.getLastTimingSection(time);
+
+            // TODO Configurable measure length
+            var measureLength = 4;
+
+            var offset = time - timingSection.time;
+            var beatTime = 60 * 1000 / timingSection.bpm;
+
+            return (offset / beatTime) % measureLength;
         },
 
         getHitSoundNames: function (hitMarker) {
