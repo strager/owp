@@ -45,6 +45,10 @@ define('game/RuleSet', [ 'util/util', 'game/mapObject', 'util/History', 'util/Cu
         return ruleSet;
     };
 
+    function scale(a, b, value) {
+        return value * (b - a) + a
+    }
+
     function lerp(a, b, value) {
         return Math.min(Math.max((value - a) / (b - a), 0), 1);
     }
@@ -61,32 +65,31 @@ define('game/RuleSet', [ 'util/util', 'game/mapObject', 'util/History', 'util/Cu
 
         var i;
         for (i = 1; i < tab.length; ++i) {
+            var cur = tab[i];
             if (tab[i][0] >= value) {
-                var s = interp(tab[i - 1][0], tab[i][0], value);
-                return s * (tab[i][1] - tab[i - 1][1]) + tab[i - 1][1];
+                var last = tab[i - 1];
+                return scale(last[1], cur[1], interp(last[0], cur[0], value));
             }
         }
 
         return tab[tab.length - 1][1];
     }
 
+    function ruleLerp(a, b, c, value) {
+        return table(lerp, [
+            [ 0, a ],
+            [ 5, b ],
+            [ 10, c ]
+        ], value);
+    }
+
     RuleSet.prototype = {
-        threePartLerp: function (a, b, c, value) {
-            value = +value; // Quick cast to number
-
-            if (value < 5) {
-                return a + (value - 0) * (b - a) / (5 - 0);
-            } else {
-                return b + (value - 5) * (c - b) / (10 - 5);
-            }
-        },
-
         getAppearTime: mapObject.matcher({
             HitMarker: function () {
                 return 0;
             },
             _: function () {
-                return this.threePartLerp(1800, 1200, 450, this.approachRate);
+                return ruleLerp(1800, 1200, 450, this.approachRate);
             }
         }),
 
@@ -338,7 +341,7 @@ define('game/RuleSet', [ 'util/util', 'game/mapObject', 'util/History', 'util/Cu
 
             var window = windows[score];
 
-            return this.threePartLerp(window[0], window[1], window[2], this.overallDifficulty);
+            return ruleLerp(window[0], window[1], window[2], this.overallDifficulty);
         },
 
         getHitScore: function (object, time) {
