@@ -589,7 +589,7 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/gPubSub',
                         x: repeatArrowX,
                         y: repeatArrowY,
                         color: [ 255, 255, 255, 255 ],
-                        scale: scale,
+                        scale: scale * ruleSet.getRepeatArrowScale(repeatArrow, time),
                         texture: textures.repeatArrow
                     });
                 }

@@ -343,6 +343,17 @@ define('game/RuleSet', [ 'util/util', 'game/mapObject', 'util/History', 'util/Cu
             return 0.5;
         },
 
+        getRepeatArrowScale: function (sliderEnd, time) {
+            var beat = this.getMeasureBeatAtTime(time);
+
+            return 1 + (beat % 1) / 4;
+        },
+
+        getMeasureBeatAtTime: function (time) {
+            // TODO
+            return (time % 1000) / 1000;
+        },
+
         getHitSoundNames: function (hitMarker) {
             // osu!'s hitsound sections are based on the hitsound time; we
             // choose to use the hit object's time, as that makes more sense
