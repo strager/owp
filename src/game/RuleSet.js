@@ -45,6 +45,31 @@ define('game/RuleSet', [ 'util/util', 'game/mapObject', 'util/History', 'util/Cu
         return ruleSet;
     };
 
+    function lerp(a, b, value) {
+        return Math.min(Math.max((value - a) / (b - a), 0), 1);
+    }
+
+    function smoothstep(a, b, value) {
+        var x = lerp(a, b, value);
+        return x * x * x * (x * (x * 6 - 15) + 10);
+    }
+
+    function table(interp, tab, value) {
+        if (tab[0][0] >= value) {
+            return tab[0][1];
+        }
+
+        var i;
+        for (i = 1; i < tab.length; ++i) {
+            if (tab[i][0] >= value) {
+                var s = interp(tab[i - 1][0], tab[i][0], value);
+                return s * (tab[i][1] - tab[i - 1][1]) + tab[i - 1][1];
+            }
+        }
+
+        return tab[tab.length - 1][1];
+    }
+
     RuleSet.prototype = {
         threePartLerp: function (a, b, c, value) {
             value = +value; // Quick cast to number
@@ -339,8 +364,13 @@ define('game/RuleSet', [ 'util/util', 'game/mapObject', 'util/History', 'util/Cu
         },
 
         getHitMarkerScale: function (hitMarker, time) {
-            // TODO
-            return 0.5;
+            var offset = time - hitMarker.time;
+
+            return table(smoothstep, [
+                [ 0, 0.5 ],
+                [ 20, 0.6 ],
+                [ 200, 0.5 ]
+            ], offset);
         },
 
         getRepeatArrowScale: function (sliderEnd, time) {
