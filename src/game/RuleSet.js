@@ -371,7 +371,7 @@ define('game/RuleSet', [ 'util/util', 'game/mapObject', 'util/History', 'util/Cu
 
             return table(smoothstep, [
                 [ 0, 0.5 ],
-                [ 20, 0.6 ],
+                [ 20, 0.55 ],
                 [ 200, 0.5 ]
             ], offset);
         },
