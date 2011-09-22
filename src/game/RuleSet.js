@@ -632,8 +632,8 @@ define('game/RuleSet', [ 'util/util', 'game/mapObject', 'util/History', 'util/Cu
         },
 
         getLastTimingSection: function (time) {
-            var inherited = this.inheritedTimingPointHistory.getDataAtTime(time);
-            var uninherited = this.uninheritedTimingPointHistory.getDataAtTime(time);
+            var inherited = this.inheritedTimingPointHistory.getDataAtTime(time) || this.inheritedTimingPointHistory.getFirst();
+            var uninherited = this.uninheritedTimingPointHistory.getDataAtTime(time) || this.uninheritedTimingPointHistory.getFirst();
 
             if (inherited && inherited.time > uninherited.time) {
                 return inherited;
