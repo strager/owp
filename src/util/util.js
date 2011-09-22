@@ -59,6 +59,18 @@ define('util/util', [ ], function () {
         };
     }
 
+    function roundRectangle(rectangle) {
+        var x = Math.floor(rectangle.x);
+        var y = Math.floor(rectangle.y);
+
+        return {
+            width: Math.ceil(rectangle.x + rectangle.width) - x,
+            height: Math.ceil(rectangle.y + rectangle.height) - y,
+            x: x,
+            y: y
+        }
+    }
+
     function extendObjectWithFields(base, fields, extension) {
         var i, arg, field;
 
@@ -110,6 +122,7 @@ define('util/util', [ ], function () {
         fitOuterRectangleScale: fitOuterRectangleScale,
         fitRectangle: fitRectangle,
         fitOuterRectangle: fitOuterRectangle,
+        roundRectangle: roundRectangle,
         extendObjectWithFields: extendObjectWithFields,
         extend: extend,
         clone: clone,

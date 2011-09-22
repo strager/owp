@@ -1418,6 +1418,7 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/gPubSub',
             container.style.height = height + 'px';
 
             var rect = util.fitRectangle(width, height, 640, 480);
+            rect = util.roundRectangle(rect);
 
             var x = Math.max(0, rect.x);
             var y = Math.max(0, rect.y);
