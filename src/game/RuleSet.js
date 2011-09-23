@@ -46,7 +46,7 @@ define('game/RuleSet', [ 'util/util', 'game/mapObject', 'util/History', 'util/Cu
     };
 
     function scale(a, b, value) {
-        return value * (b - a) + a
+        return value * (b - a) + a;
     }
 
     function lerp(a, b, value) {
@@ -660,7 +660,7 @@ define('game/RuleSet', [ 'util/util', 'game/mapObject', 'util/History', 'util/Cu
                 var height = Math.max.apply(Math, ys) - y;
 
                 return [ x, y, width, height ];
-            },
+            }
         }),
 
         getObjectStartPosition: function (object) {
