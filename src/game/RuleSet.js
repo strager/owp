@@ -646,6 +646,23 @@ define('game/RuleSet', [ 'util/util', 'game/mapObject', 'util/History', 'util/Cu
             return this.getLastTimingSection(time).hitSoundVolume;
         },
 
+        getObjectBoundingRectangle: mapObject.matcher({
+            Slider: function (slider) {
+                var radius = this.getCircleSize() / 2;
+                var points = slider.curve.flattenContourPoints(radius);
+
+                var xs = points.map(function (point) { return point[0]; });
+                var ys = points.map(function (point) { return point[1]; });
+
+                var x = Math.min.apply(Math, xs);
+                var y = Math.min.apply(Math, ys);
+                var width = Math.max.apply(Math, xs) - x;
+                var height = Math.max.apply(Math, ys) - y;
+
+                return [ x, y, width, height ];
+            },
+        }),
+
         getObjectStartPosition: function (object) {
             return {
                 x: object.x,
