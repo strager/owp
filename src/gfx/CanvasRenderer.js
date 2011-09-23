@@ -552,16 +552,18 @@ define('gfx/CanvasRenderer', [ 'game/mapObject', 'util/Cache', 'gfx/canvasShader
 
         function renderSliderObject(object) {
             var el = dom.get(object, function () {
+                // We get the bounds so we can render to the smallest canvas possible
+                var bounds = ruleSet.getObjectBoundingRectangle(object);
+
                 var canvas = document.createElement('canvas');
                 canvas.style.position = 'absolute';
-                canvas.style.left = (-currentView.mat[0]) + 'px';
-                canvas.style.top = (-currentView.mat[1]) + 'px';
-                canvas.width = 640;
-                canvas.height = 480;
+                canvas.style.left = bounds[0] + 'px';
+                canvas.style.top = bounds[1] + 'px';
+                canvas.width = bounds[2];
+                canvas.height = bounds[3];
 
                 var context = canvas.getContext('2d');
-
-                context.translate(currentView.mat[0], currentView.mat[1]);
+                context.translate(-bounds[0], -bounds[1]);
 
                 renderSliderTrack(object.curve, object.combo.color, context);
 

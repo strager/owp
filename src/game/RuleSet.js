@@ -45,23 +45,51 @@ define('game/RuleSet', [ 'util/util', 'game/mapObject', 'util/History', 'util/Cu
         return ruleSet;
     };
 
-    RuleSet.prototype = {
-        threePartLerp: function (a, b, c, value) {
-            value = +value; // Quick cast to number
+    function scale(a, b, value) {
+        return value * (b - a) + a;
+    }
 
-            if (value < 5) {
-                return a + (value - 0) * (b - a) / (5 - 0);
-            } else {
-                return b + (value - 5) * (c - b) / (10 - 5);
+    function lerp(a, b, value) {
+        return Math.min(Math.max((value - a) / (b - a), 0), 1);
+    }
+
+    function smoothstep(a, b, value) {
+        var x = lerp(a, b, value);
+        return x * x * x * (x * (x * 6 - 15) + 10);
+    }
+
+    function table(interp, tab, value) {
+        if (tab[0][0] >= value) {
+            return tab[0][1];
+        }
+
+        var i;
+        for (i = 1; i < tab.length; ++i) {
+            var cur = tab[i];
+            if (tab[i][0] >= value) {
+                var last = tab[i - 1];
+                return scale(last[1], cur[1], interp(last[0], cur[0], value));
             }
-        },
+        }
 
+        return tab[tab.length - 1][1];
+    }
+
+    function ruleLerp(a, b, c, value) {
+        return table(lerp, [
+            [ 0, a ],
+            [ 5, b ],
+            [ 10, c ]
+        ], value);
+    }
+
+    RuleSet.prototype = {
         getAppearTime: mapObject.matcher({
             HitMarker: function () {
                 return 0;
             },
             _: function () {
-                return this.threePartLerp(1800, 1200, 450, this.approachRate);
+                return ruleLerp(1800, 1200, 450, this.approachRate);
             }
         }),
 
@@ -313,7 +341,7 @@ define('game/RuleSet', [ 'util/util', 'game/mapObject', 'util/History', 'util/Cu
 
             var window = windows[score];
 
-            return this.threePartLerp(window[0], window[1], window[2], this.overallDifficulty);
+            return ruleLerp(window[0], window[1], window[2], this.overallDifficulty);
         },
 
         getHitScore: function (object, time) {
@@ -339,8 +367,31 @@ define('game/RuleSet', [ 'util/util', 'game/mapObject', 'util/History', 'util/Cu
         },
 
         getHitMarkerScale: function (hitMarker, time) {
-            // TODO
-            return 0.5;
+            var offset = time - hitMarker.time;
+
+            return table(smoothstep, [
+                [ 0, 0.5 ],
+                [ 20, 0.55 ],
+                [ 200, 0.5 ]
+            ], offset);
+        },
+
+        getRepeatArrowScale: function (sliderEnd, time) {
+            var beat = this.getMeasureBeatAtTime(time);
+
+            return 1 + (beat % 1) / 6;
+        },
+
+        getMeasureBeatAtTime: function (time) {
+            var timingSection = this.uninheritedTimingPointHistory.getDataAtTime(time);
+
+            // TODO Configurable measure length
+            var measureLength = 4;
+
+            var offset = time - timingSection.time;
+            var beatTime = 60 * 1000 / timingSection.bpm;
+
+            return (offset / beatTime) % measureLength;
         },
 
         getHitSoundNames: function (hitMarker) {
@@ -581,8 +632,8 @@ define('game/RuleSet', [ 'util/util', 'game/mapObject', 'util/History', 'util/Cu
         },
 
         getLastTimingSection: function (time) {
-            var inherited = this.inheritedTimingPointHistory.getDataAtTime(time);
-            var uninherited = this.uninheritedTimingPointHistory.getDataAtTime(time);
+            var inherited = this.inheritedTimingPointHistory.getDataAtTime(time) || this.inheritedTimingPointHistory.getFirst();
+            var uninherited = this.uninheritedTimingPointHistory.getDataAtTime(time) || this.uninheritedTimingPointHistory.getFirst();
 
             if (inherited && inherited.time > uninherited.time) {
                 return inherited;
@@ -594,6 +645,23 @@ define('game/RuleSet', [ 'util/util', 'game/mapObject', 'util/History', 'util/Cu
         getHitSoundVolume: function (time) {
             return this.getLastTimingSection(time).hitSoundVolume;
         },
+
+        getObjectBoundingRectangle: mapObject.matcher({
+            Slider: function (slider) {
+                var radius = this.getCircleSize() / 2;
+                var points = slider.curve.flattenContourPoints(radius);
+
+                var xs = points.map(function (point) { return point[0]; });
+                var ys = points.map(function (point) { return point[1]; });
+
+                var x = Math.min.apply(Math, xs);
+                var y = Math.min.apply(Math, ys);
+                var width = Math.max.apply(Math, xs) - x;
+                var height = Math.max.apply(Math, ys) - y;
+
+                return [ x, y, width, height ];
+            }
+        }),
 
         getObjectStartPosition: function (object) {
             return {

@@ -851,7 +851,13 @@ define('game/BezierSliderCurve', [ ], function () {
 
         this.flattenContourPoints = function (radius) {
             var points = transportStrokeBeziers(beziers, radius, TOLERANCE, TOLERANCE);
-            return points.map(offset);
+            points = points.map(offset);
+
+            // Reverse the points so polies toward the end of the slider are
+            // rendered first (thus showing "behind").
+            points.reverse();
+
+            return points;
         };
 
         this.getStartPoint = function () {
