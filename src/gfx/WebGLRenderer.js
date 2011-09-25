@@ -95,6 +95,10 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/gPubSub',
         // Render batch {{{
         var renderBatch = [ ];
 
+        function adjustColour(x) {
+            return x / 255;
+        }
+
         var renderBatchFlushers = {
             clear: function flushClear(color) {
                 gl.clearColor.apply(gl, color);
@@ -114,7 +118,7 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/gPubSub',
                 // Uniforms
                 gl.uniform2fv(programs.sprite.uni.view, sprite.view.mat);
                 gl.uniform2f(programs.sprite.uni.position, sprite.x, sprite.y);
-                gl.uniform4fv(programs.sprite.uni.color, sprite.color);
+                gl.uniform4fv(programs.sprite.uni.color, sprite.color.map(adjustColour));
                 gl.uniform1f(programs.sprite.uni.scale, sprite.scale);
 
                 gl.uniform2f(programs.sprite.uni.size, sprite.texture.image.width, sprite.texture.image.height);
@@ -145,7 +149,7 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/gPubSub',
                 // Uniforms
                 gl.uniform2fv(programs.solidSprite.uni.view, solidSprite.view.mat);
                 gl.uniform2f(programs.solidSprite.uni.position, solidSprite.x + solidSprite.width / 2, solidSprite.y + solidSprite.height / 2);
-                gl.uniform4fv(programs.solidSprite.uni.color, solidSprite.color);
+                gl.uniform4fv(programs.solidSprite.uni.color, solidSprite.color.map(adjustColour));
                 gl.uniform2f(programs.solidSprite.uni.size, solidSprite.width, solidSprite.height);
 
                 // Draw
@@ -238,7 +242,7 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/gPubSub',
 
                 // Uniforms
                 gl.uniform2fv(programs.curve.uni.view, curve.view.mat);
-                gl.uniform4fv(programs.curve.uni.color, curve.color);
+                gl.uniform4fv(programs.curve.uni.color, curve.color.map(adjustColour));
 
                 // Draw
                 gl.drawArrays(gl.TRIANGLE_STRIP, 0, curve.vertexCount);
@@ -936,7 +940,7 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/gPubSub',
             'uniform vec4 uColor;',
 
             'void main(void) {',
-                'gl_FragColor = texture2D(uSampler, vTextureCoord.st) * (vec4(uColor) / 255.0);',
+                'gl_FragColor = texture2D(uSampler, vTextureCoord.st) * uColor;',
             '}'
         ].join('\n');
 
@@ -1041,7 +1045,7 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/gPubSub',
             '}',
 
             'void main(void) {',
-                'gl_FragColor = getSliderColor(vTextureCoord.x, uColor / 255.0);',
+                'gl_FragColor = getSliderColor(vTextureCoord.x, uColor);',
             '}'
         ].join('\n');
 
