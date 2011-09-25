@@ -650,8 +650,9 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/gPubSub',
 
         function renderHitCircleObject(object) {
             var alpha = ruleSet.getObjectOpacity(object, time)
+            var bounds = ruleSet.getObjectBoundingRectangle(object);
 
-            renderUnit({ alpha: alpha }, function () {
+            renderUnit({ alpha: alpha, dirty: bounds }, function () {
                 renderHitCircleBackground(object.x, object.y, object.combo.color);
                 renderComboNumber(object.comboIndex + 1, object.x, object.y);
                 renderHitCircleOverlay(object.x, object.y);
