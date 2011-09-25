@@ -195,15 +195,35 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/gPubSub',
                 var uvOffset = 2 * 3 * 2 * 4; // Skip faces (2x3 pairs, x2 floats, x4 bytes)
 
                 gl.bindBuffer(gl.ARRAY_BUFFER, buffers.sprite);
-                gl.vertexAttribPointer(programs.objectTarget.attr.vertexCoord, 2, gl.FLOAT, false, 0, vertexOffset);
+                //gl.vertexAttribPointer(programs.objectTarget.attr.vertexCoord, 2, gl.FLOAT, false, 0, vertexOffset);
                 gl.vertexAttribPointer(programs.objectTarget.attr.textureCoord, 2, gl.FLOAT, false, 0, uvOffset);
-                gl.enableVertexAttribArray(programs.objectTarget.attr.vertexCoord);
+                //gl.enableVertexAttribArray(programs.objectTarget.attr.vertexCoord);
                 gl.enableVertexAttribArray(programs.objectTarget.attr.textureCoord);
 
                 // Uniforms
+                var dirtyRect;
+                if(unit.dirty) {
+                    var topLeft = unit.view.viewToGlobal(unit.dirty[0], unit.dirty[1]);
+                    dirtyRect = [
+                        topLeft[0], topLeft[1],
+                        unit.dirty[2], unit.dirty[3]
+                    ];
+                } else {
+                    dirtyRect = [
+                        0, 0,
+                        misc.objectTarget.width, misc.objectTarget.height
+                    ];
+                }
+
+                var dirtyRectTransform = [
+                    dirtyRect[0] / 640, dirtyRect[1] / 480,
+                    dirtyRect[2] / 640, dirtyRect[3] / 480
+                ];
+
                 gl.uniform2f(programs.objectTarget.uni.view, viewport.width, viewport.height);
                 gl.uniform2f(programs.objectTarget.uni.size, misc.objectTarget.width, misc.objectTarget.height);
                 gl.uniform1f(programs.objectTarget.uni.alpha, unit.alpha);
+                gl.uniform4fv(programs.objectTarget.uni.dirtyRect, dirtyRectTransform);
 
                 gl.activeTexture(gl.TEXTURE0);
                 gl.bindTexture(gl.TEXTURE_2D, misc.objectTarget.texture);
@@ -214,7 +234,7 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/gPubSub',
 
                 // Cleanup
                 gl.disableVertexAttribArray(programs.objectTarget.attr.textureCoord);
-                gl.disableVertexAttribArray(programs.objectTarget.attr.vertexCoord);
+                //gl.disableVertexAttribArray(programs.objectTarget.attr.vertexCoord);
                 gl.bindBuffer(gl.ARRAY_BUFFER, null);
 
                 gl.useProgram(null);
@@ -481,28 +501,32 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/gPubSub',
         }
 
         function renderUnit(options, callback) {
-            var alpha = typeof options.alpha === 'undefined' ? 1 : options.alpha;
+            options = util.extend({
+                dirty: null,
+                alpha: 1,
+                view: currentView
+            }, options);
 
             // Optimize the common case of alpha === 1, where there's no point
             // in rendering to an FBO
-            if (alpha >= 1) {
+            if (options.alpha >= 1) {
                 callback();
                 return;
             }
 
             renderBatch.push([ 'beginUnit', null ]);
 
-            callback();
+            var callbackOptions = callback();
+            util.extend(options, callbackOptions);
 
-            renderBatch.push([ 'endUnit', {
-                alpha: alpha
-            } ]);
+            renderBatch.push([ 'endUnit', options ]);
         }
 
         function renderSliderObject(object) {
             var alpha = ruleSet.getObjectOpacity(object, time);
+            var bounds = ruleSet.getObjectBoundingRectangle(object);
 
-            renderUnit({ alpha: alpha }, function () {
+            renderUnit({ alpha: alpha, dirty: bounds }, function () {
                 var key = [ object, ruleSet, skin ];
 
                 var c = caches.sliderTrack.get(key, function () {
@@ -975,17 +999,22 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/gPubSub',
             // TODO Rename uView to something else
             'uniform vec2 uView;',
             'uniform vec2 uSize;',
+            'uniform vec4 uDirtyRect;',
 
             'mat4 projection = mat4(',
-                '2.0 / uView.x, 0.0, 0.0, -1.0,',
-                '0.0, 2.0 / uView.y, 0.0, -1.0,',
+                '2.0 / 1.0, 0.0, 0.0, -1.0,',
+                '0.0, -2.0 / 1.0, 0.0, 1.0,',
                 '0.0, 0.0,-2.0,-0.0,',
                 '0.0, 0.0, 0.0, 1.0',
             ');',
 
             'void main(void) {',
-                'gl_Position = (vec4(aVertexCoord / 2.0, 0.0, 1.0) + vec4(0.5, 0.5, 0.0, 0.0)) * vec4(uSize, 1.0, 1.0) * projection;',
-                'vTextureCoord = aTextureCoord;',
+                // FIXME Herp derp ugly
+                'vec2 p = aTextureCoord;',
+                'vec2 mult = uDirtyRect.zw;',
+                'vec2 add = uDirtyRect.xy;',
+                'gl_Position = vec4(p * mult + add, 0.0, 1.0) * projection;',
+                'vTextureCoord = (vec2(0.0, -(uView.y - uSize.y) / uView.y) + (aTextureCoord * mult + add)) * uView / uSize * vec2(1.0, -1.0);',
             '}'
         ].join('\n');
 
@@ -998,7 +1027,7 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/gPubSub',
             'vec4 color = vec4(1.0, 1.0, 1.0, uAlpha);',
 
             'void main(void) {',
-                'gl_FragColor = texture2D(uSampler, vec2(vTextureCoord.s, vTextureCoord.t)) * color;',
+                'gl_FragColor = texture2D(uSampler, vTextureCoord.st) * color;',
             '}'
         ].join('\n');
 
@@ -1196,6 +1225,7 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/gPubSub',
                 sampler: gl.getUniformLocation(programs.objectTarget, 'uSampler'),
                 view: gl.getUniformLocation(programs.objectTarget, 'uView'),
                 size: gl.getUniformLocation(programs.objectTarget, 'uSize'),
+                dirtyRect: gl.getUniformLocation(programs.objectTarget, 'uDirtyRect'),
                 alpha: gl.getUniformLocation(programs.objectTarget, 'uAlpha')
             };
 

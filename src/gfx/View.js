@@ -3,6 +3,10 @@ define('gfx/View', [ ], function () {
         this.mat = mat;
     }
 
+    View.prototype.viewToGlobal = function (x, y) {
+        return [ x + this.mat[0], y + this.mat[1] ];
+    };
+
     View.prototype.playfieldToView = function (x, y) {
         return [ x - this.mat[0], y - this.mat[1] ];
     };

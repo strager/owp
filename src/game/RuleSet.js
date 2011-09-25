@@ -660,6 +660,10 @@ define('game/RuleSet', [ 'util/util', 'game/mapObject', 'util/History', 'util/Cu
                 var height = Math.max.apply(Math, ys) - y;
 
                 return [ x, y, width, height ];
+            },
+            _: function () {
+                // TODO
+                throw new Error('Not implemented');
             }
         }),
 
