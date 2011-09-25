@@ -831,7 +831,7 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/gPubSub',
 
             var scale = util.fitOuterRectangleScale(containerW, containerH, innerW, innerH);
 
-            var brightness = 1 - (1 - breakiness) * 0.125;
+            var brightness = 1 - (1 - breakiness) / 6;
 
             sprite({
                 x: 320,
