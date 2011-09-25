@@ -1,4 +1,4 @@
-define('game/BezierSliderCurve', [ ], function () {
+define('game/BezierSliderCurve', [ 'util/util' ], function (util) {
     var factorialTable = (function () {
         // Precalculate factorials into a look-up table
         var lutSize = 16;
@@ -849,7 +849,7 @@ define('game/BezierSliderCurve', [ ], function () {
             return points.map(offset);
         };
 
-        this.flattenContourPoints = function (radius) {
+        this.flattenContourPoints = util.memoize(function (radius) {
             var points = transportStrokeBeziers(beziers, radius, TOLERANCE, TOLERANCE);
             points = points.map(offset);
 
@@ -858,7 +858,7 @@ define('game/BezierSliderCurve', [ ], function () {
             points.reverse();
 
             return points;
-        };
+        });
 
         this.getStartPoint = function () {
             return offset(startPoint);

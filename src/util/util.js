@@ -1,4 +1,4 @@
-define('util/util', [ ], function () {
+define('util/util', [ 'util/Cache' ], function (Cache) {
     function fitRectangleScale(containerW, containerH, innerW, innerH) {
         var containerAR = containerW / containerH;
         var innerAR = innerW / innerH;
@@ -117,6 +117,20 @@ define('util/util', [ ], function () {
         }
     }
 
+    function memoize(fn) {
+        var cache = new Cache();
+
+        return function () {
+            var args = arguments;
+            var self = this;
+            var cargs = [ self ].concat(Array.prototype.slice.call(args));
+
+            return cache.get(args, function () {
+                return fn.apply(self, args);
+            });
+        };
+    }
+
     return {
         fitRectangleScale: fitRectangleScale,
         fitOuterRectangleScale: fitOuterRectangleScale,
@@ -126,6 +140,7 @@ define('util/util', [ ], function () {
         extendObjectWithFields: extendObjectWithFields,
         extend: extend,
         clone: clone,
-        setCursorImage: setCursorImage
+        setCursorImage: setCursorImage,
+        memoize: memoize
     };
 });
