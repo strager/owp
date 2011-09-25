@@ -844,7 +844,7 @@ define('gfx/CanvasRenderer', [ 'game/mapObject', 'util/Cache', 'gfx/canvasShader
                 backgroundGraphic.width, backgroundGraphic.height
             );
 
-            var brightness = 1 - (1 - breakiness) * 0.125;
+            var brightness = 1 - (1 - breakiness) / 6;
 
             // FIXME CHROME BUGS OUT ON THIS
             style(el, {

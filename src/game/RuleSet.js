@@ -660,6 +660,20 @@ define('game/RuleSet', [ 'util/util', 'game/mapObject', 'util/History', 'util/Cu
                 var height = Math.max.apply(Math, ys) - y;
 
                 return [ x, y, width, height ];
+            },
+            HitCircle: function (hitCircle) {
+                // The only thing easier is an AA rectangle...
+
+                var radius = this.getCircleSize() / 2;
+
+                return [
+                    hitCircle.x - radius, hitCircle.y - radius,
+                    radius * 2, radius * 2
+                ];
+            },
+            _: function () {
+                // TODO
+                throw new Error('Not implemented');
             }
         }),
 
