@@ -1034,16 +1034,10 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/gPubSub',
             'varying vec2 vTextureCoord;',
 
             'vec4 getSliderColor(float t, vec4 baseColor) {',
-                'float u = abs(t);',
-                'float intensity = 1.0;',
-
-                'if (u > 0.85) {',
-                    'baseColor = vec4(1, 1, 1, 1);',
-                '} else {',
-                    'intensity = (u + 1.5) / (1.0 + 1.5);',
-                '}',
-
-                'return baseColor * vec4(intensity, intensity, intensity, 1.0);',
+                'vec3 u = abs(vec3(t));',
+                'bvec4 z = bvec4(greaterThan(u, vec3(0.85)), 0);',
+                'vec4 grad = vec4((u + 1.5) / (1.0 + 1.5), 1.0) * baseColor;',
+                'return mix(grad, vec4(1), vec4(z));',
             '}',
 
             'void main(void) {',
