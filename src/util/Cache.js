@@ -13,10 +13,7 @@ define('util/Cache', [ 'util/Map' ], function (Map) {
                 data = this.map.get(key);
             } else {
                 data = creator(key);
-
-                if (!this.map.contains(key)) {
-                    this.map.set(key, data);
-                }
+                this.map.set(key, data);
             }
 
             return data;

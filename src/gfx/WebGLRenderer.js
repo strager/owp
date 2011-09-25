@@ -95,6 +95,10 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/gPubSub',
         // Render batch {{{
         var renderBatch = [ ];
 
+        function adjustColour(x) {
+            return x / 255;
+        }
+
         var renderBatchFlushers = {
             clear: function flushClear(color) {
                 gl.clearColor.apply(gl, color);
@@ -106,20 +110,15 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/gPubSub',
 
                 // Buffers
                 // Same as objectTarget
-                var vertexOffset = 0;
-                var uvOffset = 2 * 3 * 2 * 4; // Skip faces (2x3 pairs, x2 floats, x4 bytes)
-
                 gl.bindBuffer(gl.ARRAY_BUFFER, buffers.sprite);
-                gl.vertexAttribPointer(programs.sprite.attr.vertexCoord, 2, gl.FLOAT, false, 0, vertexOffset);
-                gl.vertexAttribPointer(programs.sprite.attr.textureCoord, 2, gl.FLOAT, false, 0, uvOffset);
-                gl.enableVertexAttribArray(programs.sprite.attr.vertexCoord);
-                gl.enableVertexAttribArray(programs.sprite.attr.textureCoord);
+                gl.vertexAttribPointer(programs.sprite.attr.coord, 2, gl.FLOAT, false, 0, 0);
+                gl.enableVertexAttribArray(programs.sprite.attr.coord);
             },
             drawSprite: function flushDrawSprite(sprite) {
                 // Uniforms
                 gl.uniform2fv(programs.sprite.uni.view, sprite.view.mat);
                 gl.uniform2f(programs.sprite.uni.position, sprite.x, sprite.y);
-                gl.uniform4fv(programs.sprite.uni.color, sprite.color);
+                gl.uniform4fv(programs.sprite.uni.color, sprite.color.map(adjustColour));
                 gl.uniform1f(programs.sprite.uni.scale, sprite.scale);
 
                 gl.uniform2f(programs.sprite.uni.size, sprite.texture.image.width, sprite.texture.image.height);
@@ -132,8 +131,7 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/gPubSub',
             },
             endSprite: function flushEndSprite() {
                 // Cleanup
-                gl.disableVertexAttribArray(programs.sprite.attr.textureCoord);
-                gl.disableVertexAttribArray(programs.sprite.attr.vertexCoord);
+                gl.disableVertexAttribArray(programs.sprite.attr.coord);
                 gl.bindBuffer(gl.ARRAY_BUFFER, null);
 
                 gl.useProgram(null);
@@ -144,24 +142,21 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/gPubSub',
 
                 // Buffers
                 // Same as sprite
-                var vertexOffset = 0;
-
                 gl.bindBuffer(gl.ARRAY_BUFFER, buffers.sprite);
-                gl.vertexAttribPointer(programs.solidSprite.attr.vertexCoord, 2, gl.FLOAT, false, 0, vertexOffset);
-                gl.enableVertexAttribArray(programs.solidSprite.attr.vertexCoord);
+                gl.vertexAttribPointer(programs.solidSprite.attr.coord, 2, gl.FLOAT, false, 0, 0);
+                gl.enableVertexAttribArray(programs.solidSprite.attr.coord);
 
                 // Uniforms
                 gl.uniform2fv(programs.solidSprite.uni.view, solidSprite.view.mat);
                 gl.uniform2f(programs.solidSprite.uni.position, solidSprite.x + solidSprite.width / 2, solidSprite.y + solidSprite.height / 2);
-                gl.uniform4fv(programs.solidSprite.uni.color, solidSprite.color);
+                gl.uniform4fv(programs.solidSprite.uni.color, solidSprite.color.map(adjustColour));
                 gl.uniform2f(programs.solidSprite.uni.size, solidSprite.width, solidSprite.height);
 
                 // Draw
                 gl.drawArrays(gl.TRIANGLES, 0, 6);
 
                 // Cleanup
-                gl.disableVertexAttribArray(programs.solidSprite.attr.textureCoord);
-                gl.disableVertexAttribArray(programs.solidSprite.attr.vertexCoord);
+                gl.disableVertexAttribArray(programs.solidSprite.attr.coord);
                 gl.bindBuffer(gl.ARRAY_BUFFER, null);
 
                 gl.useProgram(null);
@@ -169,8 +164,7 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/gPubSub',
 
             endSprite: function flushEndSprite() {
                 // Cleanup
-                gl.disableVertexAttribArray(programs.sprite.attr.textureCoord);
-                gl.disableVertexAttribArray(programs.sprite.attr.vertexCoord);
+                gl.disableVertexAttribArray(programs.sprite.attr.coord);
                 gl.bindBuffer(gl.ARRAY_BUFFER, null);
 
                 gl.useProgram(null);
@@ -190,15 +184,9 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/gPubSub',
                 gl.useProgram(programs.objectTarget);
 
                 // Buffers
-                // Same as sprite
-                var vertexOffset = 0;
-                var uvOffset = 2 * 3 * 2 * 4; // Skip faces (2x3 pairs, x2 floats, x4 bytes)
-
                 gl.bindBuffer(gl.ARRAY_BUFFER, buffers.sprite);
-                //gl.vertexAttribPointer(programs.objectTarget.attr.vertexCoord, 2, gl.FLOAT, false, 0, vertexOffset);
-                gl.vertexAttribPointer(programs.objectTarget.attr.textureCoord, 2, gl.FLOAT, false, 0, uvOffset);
-                //gl.enableVertexAttribArray(programs.objectTarget.attr.vertexCoord);
-                gl.enableVertexAttribArray(programs.objectTarget.attr.textureCoord);
+                gl.vertexAttribPointer(programs.objectTarget.attr.coord, 2, gl.FLOAT, false, 0, 0);
+                gl.enableVertexAttribArray(programs.objectTarget.attr.coord);
 
                 // Uniforms
                 var dirtyRect;
@@ -233,8 +221,7 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/gPubSub',
                 gl.drawArrays(gl.TRIANGLES, 0, 6);
 
                 // Cleanup
-                gl.disableVertexAttribArray(programs.objectTarget.attr.textureCoord);
-                //gl.disableVertexAttribArray(programs.objectTarget.attr.vertexCoord);
+                gl.disableVertexAttribArray(programs.objectTarget.attr.coord);
                 gl.bindBuffer(gl.ARRAY_BUFFER, null);
 
                 gl.useProgram(null);
@@ -255,7 +242,7 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/gPubSub',
 
                 // Uniforms
                 gl.uniform2fv(programs.curve.uni.view, curve.view.mat);
-                gl.uniform4fv(programs.curve.uni.color, curve.color);
+                gl.uniform4fv(programs.curve.uni.color, curve.color.map(adjustColour));
 
                 // Draw
                 gl.drawArrays(gl.TRIANGLE_STRIP, 0, curve.vertexCount);
@@ -273,14 +260,9 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/gPubSub',
 
                 // Buffers
                 // Same as sprite
-                var vertexOffset = 0;
-                var uvOffset = 2 * 3 * 2 * 4; // Skip faces (2x3 pairs, x2 floats, x4 bytes)
-
                 gl.bindBuffer(gl.ARRAY_BUFFER, buffers.sprite);
-                gl.vertexAttribPointer(programs.loading.attr.vertexCoord, 2, gl.FLOAT, false, 0, vertexOffset);
-                gl.vertexAttribPointer(programs.loading.attr.textureCoord, 2, gl.FLOAT, false, 0, uvOffset);
-                gl.enableVertexAttribArray(programs.loading.attr.vertexCoord);
-                gl.enableVertexAttribArray(programs.loading.attr.textureCoord);
+                gl.vertexAttribPointer(programs.loading.attr.coord, 2, gl.FLOAT, false, 0, 0);
+                gl.enableVertexAttribArray(programs.loading.attr.coord);
 
                 gl.uniform2f(programs.loading.uni.position, loading.x, loading.y);
                 gl.uniform2f(programs.loading.uni.size, loading.width, loading.height);
@@ -294,8 +276,7 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/gPubSub',
                 gl.drawArrays(gl.TRIANGLES, 0, 6);
 
                 // Cleanup
-                gl.disableVertexAttribArray(programs.loading.attr.textureCoord);
-                gl.disableVertexAttribArray(programs.loading.attr.vertexCoord);
+                gl.disableVertexAttribArray(programs.loading.attr.coord);
                 gl.bindBuffer(gl.ARRAY_BUFFER, null);
 
                 gl.useProgram(null);
@@ -930,8 +911,7 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/gPubSub',
         /*jshint white: false */
 
         spriteVertexShader = [
-            'attribute vec2 aVertexCoord;',
-            'attribute vec2 aTextureCoord;',
+            'attribute vec2 aCoord;',
 
             'uniform vec2 uView;',
             'uniform vec2 uSize;',
@@ -948,8 +928,8 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/gPubSub',
             ');',
 
             'void main(void) {',
-                'gl_Position = (vec4(aVertexCoord / 2.0, 0.0, 1.0) * vec4(uSize * uScale, 1.0, 1.0) + vec4(uView + uPosition, 0.0, 0.0)) * projection;',
-                'vTextureCoord = aTextureCoord;',
+                'gl_Position = vec4((aCoord - vec2(0.5, 0.5)) * uSize * uScale + uView + uPosition, 0.0, 1.0) * projection;',
+                'vTextureCoord = aCoord;',
             '}'
         ].join('\n');
 
@@ -960,12 +940,12 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/gPubSub',
             'uniform vec4 uColor;',
 
             'void main(void) {',
-                'gl_FragColor = texture2D(uSampler, vec2(vTextureCoord.s, vTextureCoord.t)) * (vec4(uColor) / 255.0);',
+                'gl_FragColor = texture2D(uSampler, vTextureCoord.st) * uColor;',
             '}'
         ].join('\n');
 
         solidSpriteVertexShader = [
-            'attribute vec2 aVertexCoord;',
+            'attribute vec2 aCoord;',
 
             'uniform vec2 uView;',
             'uniform vec2 uSize;',
@@ -979,7 +959,7 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/gPubSub',
             ');',
 
             'void main(void) {',
-                'gl_Position = (vec4(aVertexCoord / 2.0, 0.0, 1.0) * vec4(uSize, 1.0, 1.0) + vec4(uView + uPosition, 0.0, 0.0)) * projection;',
+                'gl_Position = vec4((aCoord - vec2(0.5, 0.5)) * uSize + uView + uPosition, 0.0, 1.0) * projection;',
             '}'
         ].join('\n');
 
@@ -992,8 +972,7 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/gPubSub',
         ].join('\n');
 
         objectTargetVertexShader = [
-            'attribute vec2 aVertexCoord;',
-            'attribute vec2 aTextureCoord;',
+            'attribute vec2 aCoord;',
 
             'varying vec2 vTextureCoord;',
 
@@ -1011,11 +990,11 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/gPubSub',
 
             'void main(void) {',
                 // FIXME Herp derp ugly
-                'vec2 p = aTextureCoord;',
+                'vec2 p = aCoord;',
                 'vec2 mult = uDirtyRect.zw;',
                 'vec2 add = uDirtyRect.xy;',
                 'gl_Position = vec4(p * mult + add, 0.0, 1.0) * projection;',
-                'vTextureCoord = (vec2(0.0, -(uView.y - uSize.y) / uView.y) + (aTextureCoord * mult + add)) * uView / uSize * vec2(1.0, -1.0);',
+                'vTextureCoord = (vec2(0.0, -(uView.y - uSize.y) / uView.y) + (aCoord * mult + add)) * uView / uSize * vec2(1.0, -1.0);',
             '}'
         ].join('\n');
 
@@ -1059,26 +1038,19 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/gPubSub',
             'varying vec2 vTextureCoord;',
 
             'vec4 getSliderColor(float t, vec4 baseColor) {',
-                'float u = abs(t);',
-                'float intensity = 1.0;',
-
-                'if (u > 0.85) {',
-                    'baseColor = vec4(1, 1, 1, 1);',
-                '} else {',
-                    'intensity = (u + 1.5) / (1.0 + 1.5);',
-                '}',
-
-                'return baseColor * vec4(intensity, intensity, intensity, 1.0);',
+                'vec3 u = abs(vec3(t));',
+                'bvec4 z = bvec4(greaterThan(u, vec3(0.85)), 0);',
+                'vec4 grad = vec4((u + 1.5) / (1.0 + 1.5), 1.0) * baseColor;',
+                'return mix(grad, vec4(1), vec4(z));',
             '}',
 
             'void main(void) {',
-                'gl_FragColor = getSliderColor(vTextureCoord.x, uColor / 255.0);',
+                'gl_FragColor = getSliderColor(vTextureCoord.x, uColor);',
             '}'
         ].join('\n');
 
         loadingVertexShader = [
-            'attribute vec2 aVertexCoord;',
-            'attribute vec2 aTextureCoord;',
+            'attribute vec2 aCoord;',
 
             'uniform vec2 uPosition;',
             'uniform vec2 uSize;',
@@ -1093,8 +1065,8 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/gPubSub',
             ');',
 
             'void main(void) {',
-                'gl_Position = vec4(aVertexCoord * uSize + uPosition, 0.0, 1.0) * projection;',
-                'vTextureCoord = aTextureCoord;',
+                'gl_Position = vec4((aCoord * 2.0 - vec2(1.0, 1.0)) * uSize + uPosition, 0.0, 1.0) * projection;',
+                'vTextureCoord = aCoord;',
             '}'
         ].join('\n');
 
@@ -1170,16 +1142,6 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/gPubSub',
             buffers.sprite = gl.createBuffer();
             gl.bindBuffer(gl.ARRAY_BUFFER, buffers.sprite);
             gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
-                // Faces
-                -1, -1,
-                 1, -1,
-                -1,  1,
-
-                 1, -1,
-                 1,  1,
-                -1,  1,
-
-                 // UV
                  0, 0,
                  1, 0,
                  0, 1,
@@ -1193,8 +1155,7 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/gPubSub',
 
             programs.sprite = createProgram(gl, spriteVertexShader, spriteFragmentShader);
             programs.sprite.attr = {
-                vertexCoord: gl.getAttribLocation(programs.sprite, 'aVertexCoord'),
-                textureCoord: gl.getAttribLocation(programs.sprite, 'aTextureCoord')
+                coord: gl.getAttribLocation(programs.sprite, 'aCoord')
             };
             programs.sprite.uni = {
                 sampler: gl.getUniformLocation(programs.sprite, 'uSampler'),
@@ -1207,7 +1168,7 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/gPubSub',
 
             programs.solidSprite = createProgram(gl, solidSpriteVertexShader, solidSpriteFragmentShader);
             programs.solidSprite.attr = {
-                vertexCoord: gl.getAttribLocation(programs.solidSprite, 'aVertexCoord')
+                coord: gl.getAttribLocation(programs.solidSprite, 'aCoord')
             };
             programs.solidSprite.uni = {
                 view: gl.getUniformLocation(programs.solidSprite, 'uView'),
@@ -1219,8 +1180,7 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/gPubSub',
 
             programs.objectTarget = createProgram(gl, objectTargetVertexShader, objectTargetFragmentShader);
             programs.objectTarget.attr = {
-                vertexCoord: gl.getAttribLocation(programs.objectTarget, 'aVertexCoord'),
-                textureCoord: gl.getAttribLocation(programs.objectTarget, 'aTextureCoord')
+                coord: gl.getAttribLocation(programs.objectTarget, 'aCoord')
             };
             programs.objectTarget.uni = {
                 sampler: gl.getUniformLocation(programs.objectTarget, 'uSampler'),
@@ -1242,8 +1202,7 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/gPubSub',
 
             programs.loading = createProgram(gl, loadingVertexShader, loadingFragmentShader);
             programs.loading.attr = {
-                vertexCoord: gl.getAttribLocation(programs.loading, 'aVertexCoord'),
-                textureCoord: gl.getAttribLocation(programs.loading, 'aTextureCoord')
+                coord: gl.getAttribLocation(programs.loading, 'aCoord')
             };
             programs.loading.uni = {
                 sampler: gl.getUniformLocation(programs.loading, 'uSampler'),
