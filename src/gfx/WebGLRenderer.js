@@ -924,8 +924,7 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/gPubSub',
             ');',
 
             'void main(void) {',
-                // FIXME
-                'gl_Position = (vec4(aCoord - vec2(0.5, 0.5), 0.0, 1.0) * vec4(uSize * uScale, 1.0, 1.0) + vec4(uView + uPosition, 0.0, 0.0)) * projection;',
+                'gl_Position = vec4((aCoord - vec2(0.5, 0.5)) * uSize * uScale + uView + uPosition, 0.0, 1.0) * projection;',
                 'vTextureCoord = aCoord;',
             '}'
         ].join('\n');
@@ -956,7 +955,7 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/gPubSub',
             ');',
 
             'void main(void) {',
-                'gl_Position = (vec4(aCoord - vec2(0.5, 0.5), 0.0, 1.0) * vec4(uSize, 1.0, 1.0) + vec4(uView + uPosition, 0.0, 0.0)) * projection;',
+                'gl_Position = vec4((aCoord - vec2(0.5, 0.5)) * uSize + uView + uPosition, 0.0, 1.0) * projection;',
             '}'
         ].join('\n');
 
