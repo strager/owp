@@ -708,7 +708,7 @@ define('gfx/CanvasRenderer', [ 'game/mapObject', 'util/Cache', 'gfx/canvasShader
             var canvas = dom.get('score', function () {
                 var size = getMaxStringSize(getStringImages('score-', skin.assetManager, '0123456789'), {
                     length: digitCount,
-                    scale: .7,
+                    scale: 0.7,
                     spacing: skin.scoreFontSpacing
                 });
 
@@ -731,7 +731,7 @@ define('gfx/CanvasRenderer', [ 'game/mapObject', 'util/Cache', 'gfx/canvasShader
                 renderCharactersCanvas(getStringImages('score-', skin.assetManager, string), context, {
                     x: canvas.width,
                     y: canvas.height / 2,
-                    scale: .7,
+                    scale: 0.7,
                     align: 'right',
                     spacing: skin.scoreFontSpacing
                 });
@@ -747,7 +747,7 @@ define('gfx/CanvasRenderer', [ 'game/mapObject', 'util/Cache', 'gfx/canvasShader
             var canvas = dom.get('combo', function () {
                 var size = getMaxStringSize(getStringImages('score-', skin.assetManager, '0123456789x'), {
                     length: '99999x'.length, // Let's say this is the max combo...
-                    scale: .7,
+                    scale: 0.7,
                     spacing: skin.scoreFontSpacing
                 });
 
@@ -770,7 +770,7 @@ define('gfx/CanvasRenderer', [ 'game/mapObject', 'util/Cache', 'gfx/canvasShader
                 renderCharactersCanvas(getStringImages('score-', skin.assetManager, string), context, {
                     x: 0,
                     y: canvas.height / 2,
-                    scale: .7,
+                    scale: 0.7,
                     align: 'left',
                     spacing: skin.scoreFontSpacing
                 });
@@ -786,7 +786,7 @@ define('gfx/CanvasRenderer', [ 'game/mapObject', 'util/Cache', 'gfx/canvasShader
             var canvas = dom.get('accuracy', function () {
                 var size = getMaxStringSize(getStringImages('score-', skin.assetManager, '0123456789.%'), {
                     length: '100.00%'.length,
-                    scale: .4,
+                    scale: 0.4,
                     spacing: skin.scoreFontSpacing
                 });
 
@@ -809,7 +809,7 @@ define('gfx/CanvasRenderer', [ 'game/mapObject', 'util/Cache', 'gfx/canvasShader
                 renderCharactersCanvas(getStringImages('score-', skin.assetManager, string), context, {
                     x: canvas.width,
                     y: canvas.height / 2,
-                    scale: .4,
+                    scale: 0.4,
                     align: 'right',
                     spacing: skin.scoreFontSpacing
                 });

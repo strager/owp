@@ -68,7 +68,7 @@ define('util/util', [ 'util/Cache' ], function (Cache) {
             height: Math.ceil(rectangle.y + rectangle.height) - y,
             x: x,
             y: y
-        }
+        };
     }
 
     function extendObjectWithFields(base, fields, extension) {
