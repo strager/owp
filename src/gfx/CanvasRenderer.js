@@ -612,7 +612,7 @@ define('gfx/CanvasRenderer', [ 'game/mapObject', 'util/Cache', 'gfx/canvasShader
                     y: repeatArrow.y,
                     owidth: reverseArrowGraphic.width,
                     oheight: reverseArrowGraphic.height,
-                    scale: ruleSet.getCircleSize() / 128 * ruleSet.getRepeatArrowScale(repeatArrow, time),
+                    scale: ruleSet.getCircleSize() / 128 * ruleSet.getRepeatArrowScale(repeatArrow, time)
                 });
 
                 setZ(repeatArrowEl);
