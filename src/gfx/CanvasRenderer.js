@@ -97,7 +97,7 @@ define('gfx/CanvasRenderer', [ 'game/mapObject', 'util/Cache', 'gfx/canvasShader
 
     function getColorStyle(color) {
         function c(x) {
-            var s = x.toString(16);
+            var s = Math.floor(x).toString(16);
             return s.length === 1 ? '0' + s : s;
         }
 
@@ -128,6 +128,7 @@ define('gfx/CanvasRenderer', [ 'game/mapObject', 'util/Cache', 'gfx/canvasShader
         var scoreHistory, comboHistory, accuracyHistory;
         var storyboard;
         var assetManager;
+        var mapProgress;
         var breakiness;
         var time;
 
@@ -141,6 +142,7 @@ define('gfx/CanvasRenderer', [ 'game/mapObject', 'util/Cache', 'gfx/canvasShader
             scoreHistory = v.scoreHistory;
             skin = v.skin;
             storyboard = v.storyboard;
+            mapProgress = v.mapProgress;
             breakiness = v.breakiness;
             time = v.time;
         }
@@ -816,11 +818,35 @@ define('gfx/CanvasRenderer', [ 'game/mapObject', 'util/Cache', 'gfx/canvasShader
             }
         }
 
+        function mapProgressColour(progress) {
+            var c = (progress * 32 + 192);
+            return [ c, c, c ];
+        }
+
+        function renderMapProgress(progress) {
+            var MAP_PROGRESS_HEIGHT = 6;
+
+            var el = dom.get('mapProgress', function () {
+                var el = document.createElement('div');
+                el.position = 'absolute';
+                return el;
+            });
+
+            el.style.backgroundColor = getColorStyle(mapProgressColour(progress));
+            el.style.marginLeft = '0px';
+            el.style.marginTop = (480 - MAP_PROGRESS_HEIGHT) + 'px';
+            el.style.width = (640 * progress) + 'px';
+            el.style.height = MAP_PROGRESS_HEIGHT + 'px';
+
+            setZ(el);
+        }
+
         function renderHud() {
             view(View.hud, function () {
                 renderScore();
                 renderCombo();
                 renderAccuracy();
+                renderMapProgress(mapProgress);
             });
         }
         // HUD rendering }}}
@@ -1072,6 +1098,7 @@ define('gfx/CanvasRenderer', [ 'game/mapObject', 'util/Cache', 'gfx/canvasShader
                     scoreHistory: state.scoreHistory,
                     accuracyHistory: state.accuracyHistory,
                     comboHistory: state.comboHistory,
+                    mapProgress: state.mapProgress,
                     time: time
                 });
 
