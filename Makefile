@@ -7,6 +7,8 @@ BIN_DIR := $(ROOT)/bin
 SRC_DIR := $(ROOT)/src
 SERVER_DIR := $(ROOT)/server
 
+JS_FILES := $(shell find $(SRC_DIR) -name '*.js') $(ROOT)/owp.js $(ROOT)/index.js
+
 all:
 	@echo 'Targets: lint deploy_local deploy_staging deploy_prod' >&2
 
@@ -25,9 +27,9 @@ deploy_prod: $(PROD_DIR)
 	rsync -rlt -zv $(PROD_DIR)/ train:owp/demo
 
 lint:
-	./lint.sh >&2
+	@jshint $(JS_FILES)
 
-$(BUILD_DIR)/owp.js: $(shell find $(SRC_DIR) -name '*.js' -or -name '*.png')
+$(BUILD_DIR)/owp.js: $(JS_FILES) $(SRC_DIR)/loading.png
 	@mkdir -p $(BUILD_DIR)
 	$(BIN_DIR)/build.sh "$@"
 
