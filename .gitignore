@@ -1,2 +1,5 @@
 /owp.min.js
 /server/config.php
+/build
+/prod_tmp
+/demo
