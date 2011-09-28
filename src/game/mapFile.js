@@ -1,5 +1,5 @@
 /*jshint bitwise: false */
-define('game/mapFile', [ 'game/RuleSet', 'game/Map', 'game/Combo', 'game/MapInfo', 'game/mapObject', 'game/Storyboard', 'game/Skin', 'game/BezierSliderCurve', 'game/TimingPoint', 'game/BreakRange' ], function (RuleSet, Map, Combo, MapInfo, mapObject, Storyboard, Skin, BezierSliderCurve, TimingPoint, BreakRange) {
+define('game/mapFile', [ 'game/RuleSet', 'game/Map', 'game/Combo', 'game/MapInfo', 'game/mapObject', 'game/Storyboard', 'game/Skin', 'game/BezierSliderCurve', 'game/CatmullSliderCurve', 'game/TimingPoint', 'game/BreakRange' ], function (RuleSet, Map, Combo, MapInfo, mapObject, Storyboard, Skin, BezierSliderCurve, CatmullSliderCurve, TimingPoint, BreakRange) {
     function readSkin(assetConfig, assetManager) {
         return Skin.fromSettings(assetManager, {
             name:   assetConfig.General.values.Name,
@@ -122,6 +122,10 @@ define('game/mapFile', [ 'game/RuleSet', 'game/Map', 'game/Combo', 'game/MapInfo
         case 'B':
             // Bezier
             return new BezierSliderCurve(curvePoints, maxLength);
+
+        case 'C':
+            // Catmull-Rom
+            return new CatmullSliderCurve(curvePoints, maxLength);
 
         case 'L':
             // Linear

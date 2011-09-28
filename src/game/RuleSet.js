@@ -383,7 +383,7 @@ define('game/RuleSet', [ 'util/util', 'game/mapObject', 'util/History', 'util/Cu
         },
 
         getMeasureBeatAtTime: function (time) {
-            var timingSection = this.uninheritedTimingPointHistory.getDataAtTime(time);
+            var timingSection = this.uninheritedTimingPointHistory.getDataAtTime(time) || this.uninheritedTimingPointHistory.getFirst();
 
             // TODO Configurable measure length
             var measureLength = 4;
@@ -618,11 +618,7 @@ define('game/RuleSet', [ 'util/util', 'game/mapObject', 'util/History', 'util/Cu
 
         getEffectiveBPM: function (time) {
             var inherited = this.inheritedTimingPointHistory.getDataAtTime(time);
-            var uninherited = this.uninheritedTimingPointHistory.getDataAtTime(time);
-
-            if (!inherited && !uninherited) {
-                return NaN;
-            }
+            var uninherited = this.uninheritedTimingPointHistory.getDataAtTime(time) || this.uninheritedTimingPointHistory.getFirst();
 
             if (!inherited) {
                 return uninherited.getEffectiveBPM(null);
