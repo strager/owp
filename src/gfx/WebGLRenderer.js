@@ -769,8 +769,8 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/gPubSub',
         }
 
         function mapProgressColour(progress) {
-            var c = (progress * 32 + 192) / 255;
-            return [ c, c, c, 1 ];
+            var c = (progress * 32 + 192);
+            return [ c, c, c, 255 ];
         }
 
         function renderHud() {
