@@ -106,6 +106,8 @@ define('Input', [ ], function () {
                 return 'left';
             } else if (rightKeys.indexOf(e.which) >= 0) {
                 return 'right';
+            } else if (e.which === 27) { // ESC key
+                return 'esc';
             }
 
             return 'none';
@@ -122,6 +124,10 @@ define('Input', [ ], function () {
                 isRightDown = true;
                 e.preventDefault();
                 mouseStateChanged();
+                break;
+            case 'esc':
+                game.togglePause();
+                e.preventDefault();
                 break;
             case 'none':
             default:

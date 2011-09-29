@@ -216,7 +216,11 @@ define('game/Game', [ 'q', 'game/MapState', 'AssetManager', 'util/PubSub', 'Soun
                 }));
             },
 
-            exit_play: clearBoundEvents
+            exit_playing: function () {
+                audio.pause();
+
+                clearBoundEvents();
+            }
         });
 
         function loadSkin(skinRoot) {
@@ -260,6 +264,15 @@ define('game/Game', [ 'q', 'game/MapState', 'AssetManager', 'util/PubSub', 'Soun
                     .then(function () {
                         sm.loaded_play();
                     });
+            },
+            togglePause: function () {
+                if (sm.canMakeTransition('pause')) {
+                    sm.pause();
+                } else if (sm.canMakeTransition('unpause')) {
+                    sm.unpause();
+                } else {
+                    // Do nothing
+                }
             },
             render: render,
             loadSkin: loadSkin,
