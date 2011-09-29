@@ -1,4 +1,4 @@
-define('StateMachine', [ 'q', 'util/util' ], function (Q, util) {
+define('util/StateMachine', [ 'q', 'util/util' ], function (Q, util) {
     function createStateMachine(transitions) {
         function validateTransitions() {
             transitions.forEach(function (t) {
