@@ -27,6 +27,16 @@ define('game/Game', [ 'q', 'game/MapState', 'AssetManager', 'util/PubSub', 'Soun
         var renderCallback = null;
         var debugInfoCallback = null;
 
+        var soundboard = null;
+        var mouseHistory = new History();
+        var isLeftDown = false;
+        var isRightDown = false;
+        var trackMouse = true;
+
+        var scoreHistory = new History();
+        var accuracyHistory = new History();
+        var comboHistory = new History();
+
         var sm = new GameStateMachine('none', {
             on_load_play: function (mapRoot, mapName) {
                 if (!skin) {
@@ -60,7 +70,7 @@ define('game/Game', [ 'q', 'game/MapState', 'AssetManager', 'util/PubSub', 'Soun
             },
 
             enter_loading: function () {
-                renderCallback = function () {
+                renderCallback = function (renderer) {
                     renderer.renderLoading(Date.now());
                 };
             },
@@ -79,7 +89,7 @@ define('game/Game', [ 'q', 'game/MapState', 'AssetManager', 'util/PubSub', 'Soun
 
                 boundEvents.push(mousePubSub.subscribe(function (e) {
                     if (e.left || e.right) {
-                        sm.play();
+                        Q.fail(sm.play(), agentInfo.crash);
                     }
                 }));
             },
@@ -87,7 +97,11 @@ define('game/Game', [ 'q', 'game/MapState', 'AssetManager', 'util/PubSub', 'Soun
             exit_ready_to_play: clearBoundEvents,
 
             enter_playing: function () {
-                var soundboard = new Soundboard(skin.valueOf().assetManager);
+                var currentTime = audioTimer.auto(audio);
+
+                isLeftDown = false;
+                isRightDown = false;
+
                 soundboard.preload([
                     'normal-hitclap.wav',
                     'normal-hitfinish.wav',
@@ -104,17 +118,6 @@ define('game/Game', [ 'q', 'game/MapState', 'AssetManager', 'util/PubSub', 'Soun
                     'soft-sliderslide.wav',
                     'soft-slidertick.wav'
                 ]);
-
-                var mouseHistory = new History();
-                var isLeftDown = false;
-                var isRightDown = false;
-                var trackMouse = true;
-
-                var scoreHistory = new History();
-                var accuracyHistory = new History();
-                var comboHistory = new History();
-
-                var currentTime = audioTimer.auto(audio);
 
                 renderCallback = function (renderer) {
                     var time = currentTime();
@@ -221,17 +224,16 @@ define('game/Game', [ 'q', 'game/MapState', 'AssetManager', 'util/PubSub', 'Soun
 
             skin = Q.ref(skinAssetManager.load('skin', 'skin'))
                 .then(function (skin_) {
-                    return Q.ref(skin_.preload())
-                        .then(function () {
-                            // preload returns an array of assets;
-                            // we want the actual skin object
-                            return skin_;
-                        });
+                    return Q.when(skin_.preload(), function () {
+                        soundboard = new Soundboard(skin_.assetManager);
+
+                        // preload returns an array of assets;
+                        // we want the actual skin object
+                        return skin_;
+                    }, agentInfo.crash);
                 });
 
-            // Let callers know when the skin is loaded,
-            // but don't let them know about the skin
-            return Q.when(skin, function () { }, agentInfo.crash);
+            return Q.fail(skin, agentInfo.crash);
         }
 
         function debugInfo() {
