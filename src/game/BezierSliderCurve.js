@@ -255,7 +255,7 @@ define('game/BezierSliderCurve', [ 'util/util' ], function (util) {
         var splitBeziers = [ bezier ];
 
         while (ts.length > 0) {
-            var t = ts.shift()
+            var t = ts.shift();
             var orig = splitBeziers.pop();
             var split = splitBezierAt(t, orig);
             splitBeziers.push(split[0]);
@@ -377,8 +377,10 @@ define('game/BezierSliderCurve', [ 'util/util' ], function (util) {
     }
 
     function bezierComponentExtremes4(a, b, c, d) {
+        var bot;
+
         if (-a + b * 3 - c * 3 + d === 0) {
-            var bot = (a - b * 2 + c) * 2;
+            bot = (a - b * 2 + c) * 2;
 
             if (bot === 0) {
                 // No solution
@@ -388,7 +390,7 @@ define('game/BezierSliderCurve', [ 'util/util' ], function (util) {
             }
         } else {
             var sqrt = Math.sqrt(-a * c + a * d + b * b - b * c - b * d + c * c);
-            var bot = -a + b * 3 - c * 3 + d;
+            bot = -a + b * 3 - c * 3 + d;
 
             if (bot === 0) {
                 // No solution
@@ -601,7 +603,7 @@ define('game/BezierSliderCurve', [ 'util/util' ], function (util) {
         if (tA < bezierSetA.length) {
             newSetA = bezierSetA.slice(0, Math.floor(tA)).concat([
                 splitBezierAt(tA % 1, bezierSetA[Math.floor(tA)])[0]
-            ])
+            ]);
         } else {
             newSetA = bezierSetA;
         }
@@ -609,7 +611,7 @@ define('game/BezierSliderCurve', [ 'util/util' ], function (util) {
         if (tB < bezierSetB.length) {
             newSetB = bezierSetB.slice(0, Math.floor(tB)).concat([
                 splitBezierAt(tB % 1, bezierSetB[Math.floor(tB)])[0]
-            ])
+            ]);
         } else {
             newSetB = bezierSetB;
         }

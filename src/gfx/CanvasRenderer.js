@@ -97,7 +97,7 @@ define('gfx/CanvasRenderer', [ 'game/mapObject', 'util/Cache', 'gfx/canvasShader
 
     function getColorStyle(color) {
         function c(x) {
-            var s = x.toString(16);
+            var s = Math.floor(x).toString(16);
             return s.length === 1 ? '0' + s : s;
         }
 
@@ -128,6 +128,7 @@ define('gfx/CanvasRenderer', [ 'game/mapObject', 'util/Cache', 'gfx/canvasShader
         var scoreHistory, comboHistory, accuracyHistory;
         var storyboard;
         var assetManager;
+        var mapProgress;
         var breakiness;
         var time;
 
@@ -141,6 +142,7 @@ define('gfx/CanvasRenderer', [ 'game/mapObject', 'util/Cache', 'gfx/canvasShader
             scoreHistory = v.scoreHistory;
             skin = v.skin;
             storyboard = v.storyboard;
+            mapProgress = v.mapProgress;
             breakiness = v.breakiness;
             time = v.time;
         }
@@ -610,7 +612,7 @@ define('gfx/CanvasRenderer', [ 'game/mapObject', 'util/Cache', 'gfx/canvasShader
                     y: repeatArrow.y,
                     owidth: reverseArrowGraphic.width,
                     oheight: reverseArrowGraphic.height,
-                    scale: ruleSet.getCircleSize() / 128
+                    scale: ruleSet.getCircleSize() / 128 * ruleSet.getRepeatArrowScale(repeatArrow, time)
                 });
 
                 setZ(repeatArrowEl);
@@ -706,7 +708,7 @@ define('gfx/CanvasRenderer', [ 'game/mapObject', 'util/Cache', 'gfx/canvasShader
             var canvas = dom.get('score', function () {
                 var size = getMaxStringSize(getStringImages('score-', skin.assetManager, '0123456789'), {
                     length: digitCount,
-                    scale: .7,
+                    scale: 0.7,
                     spacing: skin.scoreFontSpacing
                 });
 
@@ -729,7 +731,7 @@ define('gfx/CanvasRenderer', [ 'game/mapObject', 'util/Cache', 'gfx/canvasShader
                 renderCharactersCanvas(getStringImages('score-', skin.assetManager, string), context, {
                     x: canvas.width,
                     y: canvas.height / 2,
-                    scale: .7,
+                    scale: 0.7,
                     align: 'right',
                     spacing: skin.scoreFontSpacing
                 });
@@ -745,7 +747,7 @@ define('gfx/CanvasRenderer', [ 'game/mapObject', 'util/Cache', 'gfx/canvasShader
             var canvas = dom.get('combo', function () {
                 var size = getMaxStringSize(getStringImages('score-', skin.assetManager, '0123456789x'), {
                     length: '99999x'.length, // Let's say this is the max combo...
-                    scale: .7,
+                    scale: 0.7,
                     spacing: skin.scoreFontSpacing
                 });
 
@@ -768,7 +770,7 @@ define('gfx/CanvasRenderer', [ 'game/mapObject', 'util/Cache', 'gfx/canvasShader
                 renderCharactersCanvas(getStringImages('score-', skin.assetManager, string), context, {
                     x: 0,
                     y: canvas.height / 2,
-                    scale: .7,
+                    scale: 0.7,
                     align: 'left',
                     spacing: skin.scoreFontSpacing
                 });
@@ -784,7 +786,7 @@ define('gfx/CanvasRenderer', [ 'game/mapObject', 'util/Cache', 'gfx/canvasShader
             var canvas = dom.get('accuracy', function () {
                 var size = getMaxStringSize(getStringImages('score-', skin.assetManager, '0123456789.%'), {
                     length: '100.00%'.length,
-                    scale: .4,
+                    scale: 0.4,
                     spacing: skin.scoreFontSpacing
                 });
 
@@ -807,7 +809,7 @@ define('gfx/CanvasRenderer', [ 'game/mapObject', 'util/Cache', 'gfx/canvasShader
                 renderCharactersCanvas(getStringImages('score-', skin.assetManager, string), context, {
                     x: canvas.width,
                     y: canvas.height / 2,
-                    scale: .4,
+                    scale: 0.4,
                     align: 'right',
                     spacing: skin.scoreFontSpacing
                 });
@@ -816,11 +818,35 @@ define('gfx/CanvasRenderer', [ 'game/mapObject', 'util/Cache', 'gfx/canvasShader
             }
         }
 
+        function mapProgressColour(progress) {
+            var c = (progress * 32 + 192);
+            return [ c, c, c ];
+        }
+
+        function renderMapProgress(progress) {
+            var MAP_PROGRESS_HEIGHT = 6;
+
+            var el = dom.get('mapProgress', function () {
+                var el = document.createElement('div');
+                el.position = 'absolute';
+                return el;
+            });
+
+            el.style.backgroundColor = getColorStyle(mapProgressColour(progress));
+            el.style.marginLeft = '0px';
+            el.style.marginTop = (480 - MAP_PROGRESS_HEIGHT) + 'px';
+            el.style.width = (640 * progress) + 'px';
+            el.style.height = MAP_PROGRESS_HEIGHT + 'px';
+
+            setZ(el);
+        }
+
         function renderHud() {
             view(View.hud, function () {
                 renderScore();
                 renderCombo();
                 renderAccuracy();
+                renderMapProgress(mapProgress);
             });
         }
         // HUD rendering }}}
@@ -1072,6 +1098,7 @@ define('gfx/CanvasRenderer', [ 'game/mapObject', 'util/Cache', 'gfx/canvasShader
                     scoreHistory: state.scoreHistory,
                     accuracyHistory: state.accuracyHistory,
                     comboHistory: state.comboHistory,
+                    mapProgress: state.mapProgress,
                     time: time
                 });
 

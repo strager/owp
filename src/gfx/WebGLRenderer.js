@@ -92,6 +92,17 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/gPubSub',
             breakiness = v.breakiness;
         }
 
+        // Views {{{
+        var currentView = null;
+
+        function view(v, callback) {
+            var oldView = currentView;
+            currentView = v;
+            callback();
+            currentView = oldView;
+        }
+        // Views }}}
+
         // Render batch {{{
         var renderBatch = [ ];
 
@@ -157,14 +168,6 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/gPubSub',
 
                 // Cleanup
                 gl.disableVertexAttribArray(programs.solidSprite.attr.coord);
-                gl.bindBuffer(gl.ARRAY_BUFFER, null);
-
-                gl.useProgram(null);
-            },
-
-            endSprite: function flushEndSprite() {
-                // Cleanup
-                gl.disableVertexAttribArray(programs.sprite.attr.coord);
                 gl.bindBuffer(gl.ARRAY_BUFFER, null);
 
                 gl.useProgram(null);
@@ -324,17 +327,6 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/gPubSub',
             renderBatch = [ [ 'clear', [ r, g, b, a ] ] ];
         }
         // Render batch }}}
-
-        // Views {{{
-        var currentView = null;
-
-        function view(v, callback) {
-            var oldView = currentView;
-            currentView = v;
-            callback();
-            currentView = oldView;
-        }
-        // Views }}}
 
         // Rendering helpers {{{
         function getCharacters(string) {
@@ -630,7 +622,7 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/gPubSub',
         }
 
         function renderHitCircleObject(object) {
-            var alpha = ruleSet.getObjectOpacity(object, time)
+            var alpha = ruleSet.getObjectOpacity(object, time);
             var bounds = ruleSet.getObjectBoundingRectangle(object);
 
             renderUnit({ alpha: alpha, dirty: bounds }, function () {
@@ -736,7 +728,7 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/gPubSub',
             renderCharacters(getStringTextures(textures.scoreDigits, score), {
                 x: 640,
                 y: 20,
-                scale: .7,
+                scale: 0.7,
                 align: 'right',
                 spacing: skin.scoreFontSpacing
             });
@@ -748,7 +740,7 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/gPubSub',
             renderCharacters(getStringTextures(textures.scoreDigits, combo + 'x'), {
                 x: 0,
                 y: 460,
-                scale: .7,
+                scale: 0.7,
                 align: 'left',
                 spacing: skin.scoreFontSpacing
             });
@@ -762,7 +754,7 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/gPubSub',
             renderCharacters(getStringTextures(textures.scoreDigits, accuracy + '%'), {
                 x: 640,
                 y: 45,
-                scale: .4,
+                scale: 0.4,
                 align: 'right',
                 spacing: skin.scoreFontSpacing
             });
@@ -905,6 +897,7 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/gPubSub',
     var spriteVertexShader, spriteFragmentShader;
     var objectTargetVertexShader, objectTargetFragmentShader;
     var curveVertexShader, curveFragmentShader;
+    var solidSpriteVertexShader, solidSpriteFragmentShader;
     var loadingVertexShader, loadingFragmentShader;
 
     (function () {
@@ -1412,16 +1405,16 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/gPubSub',
 
             var x = Math.max(0, rect.x);
             var y = Math.max(0, rect.y);
-            var width = Math.min(width, rect.width);
-            var height = Math.min(height, rect.height);
+            var w = Math.min(width, rect.width);
+            var h = Math.min(height, rect.height);
 
             viewport = {
                 x: x,
                 y: y,
-                width: width,
-                height: height,
-                nwidth: nextPot(width),
-                nheight: nextPot(height)
+                width: w,
+                height: h,
+                nwidth: nextPot(w),
+                nheight: nextPot(h)
             };
 
             if (videoElement) {

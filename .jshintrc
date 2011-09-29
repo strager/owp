@@ -15,7 +15,7 @@
     "bitwise": true,
     "newcap": true,
     "immed": true,
-    "white": true,
+    "white": false,
     "laxbreak": true,
     "undef": true,
     "sub": true,
