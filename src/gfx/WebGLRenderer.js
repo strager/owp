@@ -1,4 +1,39 @@
 define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/gPubSub', 'util/Cache', 'util/util', 'loading', 'gfx/View' ], function (MapState, mapObject, gPubSub, Cache, util, loadingImageSrc, View) {
+    function makeTexture(gl, image) {
+        var texture = gl.createTexture();
+        texture.image = image;
+
+        gl.bindTexture(gl.TEXTURE_2D, texture);
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, texture.image);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+
+        gl.bindTexture(gl.TEXTURE_2D, null);
+
+        return texture;
+    }
+
+    function TextureCache(gl) {
+        this.gl = gl;
+        this.cache = new Cache();
+    }
+
+    TextureCache.prototype.get = function (name, assetManager) {
+        var gl = this.gl;
+
+        return this.cache.get([ name, assetManager ], function () {
+            return makeTexture(gl, assetManager.get(name, 'image'));
+        });
+    };
+
+    TextureCache.prototype.getMany = function (names, assetManager) {
+        return names.map(function (name) {
+            return this.get(name, assetManager);
+        }, this);
+    };
+
     function reportGLError(gl, error) {
         // Find the error name
         var key;
@@ -69,13 +104,14 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/gPubSub',
         }
 
         // Les variables
-        var ruleSet, skin;
+        var ruleSet, skin, storyboard;
         var objects;
         var mouseHistory;
         var scoreHistory, comboHistory, accuracyHistory;
         var videoElement;
         var mapProgress;
         var breakiness;
+        var storyboardKey, skinKey;
         var time;
 
         function vars(v) {
@@ -87,8 +123,11 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/gPubSub',
             ruleSet = v.ruleSet;
             scoreHistory = v.scoreHistory;
             skin = v.skin;
+            storyboard = v.storyboard;
             time = v.time;
             videoElement = v.videoElement;
+            storyboardKey = v.storyboardKey;
+            skinKey = v.skinKey;
             breakiness = v.breakiness;
         }
 
@@ -298,7 +337,7 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/gPubSub',
             options.view = currentView;
             var draw = [ 'drawSprite', options ];
 
-            if (renderBatch[renderBatch.length - 1][0] === 'endSprite') {
+            if (renderBatch.length && renderBatch[renderBatch.length - 1][0] === 'endSprite') {
                 renderBatch.splice(-1, 0, draw);
             } else {
                 renderBatch.push([ 'beginSprite', null ]);
@@ -329,13 +368,32 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/gPubSub',
         // Render batch }}}
 
         // Rendering helpers {{{
+        var fontLUT = {
+            '0': '0',
+            '1': '1',
+            '2': '2',
+            '3': '3',
+            '4': '4',
+            '5': '5',
+            '6': '6',
+            '7': '7',
+            '8': '8',
+            '9': '9',
+            '.': 'dot',
+            ',': 'comma',
+            '%': 'percent',
+            'x': 'x'
+        };
+
         function getCharacters(string) {
-            return ('' + string).split('');
+            return ('' + string).split('').map(function (c) {
+                return fontLUT[c];
+            });
         }
 
         function getStringTextures(font, string) {
             return getCharacters(string).map(function (c) {
-                return font[c];
+                return textures.get(font + c + '.png', skinKey);
             });
         }
 
@@ -425,12 +483,12 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/gPubSub',
                 y: y,
                 color: color,
                 scale: scale,
-                texture:textures.approachCircle
+                texture: textures.get('approachcircle.png', skinKey)
             });
         }
 
         function renderComboNumber(number, x, y) {
-            var texs = getStringTextures(textures.digits, number);
+            var texs = getStringTextures('default-', number);
             var scale = Math.pow(texs.length, -1 / 4) * 0.9;
             scale *= ruleSet.getCircleSize() / 128;
 
@@ -453,7 +511,7 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/gPubSub',
                 y: sliderBallPosition[1],
                 color: [ 255, 255, 255, 255 ],
                 scale: scale,
-                texture: textures.sliderBall
+                texture: textures.get('sliderb0.png', skinKey)
             });
         }
 
@@ -469,7 +527,7 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/gPubSub',
                 y: tick.y,
                 color: [ 255, 255, 255, 255 ],
                 scale: scale,
-                texture: textures.sliderTick
+                texture: textures.get('sliderscorepoint.png', skinKey)
             });
         }
 
@@ -543,7 +601,7 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/gPubSub',
                         y: lastPoint[1],
                         color: color.concat([ 255 ]),
                         scale: scale,
-                        texture: textures.hitCircle
+                        texture: textures.get('hitcircle.png', skinKey)
                     });
 
                     sprite({
@@ -551,7 +609,7 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/gPubSub',
                         y: lastPoint[1],
                         color: [ 255, 255, 255, 255 ],
                         scale: scale,
-                        texture: textures.hitCircleOverlay
+                        texture: textures.get('hitcircleoverlay.png', skinKey)
                     });
                 }
 
@@ -587,7 +645,7 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/gPubSub',
                         y: repeatArrowY,
                         color: [ 255, 255, 255, 255 ],
                         scale: scale * ruleSet.getRepeatArrowScale(repeatArrow, time),
-                        texture: textures.repeatArrow
+                        texture: textures.get('reversearrow.png', skinKey)
                     });
                 }
 
@@ -605,7 +663,7 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/gPubSub',
                 y: y,
                 color: color.concat([ 255 ]),
                 scale: scale,
-                texture: textures.hitCircle
+                texture: textures.get('hitcircle.png', skinKey)
             });
         }
 
@@ -617,7 +675,7 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/gPubSub',
                 y: y,
                 color: [ 255, 255, 255, 255 ],
                 scale: scale,
-                texture: textures.hitCircleOverlay
+                texture: textures.get('hitcircleoverlay.png', skinKey)
             });
         }
 
@@ -646,7 +704,7 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/gPubSub',
                 y: object.hitObject.y,
                 color: [ 255, 255, 255, alpha * 255 ],
                 scale: scale,
-                texture: textures.hitMarkers[image]
+                texture: textures.get(image, skinKey)
             });
         }
 
@@ -706,7 +764,7 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/gPubSub',
                 y: state.y,
                 color: [ 255, 255, 255, 255 ],
                 scale: 1,
-                texture: textures.cursor
+                texture: textures.get('cursor.png', skinKey)
             });
         }
 
@@ -725,7 +783,7 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/gPubSub',
             score = zeros + score;
             score = score.slice(-digitCount);
 
-            renderCharacters(getStringTextures(textures.scoreDigits, score), {
+            renderCharacters(getStringTextures('score-', score), {
                 x: 640,
                 y: 20,
                 scale: 0.7,
@@ -737,7 +795,7 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/gPubSub',
         function renderCombo() {
             var combo = comboHistory.getDataAtTime(time) || 0;
 
-            renderCharacters(getStringTextures(textures.scoreDigits, combo + 'x'), {
+            renderCharacters(getStringTextures('score-', combo + 'x'), {
                 x: 0,
                 y: 460,
                 scale: 0.7,
@@ -751,7 +809,7 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/gPubSub',
             accuracy *= 100;
             accuracy = accuracy.toFixed(2);
 
-            renderCharacters(getStringTextures(textures.scoreDigits, accuracy + '%'), {
+            renderCharacters(getStringTextures('score-', accuracy + '%'), {
                 x: 640,
                 y: 45,
                 scale: 0.4,
@@ -788,13 +846,12 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/gPubSub',
         function renderBackground() {
             clear(1, 1, 1, 1);
 
-            if (!textures.background) {
+            var bg = storyboard.getBackground(0);
+            if (!bg) {
                 return;
             }
 
-            // Background
-            // TODO Get background texture at specific time
-            var texture = textures.background;
+            var texture = textures.get(bg.fileName, storyboardKey);
             var backgroundImage = texture.image;
 
             var containerW = 640;
@@ -837,15 +894,14 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/gPubSub',
         // Storyboard rendering }}}
 
         // Loading rendering {{{
-        function renderLoading() {
+        function renderLoading(texture) {
             clear(0, 0, 0, 1);
 
-            if (!textures.loading) {
+            if (!texture) {
                 return;
             }
 
             var size = 0.6;
-            var texture = textures.loading;
             var rect = util.fitRectangle(size, size, texture.image.width, texture.image.height);
 
             var angle = time / 35000;
@@ -867,7 +923,7 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/gPubSub',
         // Ready-to-play rendering {{{
         function renderReadyToPlay() {
             view(View.global, function () {
-                var texture = textures.readyToPlay;
+                var texture = textures.get('ready-to-play.png', skinKey);
 
                 sprite({
                     x: 320,
@@ -1134,7 +1190,7 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/gPubSub',
 
         var buffers = { };
         var programs = { };
-        var textures = { };
+        var textureCache = new TextureCache(gl);
         var misc = { };
 
         var caches = {
@@ -1224,20 +1280,6 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/gPubSub',
             resize(640, 480);
         }
 
-        function makeTexture(image) {
-            var texture = gl.createTexture();
-            texture.image = image;
-
-            gl.bindTexture(gl.TEXTURE_2D, texture);
-            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, texture.image);
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-
-            return texture;
-        }
-
         function nextPot(v) {
             // http://graphics.stanford.edu/~seander/bithacks.html#RoundUpPowerOf2
             v--;
@@ -1292,56 +1334,42 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/gPubSub',
                 return;
             }
 
-            function makeSkinTexture(name) {
-                return makeTexture(skin.assetManager.get(name, 'image'));
-            }
+            var skinKey = skin.assetManager;
 
-            textures.hitCircle = makeSkinTexture('hitcircle.png');
-            textures.hitCircleOverlay = makeSkinTexture('hitcircleoverlay.png');
-            textures.approachCircle = makeSkinTexture('approachcircle.png');
-            textures.sliderBall = makeSkinTexture('sliderb0.png');
-            textures.cursor = makeSkinTexture('cursor.png');
-            textures.cursorTrail = makeSkinTexture('cursortrail.png');
-            textures.sliderTick = makeSkinTexture('sliderscorepoint.png');
-            textures.repeatArrow = makeSkinTexture('reversearrow.png');
+            textureCache.getMany([
+                'hitcircle.png',
+                'hitcircleoverlay.png',
+                'approachcircle.png',
+                'sliderb0.png',
+                'cursor.png',
+                'cursortrail.png',
+                'sliderscorepoint.png',
+                'reversearrow.png',
+
+                'default-comma.png',
+                'default-dot.png',
+
+                'score-comma.png',
+                'score-dot.png',
+                'score-percent.png',
+                'score-x.png',
+
+                'hit300.png',
+                'hit100.png',
+                'hit50.png',
+                'sliderpoint30.png',
+                'sliderpoint10.png',
+                'hit0.png'
+            ], skinKey);
+
+            var i;
+            for (i = 0; i < 10; ++i) {
+                textureCache.get('default-' + i + '.png', skinKey);
+                textureCache.get('score-' + i + '.png', skinKey);
+            }
 
             var cursorImage = skin.assetManager.get('cursor.png', 'image');
             util.setCursorImage(canvas, cursorImage.src, cursorImage.width / 2, cursorImage.height / 2);
-
-            var i;
-
-            textures.digits = [ ];
-            textures.scoreDigits = [ ];
-
-            for (i = 0; i < 10; ++i) {
-                textures.digits[i] = makeSkinTexture('default-' + i + '.png');
-                textures.scoreDigits[i] = makeSkinTexture('score-' + i + '.png');
-            }
-
-            textures.digits[','] = makeSkinTexture('default-comma.png');
-            textures.digits['.'] = makeSkinTexture('default-dot.png');
-
-            textures.scoreDigits[','] = makeSkinTexture('score-comma.png');
-            textures.scoreDigits['.'] = makeSkinTexture('score-dot.png');
-            textures.scoreDigits['%'] = makeSkinTexture('score-percent.png');
-            textures.scoreDigits['x'] = makeSkinTexture('score-x.png');
-
-            var hitMarkerNames = [
-                'hit300',
-                'hit100',
-                'hit50',
-                'sliderpoint30',
-                'sliderpoint10',
-                'hit0'
-            ];
-
-            textures.hitMarkers = [ ];
-
-            hitMarkerNames.forEach(function (name) {
-                textures.hitMarkers[name + '.png'] = makeSkinTexture(name + '.png');
-            });
-
-            gl.bindTexture(gl.TEXTURE_2D, null);
 
             skinInitd = true;
         }
@@ -1353,11 +1381,13 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/gPubSub',
                 return;
             }
 
+            var storyboardKey = assetManager;
+
             // A bit of a HACK
             var background = storyboard.getBackground(0);
             if (background) {
                 var backgroundGraphic = assetManager.get(background.fileName, 'image');
-                textures.background = makeTexture(backgroundGraphic);
+                textureCache.get(background.fileName, storyboardKey);
             }
 
             var video = storyboard.videos[0];
@@ -1376,17 +1406,18 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/gPubSub',
         }
 
         var loadingInitd = false;
+        var loadingTexture = null;
 
         function initLoading() {
             if (loadingInitd) {
                 return;
             }
 
-            var loadingTexture = new Image();
-            loadingTexture.onload = function () {
-                textures.loading = makeTexture(loadingTexture);
+            var loadingImage = new Image();
+            loadingImage.onload = function () {
+                loadingTexture = makeTexture(gl, loadingImage);
             };
-            loadingTexture.src = loadingImageSrc;
+            loadingImage.src = loadingImageSrc;
 
             loadingInitd = true;
         }
@@ -1398,7 +1429,9 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/gPubSub',
                 return;
             }
 
-            textures.readyToPlay = makeTexture(skin.assetManager.get('ready-to-play.png', 'image'));
+            var skinKey = skin.assetManager;
+
+            textureCache.get('ready-to-play.png', skinKey);
 
             readyToPlayInitd = true;
         }
@@ -1442,7 +1475,7 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/gPubSub',
                 context: context,
                 misc: misc,
                 programs: programs,
-                textures: textures,
+                textures: textureCache,
                 viewport: viewport
             });
         }
@@ -1486,7 +1519,8 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/gPubSub',
                     ruleSet: state.ruleSet,
                     skin: state.skin,
                     mouseHistory: state.mouseHistory,
-                    time: time
+                    time: time,
+                    skinKey: state.skin.assetManager
                 });
 
                 r.renderMap();
@@ -1502,7 +1536,8 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/gPubSub',
                     accuracyHistory: state.accuracyHistory,
                     comboHistory: state.comboHistory,
                     mapProgress: state.mapProgress,
-                    time: time
+                    time: time,
+                    skinKey: state.skin.assetManager
                 });
 
                 r.renderHud();
@@ -1515,7 +1550,8 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/gPubSub',
                     videoElement: videoElement,
                     storyboard: state.storyboard,
                     breakiness: state.breakiness,
-                    time: time
+                    time: time,
+                    storyboardKey: state.assetManager
                 });
 
                 r.renderStoryboard();
@@ -1528,7 +1564,7 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/gPubSub',
                     time: time
                 });
 
-                r.renderLoading();
+                r.renderLoading(loadingTexture);
             },
 
             renderReadyToPlay: function (skin, time) {
@@ -1536,7 +1572,8 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/gPubSub',
 
                 r.vars({
                     skin: skin,
-                    time: time
+                    time: time,
+                    skinKey: skin.assetManager
                 });
 
                 r.renderReadyToPlay();
