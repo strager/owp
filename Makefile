@@ -9,7 +9,7 @@ SRC_DIR := $(ROOT)/src
 SERVER_DIR := $(ROOT)/server
 
 JS_FILES := $(shell find $(SRC_DIR) -name '*.js') $(ROOT)/owp.js $(ROOT)/index.js
-DEV_FILES := $(JS_FILES) $(SRC_DIR)/loading.png $(find $(BIN_DIR) -perm /444) $(ROOT)/Makefile
+DEV_FILES := $(JS_FILES) $(SRC_DIR)/loading.png $(shell find $(BIN_DIR) -perm /444 -type f) $(ROOT)/Makefile
 
 all:
 	@echo 'Targets: lint deploy_local deploy_staging deploy_prod' >&2
