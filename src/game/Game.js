@@ -43,6 +43,10 @@ define('game/Game', [ 'q', 'game/MapState', 'AssetManager', 'util/PubSub', 'Soun
                     throw new Error('Must set a skin before starting a map');
                 }
 
+                renderCallback = function (renderer) {
+                    renderer.renderLoading(Date.now());
+                };
+
                 mapAssetManager = new AssetManager(mapRoot);
 
                 // TODO Refactor this mess
@@ -67,12 +71,6 @@ define('game/Game', [ 'q', 'game/MapState', 'AssetManager', 'util/PubSub', 'Soun
                 Q.fail(load, agentInfo.crash);
 
                 return load;
-            },
-
-            enter_loading: function () {
-                renderCallback = function (renderer) {
-                    renderer.renderLoading(Date.now());
-                };
             },
 
             enter_ready_to_play: function () {
