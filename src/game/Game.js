@@ -32,6 +32,7 @@ define('game/Game', [ 'q', 'game/MapState', 'AssetManager', 'util/PubSub', 'Soun
         var isLeftDown = false;
         var isRightDown = false;
         var trackMouse = true;
+        var currentTime = null;
 
         var scoreHistory = new History();
         var accuracyHistory = new History();
@@ -62,7 +63,7 @@ define('game/Game', [ 'q', 'game/MapState', 'AssetManager', 'util/PubSub', 'Soun
                         })
                         .then(function (r) {
                             audio = r[0];
-
+                            currentTime = audioTimer.auto(audio);
                             mapState = MapState.fromMapInfo(mapInfo, timeline);
                         }),
                     Q.ref(skin)
@@ -95,8 +96,6 @@ define('game/Game', [ 'q', 'game/MapState', 'AssetManager', 'util/PubSub', 'Soun
             exit_ready_to_play: clearBoundEvents,
 
             enter_playing: function () {
-                var currentTime = audioTimer.auto(audio);
-
                 isLeftDown = false;
                 isRightDown = false;
 
@@ -218,6 +217,35 @@ define('game/Game', [ 'q', 'game/MapState', 'AssetManager', 'util/PubSub', 'Soun
                 audio.pause();
 
                 clearBoundEvents();
+            },
+
+            enter_paused: function () {
+                renderCallback = function (renderer) {
+                    var time = currentTime();
+                    var breakiness = mapState.ruleSet.getBreakinessAt(time);
+
+                    renderer.renderStoryboard({
+                        storyboard: mapInfo.storyboard,
+                        assetManager: mapAssetManager,
+                        breakiness: breakiness
+                    }, time);
+                    renderer.renderMap({
+                        ruleSet: mapState.ruleSet,
+                        objects: mapState.getVisibleObjects(time),
+                        skin: skin.valueOf(),
+                        mouseHistory: mouseHistory
+                    }, time);
+                    renderer.renderHud({
+                        skin: skin.valueOf(),
+                        ruleSet: mapState.ruleSet,
+                        scoreHistory: scoreHistory,
+                        accuracyHistory: accuracyHistory,
+                        comboHistory: comboHistory,
+                        mapProgress: mapState.ruleSet.getMapProgress(mapInfo.map, time)
+                    }, time);
+                    renderer.renderColourOverlay([ 0, 0, 0, 128 ]);
+                };
+
             }
         });
 

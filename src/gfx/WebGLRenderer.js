@@ -93,7 +93,7 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/gPubSub',
         }
 
         // Views {{{
-        var currentView = null;
+        var currentView;
 
         function view(v, callback) {
             var oldView = currentView;
@@ -866,7 +866,7 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/gPubSub',
 
         // Ready-to-play rendering {{{
         function renderReadyToPlay() {
-            view(View.storyboard, function () {
+            view(View.global, function () {
                 var texture = textures.readyToPlay;
 
                 sprite({
@@ -880,6 +880,18 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/gPubSub',
         }
         // Ready-to-play rendering }}}
 
+        function renderColourOverlay(colour) {
+            view(View.global, function () {
+                solidSprite({
+                    x: 0,
+                    y: 0,
+                    width: 640,
+                    height: 480,
+                    color: colour
+                });
+            });
+        }
+
         return {
             vars: vars,
             consts: consts,
@@ -888,6 +900,7 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/gPubSub',
             renderStoryboard: renderStoryboard,
             renderLoading: renderLoading,
             renderReadyToPlay: renderReadyToPlay,
+            renderColourOverlay: renderColourOverlay,
             renderCursor: renderCursor,
             flush: flushRenderBatch
         };
@@ -1537,6 +1550,10 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/gPubSub',
                 });
 
                 r.renderCursor();
+            },
+
+            renderColourOverlay: function (colour) {
+                r.renderColourOverlay(colour);
             }
         };
     }

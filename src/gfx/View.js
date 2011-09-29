@@ -14,6 +14,7 @@ define('gfx/View', [ ], function () {
     View.map = new View([ 64, 56 ]);
     View.storyboard = new View([ 0, 0 ]);
     View.hud = new View([ 0, 0 ]);
+    View.global = new View([ 0, 0 ]);
 
     return View;
 });
