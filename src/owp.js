@@ -1,4 +1,4 @@
-define('owp', [ 'game/Game', 'util/util', 'util/FramerateCounter', 'gfx/WebGLRenderer', 'gfx/CanvasRenderer', 'agentInfo', 'util/gPubSub', 'input' ], function (Game, util, FramerateCounter, WebGLRenderer, CanvasRenderer, agentInfo, gPubSub, input) {
+define('owp', [ 'game/Game', 'util/util', 'util/FramerateCounter', 'gfx/WebGLRenderer', 'gfx/CanvasRenderer', 'agentInfo', 'util/gPubSub', 'Input' ], function (Game, util, FramerateCounter, WebGLRenderer, CanvasRenderer, agentInfo, gPubSub, Input) {
     var PLAYAREA_WIDTH = 640;
     var PLAYAREA_HEIGHT = 480;
 
@@ -170,10 +170,8 @@ define('owp', [ 'game/Game', 'util/util', 'util/FramerateCounter', 'gfx/WebGLRen
         }
 
         // Start your engines!
+        var input = new Input(document, game);
         input.addRenderer(renderer);
-        input.mouse.subscribe(function (mouseState) {
-            game.mouse(mouseState);
-        });
 
         renderLoop(function () {
             game.render(renderer);
