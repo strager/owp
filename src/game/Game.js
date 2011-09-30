@@ -262,47 +262,51 @@ define('game/Game', [ 'q', 'game/MapState', 'AssetManager', 'util/PubSub', 'Soun
             },
 
             enter_score_screen: function () {
-                scoreScreenUi = new UI();
+                scoreScreenUi = new UI(skin.valueOf().assetManager);
                 scoreScreenUi.build([
                     {
                         image: 'ranking-panel.png',
-                        x: 320,
-                        y: 480 - (640 * 698 / 1024) / 2,
+                        x: 0,
+                        y: 480,
+                        align: [ 0, 1 ],
                         width: 640
                     }, {
                         image: 'hit300.png',
                         x: 40,
                         y: 180,
-                        scale: 0.25
+                        scale: 0.3
                     }, {
                         image: 'hit100.png',
                         x: 40,
                         y: 230,
-                        scale: 0.25
+                        scale: 0.3
                     }, {
                         image: 'hit50.png',
                         x: 40,
                         y: 280,
-                        scale: 0.25
+                        scale: 0.3
                     }, {
                         image: 'hit0.png',
                         x: 220,
                         y: 280,
-                        scale: 0.25
+                        scale: 0.3
                     }, {
                         image: 'ranking-retry.png',
-                        x: 396 + 122,
-                        y: 305 + 14,
+                        x: 396,
+                        y: 319,
+                        align: [ 0, 0.5 ],
                         width: 244
                     }, {
                         image: 'ranking-replay.png',
-                        x: 396 + 122,
-                        y: 365 + 14,
+                        x: 396,
+                        y: 379,
+                        align: [ 0, 0.5 ],
                         width: 244
                     }, {
                         image: 'ranking-back.png',
-                        x: 396 + 122,
-                        y: 425 + 14,
+                        x: 396,
+                        y: 439,
+                        align: [ 0, 0.5 ],
                         width: 244
                     }, {
                         image: 'ranking-s.png',

@@ -1,6 +1,7 @@
 define('ui/UI', [ 'ui/Control', 'util/PubSub' ], function (Control, PubSub) {
-    function UI() {
+    function UI(assetManager) {
         this.controls = [ ];
+        this.assetManager = assetManager;
 
         this.events = {
             mouse: new PubSub()

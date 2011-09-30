@@ -23,8 +23,13 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/gPubSub',
     TextureCache.prototype.get = function (name, assetManager) {
         var gl = this.gl;
 
-        return this.cache.get([ name, assetManager ], function () {
-            return makeTexture(gl, assetManager.get(name, 'image'));
+        var image = name;
+        if (assetManager) {
+            image = assetManager.get(name, 'image');
+        }
+
+        return this.cache.get(image, function () {
+            return makeTexture(gl, image);
         });
     };
 
@@ -950,20 +955,14 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/gPubSub',
 
         // User interface {{{
         function renderUiControl(control) {
-            // TODO Align
+            var texture = textures.get(control.image());
 
-            var texture = textures.get(control.image(), skinKey);
-            var scale = control.scale();
-
-            // TODO Height
-            var w = control.width();
-            if (w) {
-                scale *= w / texture.image.width;
-            }
+            // TODO Height scaling
+            scale = control.width() / texture.image.width;
 
             sprite({
-                x: control.x(),
-                y: control.y(),
+                x: control.centerX(),
+                y: control.centerY(),
                 color: [ 255, 255, 255, 255 ],
                 scale: scale,
                 texture: texture
