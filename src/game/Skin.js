@@ -40,6 +40,8 @@ define('game/Skin', [ 'util/util' ], function (util) {
                     'reversearrow.png',
                     'sliderb0.png',
 
+                    'ranking-panel.png',
+
                     'default-0.png',
                     'default-1.png',
                     'default-2.png',

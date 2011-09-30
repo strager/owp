@@ -802,6 +802,10 @@ define('game/RuleSet', [ 'util/util', 'game/mapObject', 'util/History', 'util/Cu
             return this.getObjectStartDisappearTime(map.objects[map.objects.length - 1]);
         },
 
+        getMapExitTime: function (map) {
+            return this.getMapEndTime(map) + 2000;
+        },
+
         getMapProgress: function (map, time) {
             var startTime = this.getMapStartTime(map);
             var endTime = this.getMapEndTime(map);

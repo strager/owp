@@ -1,11 +1,14 @@
-define('game/Game', [ 'q', 'game/MapState', 'AssetManager', 'util/PubSub', 'Soundboard', 'util/Timeline', 'util/gPubSub', 'util/History', 'agentInfo', 'util/audioTimer', 'game/RuleSet', 'game/mapObject', 'game/Combo', 'game/TimingPoint', 'game/BezierSliderCurve', 'util/StateMachine' ], function (Q, MapState, AssetManager, PubSub, Soundboard, Timeline, gPubSub, History, agentInfo, audioTimer, RuleSet, mapObject, Combo, TimingPoint, BezierSliderCurve, StateMachine) {
+define('game/Game', [ 'q', 'game/MapState', 'AssetManager', 'util/PubSub', 'Soundboard', 'util/Timeline', 'util/gPubSub', 'util/History', 'agentInfo', 'util/audioTimer', 'game/RuleSet', 'game/mapObject', 'game/Combo', 'game/TimingPoint', 'game/BezierSliderCurve', 'util/StateMachine', 'ui/UI' ], function (Q, MapState, AssetManager, PubSub, Soundboard, Timeline, gPubSub, History, agentInfo, audioTimer, RuleSet, mapObject, Combo, TimingPoint, BezierSliderCurve, StateMachine, UI) {
     var GameStateMachine = StateMachine.create([
         { name: 'load_play',   from: 'none',          to: 'loading'       },
         { name: 'loaded_play', from: 'loading',       to: 'ready_to_play' },
         { name: 'play',        from: 'ready_to_play', to: 'playing'       },
         { name: 'pause',       from: 'playing',       to: 'paused'        },
-        { name: 'unpause',     from: 'paused',        to: 'playing'       }
+        { name: 'unpause',     from: 'paused',        to: 'playing'       },
+        { name: 'end_map',     from: 'playing',       to: 'score_screen'  }
     ]);
+
+    var MAP_END = 'mapEnd';
 
     function Game() {
         var skin = null;
@@ -37,6 +40,8 @@ define('game/Game', [ 'q', 'game/MapState', 'AssetManager', 'util/PubSub', 'Soun
         var scoreHistory = new History();
         var accuracyHistory = new History();
         var comboHistory = new History();
+
+        var scoreScreenUi = null;
 
         var sm = new GameStateMachine('none', {
             on_load_play: function (mapRoot, mapName) {
@@ -72,6 +77,12 @@ define('game/Game', [ 'q', 'game/MapState', 'AssetManager', 'util/PubSub', 'Soun
                 Q.fail(load, agentInfo.crash);
 
                 return load;
+            },
+
+            on_loaded_play: function () {
+                var exitTime = mapState.ruleSet.getMapExitTime(mapInfo.map);
+                exitTime = 2000;
+                timeline.add(MAP_END, true, exitTime);
             },
 
             enter_ready_to_play: function () {
@@ -203,6 +214,10 @@ define('game/Game', [ 'q', 'game/MapState', 'AssetManager', 'util/PubSub', 'Soun
                     });
                 }));
 
+                boundEvents.push(timeline.subscribe(MAP_END, function () {
+                    Q.fail(sm.end_map(), agentInfo.crash);
+                }));
+
                 boundEvents.push(gPubSub.subscribe(function () {
                     var time = currentTime();
 
@@ -245,7 +260,38 @@ define('game/Game', [ 'q', 'game/MapState', 'AssetManager', 'util/PubSub', 'Soun
                     }, time);
                     renderer.renderColourOverlay([ 0, 0, 0, 128 ]);
                 };
+            },
 
+            enter_score_screen: function () {
+                scoreScreenUi = new UI();
+                scoreScreenUi.build([
+                    {
+                        image: 'ranking-panel.png',
+                        x: 320,
+                        y: 480 - (640 * 698 / 1024) / 2,
+                        width: 640,
+                        height: 640 * 698 / 1024
+                    }, {
+                        image: 'hit300.png',
+                        x: 40,
+                        y: 180,
+                        scale: 0.5
+                    }, {
+                        image: 'hit100.png',
+                        x: 40,
+                        y: 230,
+                        scale: 0.5
+                    }, {
+                        image: 'hit50.png',
+                        x: 40,
+                        y: 280,
+                        scale: 0.5
+                    }
+                ]);
+
+                renderCallback = function (renderer) {
+                    renderer.renderUi(scoreScreenUi);
+                };
             }
         });
 
@@ -286,10 +332,14 @@ define('game/Game', [ 'q', 'game/MapState', 'AssetManager', 'util/PubSub', 'Soun
 
         return {
             startMap: function (mapRoot, mapName) {
-                sm.load_play(mapRoot, mapName)
+                var p = sm.load_play(mapRoot, mapName)
                     .then(function () {
                         sm.loaded_play();
                     });
+
+                Q.fail(p, agentInfo.crash);
+
+                return p;
             },
             togglePause: function () {
                 if (sm.canMakeTransition('pause')) {
