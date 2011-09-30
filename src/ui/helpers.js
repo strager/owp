@@ -26,6 +26,10 @@ define('ui/helpers', [ 'util/ease' ], function (ease) {
         }
 
         function currentValue() {
+            if (easeDuration <= 0) {
+                return toValue;
+            }
+
             var t = easeFn(0, easeDuration, Date.now() - startDate);
             return ease.scale(fromValue, toValue, t);
         }

@@ -958,7 +958,7 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/gPubSub',
             var texture = textures.get(control.image());
 
             // TODO Height scaling
-            scale = control.width() / texture.image.width;
+            var scale = control.width() / texture.image.width;
 
             sprite({
                 x: control.centerX(),
