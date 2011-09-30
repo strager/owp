@@ -1085,14 +1085,10 @@ define('gfx/CanvasRenderer', [ 'game/mapObject', 'util/Cache', 'gfx/canvasShader
             resize: resize,
 
             mouseToGame: function (x, y) {
-                var playfieldX = (x - viewport.x) / viewport.width * 640;
-                var playfieldY = (y - viewport.y) / viewport.height * 480;
-                var mapCoords = View.map.playfieldToView(playfieldX, playfieldY);
-
                 return {
-                    x: mapCoords[0],
-                    y: mapCoords[1]
-                };
+                    x: (x - viewport.x) / viewport.width * 640,
+                    y: (y - viewport.y) / viewport.height * 480
+                }
             },
 
             beginRender: function () {

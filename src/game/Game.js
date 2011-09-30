@@ -1,4 +1,4 @@
-define('game/Game', [ 'q', 'game/MapState', 'AssetManager', 'util/PubSub', 'Soundboard', 'util/Timeline', 'util/gPubSub', 'util/History', 'agentInfo', 'util/audioTimer', 'game/RuleSet', 'game/mapObject', 'game/Combo', 'game/TimingPoint', 'game/BezierSliderCurve', 'util/StateMachine', 'ui/UI' ], function (Q, MapState, AssetManager, PubSub, Soundboard, Timeline, gPubSub, History, agentInfo, audioTimer, RuleSet, mapObject, Combo, TimingPoint, BezierSliderCurve, StateMachine, UI) {
+define('game/Game', [ 'q', 'game/MapState', 'AssetManager', 'util/PubSub', 'Soundboard', 'util/Timeline', 'util/gPubSub', 'util/History', 'agentInfo', 'util/audioTimer', 'game/RuleSet', 'game/mapObject', 'game/Combo', 'game/TimingPoint', 'game/BezierSliderCurve', 'util/StateMachine', 'ui/UI', 'util/util', 'gfx/View' ], function (Q, MapState, AssetManager, PubSub, Soundboard, Timeline, gPubSub, History, agentInfo, audioTimer, RuleSet, mapObject, Combo, TimingPoint, BezierSliderCurve, StateMachine, UI, util, View) {
     var GameStateMachine = StateMachine.create([
         { name: 'load_play',   from: 'none',          to: 'loading'       },
         { name: 'loaded_play', from: 'loading',       to: 'ready_to_play' },
@@ -41,7 +41,7 @@ define('game/Game', [ 'q', 'game/MapState', 'AssetManager', 'util/PubSub', 'Soun
         var accuracyHistory = new History();
         var comboHistory = new History();
 
-        var scoreScreenUi = null;
+        var ui = null;
 
         var sm = new GameStateMachine('none', {
             on_load_play: function (mapRoot, mapName) {
@@ -167,6 +167,11 @@ define('game/Game', [ 'q', 'game/MapState', 'AssetManager', 'util/PubSub', 'Soun
                 boundEvents.push(mousePubSub.subscribe(function (e) {
                     var time = currentTime();
 
+                    e = util.clone(e);
+                    var pos = View.map.playfieldToView(e.x, e.y);
+                    e.x = pos[0];
+                    e.y = pos[1];
+
                     if (trackMouse) {
                         mouseHistory.add(time, e);
                     }
@@ -262,8 +267,10 @@ define('game/Game', [ 'q', 'game/MapState', 'AssetManager', 'util/PubSub', 'Soun
             },
 
             enter_score_screen: function () {
-                scoreScreenUi = new UI(skin.valueOf().assetManager);
-                scoreScreenUi.build([
+                ui = new UI(skin.valueOf().assetManager);
+                boundEvents.push(mousePubSub.pipeTo(ui.events.mouse));
+
+                ui.build([
                     {
                         image: 'ranking-panel.png',
                         x: 0,
@@ -291,18 +298,21 @@ define('game/Game', [ 'q', 'game/MapState', 'AssetManager', 'util/PubSub', 'Soun
                         y: 280,
                         scale: 0.3
                     }, {
+                        name: 'retry button',
                         image: 'ranking-retry.png',
                         x: 396,
                         y: 319,
                         align: [ 0, 0.5 ],
                         width: 244
                     }, {
+                        name: 'replay button',
                         image: 'ranking-replay.png',
                         x: 396,
                         y: 379,
                         align: [ 0, 0.5 ],
                         width: 244
                     }, {
+                        name: 'back button',
                         image: 'ranking-back.png',
                         x: 396,
                         y: 439,
@@ -316,8 +326,20 @@ define('game/Game', [ 'q', 'game/MapState', 'AssetManager', 'util/PubSub', 'Soun
                     }
                 ]);
 
+                ui['retry button'].events.mouseDown.subscribe(function () {
+                    alert('retry');
+                });
+
+                ui['replay button'].events.mouseDown.subscribe(function () {
+                    alert('replay');
+                });
+
+                ui['back button'].events.mouseDown.subscribe(function () {
+                    alert('back');
+                });
+
                 renderCallback = function (renderer) {
-                    renderer.renderUi(scoreScreenUi);
+                    renderer.renderUi(ui);
                 };
             }
         });

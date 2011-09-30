@@ -37,17 +37,13 @@ define('ui/Control', [ 'util/util', 'ui/helpers', 'util/PubSub' ], function (uti
 
         this.name = spec.name;
 
-        if (this.button) {
-            this.events = {
-                click: new PubSub(),
-                hoverIn: new PubSub(),
-                hoverOut: new PubSub(),
-                mouseDown: new PubSub(),
-                mouseUp: new PubSub()
-            };
-
-            // TODO Bind mouse in UI
-        }
+        this.events = {
+            click: new PubSub(),
+            hoverIn: new PubSub(),
+            hoverOut: new PubSub(),
+            mouseDown: new PubSub(),
+            mouseUp: new PubSub()
+        };
 
         this.isVisible = true;
     }
@@ -63,6 +59,55 @@ define('ui/Control', [ 'util/util', 'ui/helpers', 'util/PubSub' ], function (uti
 
         centerY: function () {
             return center(this.y(), this.align()[1], this.height());
+        },
+
+        bindMouse: function (mousePubSub) {
+            var self = this;
+
+            var wasDown = false;
+            var wasInside = false;
+
+            mousePubSub.subscribe(function (m) {
+                var down = m.left || m.right;
+                var inside = self.hitTest(m.x, m.y);
+
+                if (down && inside && !wasDown) {
+                    self.events.mouseDown.publish();
+                }
+
+                // TODO Other event types
+
+                wasDown = down;
+                wasInside = inside;
+            });
+        },
+
+        bounds: function () {
+            var w = this.width();
+            var h = this.height();
+            var cx = this.centerX();
+            var cy = this.centerY();
+
+            return [
+                cx - w / 2,
+                cy - h / 2,
+                cx + w / 2,
+                cy + h / 2
+            ];
+        },
+
+        hitTest: function (x, y) {
+            var bounds = this.bounds();
+
+            if (x < bounds[0] || y < bounds[1]) {
+                return false;
+            }
+
+            if (x >= bounds[2] || y >= bounds[3]) {
+                return false;
+            }
+
+            return true;
         }
     };
 

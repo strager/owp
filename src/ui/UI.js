@@ -8,10 +8,25 @@ define('ui/UI', [ 'ui/Control', 'util/PubSub' ], function (Control, PubSub) {
         };
     }
 
-    UI.prototype.build = function (spec) {
-        spec.forEach(function (controlSpec) {
-            this.controls.push(new Control(this, controlSpec));
-        }, this);
+    UI.prototype = {
+        build: function (spec) {
+            spec.forEach(function (controlSpec) {
+                this.register(new Control(this, controlSpec));
+            }, this);
+        },
+
+        register: function (control) {
+            if (control.name) {
+                if (this[control.name]) {
+                    throw new Error('Invalid or duplicate control name: ' + control.name);
+                }
+
+                this[control.name] = control;
+            }
+
+            control.bindMouse(this.events.mouse);
+            this.controls.push(control);
+        }
     };
 
     return UI;
