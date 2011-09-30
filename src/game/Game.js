@@ -268,23 +268,47 @@ define('game/Game', [ 'q', 'game/MapState', 'AssetManager', 'util/PubSub', 'Soun
                         image: 'ranking-panel.png',
                         x: 320,
                         y: 480 - (640 * 698 / 1024) / 2,
-                        width: 640,
-                        height: 640 * 698 / 1024
+                        width: 640
                     }, {
                         image: 'hit300.png',
                         x: 40,
                         y: 180,
-                        scale: 0.5
+                        scale: 0.25
                     }, {
                         image: 'hit100.png',
                         x: 40,
                         y: 230,
-                        scale: 0.5
+                        scale: 0.25
                     }, {
                         image: 'hit50.png',
                         x: 40,
                         y: 280,
-                        scale: 0.5
+                        scale: 0.25
+                    }, {
+                        image: 'hit0.png',
+                        x: 220,
+                        y: 280,
+                        scale: 0.25
+                    }, {
+                        image: 'ranking-retry.png',
+                        x: 396 + 122,
+                        y: 305 + 14,
+                        width: 244
+                    }, {
+                        image: 'ranking-replay.png',
+                        x: 396 + 122,
+                        y: 365 + 14,
+                        width: 244
+                    }, {
+                        image: 'ranking-back.png',
+                        x: 396 + 122,
+                        y: 425 + 14,
+                        width: 244
+                    }, {
+                        image: 'ranking-s.png',
+                        x: 530,
+                        y: 155,
+                        scale: 0.7
                     }
                 ]);
 
