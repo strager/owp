@@ -1,4 +1,4 @@
-define('game/RuleSet', [ 'util/util', 'game/mapObject', 'util/History', 'util/CueList' ], function (util, mapObject, History, CueList) {
+define('game/RuleSet', [ 'util/util', 'game/mapObject', 'util/History', 'util/CueList', 'util/ease' ], function (util, mapObject, History, CueList, ease) {
     function RuleSet() {
         this.approachRate = 5;
         this.overallDifficulty = 5;
@@ -45,38 +45,8 @@ define('game/RuleSet', [ 'util/util', 'game/mapObject', 'util/History', 'util/Cu
         return ruleSet;
     };
 
-    function scale(a, b, value) {
-        return value * (b - a) + a;
-    }
-
-    function lerp(a, b, value) {
-        return Math.min(Math.max((value - a) / (b - a), 0), 1);
-    }
-
-    function smoothstep(a, b, value) {
-        var x = lerp(a, b, value);
-        return x * x * x * (x * (x * 6 - 15) + 10);
-    }
-
-    function table(interp, tab, value) {
-        if (tab[0][0] >= value) {
-            return tab[0][1];
-        }
-
-        var i;
-        for (i = 1; i < tab.length; ++i) {
-            var cur = tab[i];
-            if (tab[i][0] >= value) {
-                var last = tab[i - 1];
-                return scale(last[1], cur[1], interp(last[0], cur[0], value));
-            }
-        }
-
-        return tab[tab.length - 1][1];
-    }
-
     function ruleLerp(a, b, c, value) {
-        return table(lerp, [
+        return ease.table(ease.lerp, [
             [ 0, a ],
             [ 5, b ],
             [ 10, c ]
@@ -369,7 +339,7 @@ define('game/RuleSet', [ 'util/util', 'game/mapObject', 'util/History', 'util/Cu
         getHitMarkerScale: function (hitMarker, time) {
             var offset = time - hitMarker.time;
 
-            return table(smoothstep, [
+            return ease.table(ease.smoothstep, [
                 [ 0, 0.5 ],
                 [ 20, 0.55 ],
                 [ 200, 0.5 ]
