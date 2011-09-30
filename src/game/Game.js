@@ -298,28 +298,28 @@ define('game/Game', [ 'q', 'game/MapState', 'AssetManager', 'util/PubSub', 'Soun
                         x: 220,
                         y: 280,
                         scale: 0.3
-                    }, {
-                        name: 'retry button',
-                        image: 'ranking-retry.png',
-                        x: 396,
-                        y: 319,
-                        alignX: 0,
-                        alignY: 0.5,
-                        width: 244,
+                    //}, {
+                    //    name: 'retry button',
+                    //    image: 'ranking-retry.png',
+                    //    x: 396,
+                    //    y: 319,
+                    //    alignX: 0,
+                    //    alignY: 0.5,
+                    //    width: 244,
 
-                        hover: { width: 268 },
-                        ease: { width: [ 'smoothstep', 200 ] }
-                    }, {
-                        name: 'replay button',
-                        image: 'ranking-replay.png',
-                        x: 396,
-                        y: 379,
-                        alignX: 0,
-                        alignY: 0.5,
-                        width: 244,
+                    //    hover: { width: 268 },
+                    //    ease: { width: [ 'smoothstep', 200 ] }
+                    //}, {
+                    //    name: 'replay button',
+                    //    image: 'ranking-replay.png',
+                    //    x: 396,
+                    //    y: 379,
+                    //    alignX: 0,
+                    //    alignY: 0.5,
+                    //    width: 244,
 
-                        hover: { width: 268 },
-                        ease: { width: [ 'smoothstep', 200 ] }
+                    //    hover: { width: 268 },
+                    //    ease: { width: [ 'smoothstep', 200 ] }
                     }, {
                         name: 'back button',
                         image: 'ranking-back.png',
@@ -339,16 +339,9 @@ define('game/Game', [ 'q', 'game/MapState', 'AssetManager', 'util/PubSub', 'Soun
                     }
                 ]);
 
-                ui['retry button'].events.mouseDown.subscribe(function () {
-                    alert('retry');
-                });
-
-                ui['replay button'].events.mouseDown.subscribe(function () {
-                    alert('replay');
-                });
-
                 ui['back button'].events.mouseDown.subscribe(function () {
-                    alert('back');
+                    // HACK =]
+                    window.location = '.';
                 });
 
                 renderCallback = function (renderer) {
