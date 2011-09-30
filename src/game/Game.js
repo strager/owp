@@ -81,7 +81,6 @@ define('game/Game', [ 'q', 'game/MapState', 'AssetManager', 'util/PubSub', 'Soun
 
             on_loaded_play: function () {
                 var exitTime = mapState.ruleSet.getMapExitTime(mapInfo.map);
-                exitTime = 2000;
                 timeline.add(MAP_END, true, exitTime);
             },
 
