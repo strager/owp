@@ -10,7 +10,8 @@ define('ui/Control', [ 'util/util', 'ui/helpers', 'util/PubSub' ], function (uti
             height: null,
             name: null,
             button: false,
-            align: [ 0.5, 0.5 ]
+            alignX: 0.5,
+            alignY: 0.5
         }, spec);
 
         util.extend(this, spec.vars);
