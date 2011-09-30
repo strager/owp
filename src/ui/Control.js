@@ -15,6 +15,17 @@ define('ui/Control', [ 'util/util', 'ui/helpers', 'util/PubSub' ], function (uti
 
         util.extend(this, spec.vars);
 
+        this.events = {
+            click: new PubSub(),
+            hoverIn: new PubSub(),
+            hoverOut: new PubSub(),
+            mouseDown: new PubSub(),
+            mouseUp: new PubSub(),
+            state: new PubSub()
+        };
+
+        this.currentState = 'default';
+
         if (spec.image) {
             var image = ui.assetManager.get(spec.image, 'image');
             uiHelpers.bindConstant(this, 'image', image);
@@ -31,19 +42,11 @@ define('ui/Control', [ 'util/util', 'ui/helpers', 'util/PubSub' ], function (uti
 
         uiHelpers.bindTemplate(this, 'text', spec.text);
         
-        'x,y,width,height,button,align'.split(',').forEach(function (n) {
-            uiHelpers.bindConstant(this, n, spec[n]);
+        'x,y,width,height,button,alignX,alignY'.split(',').forEach(function (n) {
+            uiHelpers.bindEasable(this, n, spec, n);
         }, this);
 
         this.name = spec.name;
-
-        this.events = {
-            click: new PubSub(),
-            hoverIn: new PubSub(),
-            hoverOut: new PubSub(),
-            mouseDown: new PubSub(),
-            mouseUp: new PubSub()
-        };
 
         this.isVisible = true;
     }
@@ -54,11 +57,18 @@ define('ui/Control', [ 'util/util', 'ui/helpers', 'util/PubSub' ], function (uti
 
     Control.prototype = {
         centerX: function () {
-            return center(this.x(), this.align()[0], this.width());
+            return center(this.x(), this.alignX(), this.width());
         },
 
         centerY: function () {
-            return center(this.y(), this.align()[1], this.height());
+            return center(this.y(), this.alignY(), this.height());
+        },
+
+        updateState: function (state) {
+            if (state !== this.currentState) {
+                this.currentState = state;
+                this.events.state.publish(state);
+            }
         },
 
         bindMouse: function (mousePubSub) {
@@ -76,6 +86,16 @@ define('ui/Control', [ 'util/util', 'ui/helpers', 'util/PubSub' ], function (uti
                 }
 
                 // TODO Other event types
+
+                if (inside) {
+                    if (down) {
+                        self.updateState('down');
+                    } else {
+                        self.updateState('hover');
+                    }
+                } else {
+                    self.updateState('default');
+                }
 
                 wasDown = down;
                 wasInside = inside;

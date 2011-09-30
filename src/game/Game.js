@@ -275,7 +275,8 @@ define('game/Game', [ 'q', 'game/MapState', 'AssetManager', 'util/PubSub', 'Soun
                         image: 'ranking-panel.png',
                         x: 0,
                         y: 480,
-                        align: [ 0, 1 ],
+                        alignX: 0,
+                        alignY: 1,
                         width: 640
                     }, {
                         image: 'hit300.png',
@@ -302,22 +303,34 @@ define('game/Game', [ 'q', 'game/MapState', 'AssetManager', 'util/PubSub', 'Soun
                         image: 'ranking-retry.png',
                         x: 396,
                         y: 319,
-                        align: [ 0, 0.5 ],
-                        width: 244
+                        alignX: 0,
+                        alignY: 0.5,
+                        width: 244,
+
+                        hover: { width: 268 },
+                        ease: { width: [ 'smoothstep', 200 ] }
                     }, {
                         name: 'replay button',
                         image: 'ranking-replay.png',
                         x: 396,
                         y: 379,
-                        align: [ 0, 0.5 ],
-                        width: 244
+                        alignX: 0,
+                        alignY: 0.5,
+                        width: 244,
+
+                        hover: { width: 268 },
+                        ease: { width: [ 'smoothstep', 200 ] }
                     }, {
                         name: 'back button',
                         image: 'ranking-back.png',
                         x: 396,
                         y: 439,
-                        align: [ 0, 0.5 ],
-                        width: 244
+                        alignX: 0,
+                        alignY: 0.5,
+                        width: 244,
+
+                        hover: { width: 268 },
+                        ease: { width: [ 'smoothstep', 200 ] }
                     }, {
                         image: 'ranking-s.png',
                         x: 530,
