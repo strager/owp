@@ -272,6 +272,24 @@ define('gfx/CanvasRenderer', [ 'game/mapObject', 'util/Cache', 'gfx/canvasShader
             ];
         }
 
+        function getStringSize(images, options) {
+            var scale = options.scale || 1;
+            var spacing = options.spacing || 0;
+
+            var width = images.reduce(function (acc, image) {
+                return acc + image.width;
+            }, 0);
+
+            var maxHeight = images.reduce(function (acc, image) {
+                return Math.max(acc, image.height);
+            }, 0);
+
+            return [
+                (width + spacing * (length - 1)) * scale,
+                maxHeight * scale
+            ];
+        }
+
         function renderCharactersCanvas(images, context, options) {
             var offset = 0;
 
@@ -315,6 +333,24 @@ define('gfx/CanvasRenderer', [ 'game/mapObject', 'util/Cache', 'gfx/canvasShader
 
                 offset += width + spacing;
             });
+        }
+
+        function makeCharactersCanvas(images, canvas, options) {
+            var size = getStringSize(images, options);
+
+            // Resizing clears canvas
+            canvas.width = Math.ceil(size[0]);
+            canvas.height = Math.ceil(size[1]);
+
+            var context = canvas.getContext('2d');
+
+            renderCharactersCanvas(images, context, util.extend({
+                x: 0,
+                y: canvas.height / 2,
+                scale: 1,
+                align: 'left',
+                spacing: skin.scoreFontSpacing
+            }, options));
         }
         // Rendering helpers }}}
 
@@ -977,6 +1013,72 @@ define('gfx/CanvasRenderer', [ 'game/mapObject', 'util/Cache', 'gfx/canvasShader
             });
         }
 
+        // User interface {{{
+        function renderUiControl(control) {
+            if (control.image) {
+                var image = control.image();
+
+                var el = dom.get(control, function () {
+                    return cloneAbsolute(image);
+                });
+
+                // TODO Height scaling
+                var scale = control.width() / image.width;
+
+                style(el, {
+                    x: control.centerX(),
+                    y: control.centerY(),
+                    owidth: image.width,
+                    oheight: image.height,
+                    scale: scale
+                });
+            }
+
+            if (control.text) {
+                var canvas = dom.get(control, function () {
+                    var canvas = document.createElement('canvas');
+                    canvas.style.position = 'absolute';
+                    return canvas;
+                });
+
+                var text = control.text();
+                var characterScale = control.characterScale();
+                var alignX = control.alignX();
+                var alignY = control.alignY();
+
+                var data = {
+                    text: text,
+                    characterScale: characterScale,
+                    alignX: alignX,
+                    alignY: alignY
+                };
+
+                var dataString = JSON.stringify(data);
+
+                if (canvas.getAttribute('data-displayed') !== dataString) {
+                    var images = getStringImages('score-', skin.assetManager, text);
+                    makeCharactersCanvas(images, canvas, {
+                        scale: characterScale
+                    });
+
+                    canvas.setAttribute('data-displayed', dataString);
+                }
+
+                // TODO Use centerX/centerY
+                style(canvas, {
+                    x: (control.x() + canvas.width / 2) - canvas.width * alignX,
+                    y: (control.y() + canvas.height / 2) - canvas.height * alignY,
+                    scale: scale
+                });
+            }
+        }
+
+        function renderUi(ui) {
+            view(View.global, function () {
+                ui.controls.forEach(renderUiControl);
+            });
+        }
+        // User interface }}}
         return {
             vars: vars,
             consts: consts,
@@ -986,7 +1088,8 @@ define('gfx/CanvasRenderer', [ 'game/mapObject', 'util/Cache', 'gfx/canvasShader
             renderLoading: renderLoading,
             renderReadyToPlay: renderReadyToPlay,
             renderCursor: renderCursor,
-            renderColourOverlay: renderColourOverlay
+            renderColourOverlay: renderColourOverlay,
+            renderUi: renderUi
         };
     }
 
@@ -1169,6 +1272,10 @@ define('gfx/CanvasRenderer', [ 'game/mapObject', 'util/Cache', 'gfx/canvasShader
 
             renderColourOverlay: function (colour) {
                 r.renderColourOverlay(colour);
+            },
+
+            renderUi: function (ui) {
+                r.renderUi(ui);
             }
         };
     }
