@@ -413,7 +413,7 @@ define('game/Game', [ 'q', 'game/MapState', 'AssetManager', 'util/PubSub', 'Soun
                 });
 
                 ui.vars.maxCombo = 0;
-                debugger;
+
                 comboHistory.map.forEach(function (time, combo) {
                     ui.vars.maxCombo = Math.max(ui.vars.maxCombo, combo);
                 });
