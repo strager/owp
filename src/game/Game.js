@@ -339,8 +339,7 @@ define('game/Game', [ 'q', 'game/MapState', 'AssetManager', 'util/PubSub', 'Soun
                         scale: 0.7
                     }, {
                         name: 'score',
-                        //text: '${score}',
-                        text: '0123456789',
+                        text: '${score}',
                         characterScale: 0.7,
                         x: 276,
                         y: 105,
@@ -354,6 +353,8 @@ define('game/Game', [ 'q', 'game/MapState', 'AssetManager', 'util/PubSub', 'Soun
                     // HACK =]
                     window.location = '.';
                 });
+
+                ui.vars.score = scoreHistory.getLast(0);
 
                 renderCallback = function (renderer) {
                     renderer.renderUi(ui);

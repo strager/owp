@@ -2,7 +2,7 @@ define('ui/helpers', [ 'util/ease', 'util/util' ], function (ease, util) {
     function bindTemplate(control, boundName, template, vars) {
         control[boundName] = function () {
             return template.replace(/\$\{([a-zA-Z_]+)\}/g, function (_, name) {
-                if (Object.prototype.hasOwnProperty.call(control, name)) {
+                if (Object.prototype.hasOwnProperty.call(vars, name)) {
                     return vars[name];
                 } else {
                     return _;
