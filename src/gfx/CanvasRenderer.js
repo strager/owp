@@ -101,7 +101,13 @@ define('gfx/CanvasRenderer', [ 'game/mapObject', 'util/Cache', 'gfx/canvasShader
             return s.length === 1 ? '0' + s : s;
         }
 
-        return '#' + color.map(c).join('');
+        if (color.length === 3) {
+            return 'rgb(' + color.join(',') + ')';
+        } else if (color.length === 4) {
+            return 'rgba(' + color[0] + ',' + color[1] + ',' + color[2] + ',' + (color[3] / 255) + ')';
+        } else {
+            throw new Error('Bad color: ' + JSON.stringify(color));
+        }
     }
 
     function cloneAbsolute(element) {
@@ -161,6 +167,7 @@ define('gfx/CanvasRenderer', [ 'game/mapObject', 'util/Cache', 'gfx/canvasShader
             var container = dom.get(v, function () {
                 var div = document.createElement('div');
                 div.style.position = 'absolute';
+                div.style.zIndex = '1'; // Make new z space per container
                 return div;
             });
             container.style.left = v.mat[0] + 'px';
@@ -937,18 +944,38 @@ define('gfx/CanvasRenderer', [ 'game/mapObject', 'util/Cache', 'gfx/canvasShader
 
         // Ready-to-play rendering {{{
         function renderReadyToPlay() {
-            var el = dom.get('ready-to-play', function () {
-                var el = cloneAbsolute(skin.assetManager.get('ready-to-play.png', 'image'));
-                el.style.left = '0px';
-                el.style.top = '0px';
-                el.style.width = '640px';
-                el.style.height = '480px';
-                return el;
-            });
+            view(View.global, function () {
+                var el = dom.get('ready-to-play', function () {
+                    var el = cloneAbsolute(skin.assetManager.get('ready-to-play.png', 'image'));
+                    el.style.left = '0px';
+                    el.style.top = '0px';
+                    el.style.width = '640px';
+                    el.style.height = '480px';
+                    return el;
+                });
 
-            setZ(el);
+                setZ(el);
+            });
         }
         // Ready-to-play rendering }}}
+
+        function renderColourOverlay(colour) {
+            view(View.global, function () {
+                var el = dom.get('colour-overlay', function () {
+                    var el = document.createElement('div');
+                    el.style.position = 'absolute';
+                    el.style.left = '0px';
+                    el.style.top = '0px';
+                    el.style.width = '640px';
+                    el.style.height = '480px';
+                    return el;
+                });
+
+                el.style.background = getColorStyle(colour);
+
+                setZ(el);
+            });
+        }
 
         return {
             vars: vars,
@@ -958,7 +985,8 @@ define('gfx/CanvasRenderer', [ 'game/mapObject', 'util/Cache', 'gfx/canvasShader
             renderStoryboard: renderStoryboard,
             renderLoading: renderLoading,
             renderReadyToPlay: renderReadyToPlay,
-            renderCursor: renderCursor
+            renderCursor: renderCursor,
+            renderColourOverlay: renderColourOverlay
         };
     }
 
@@ -1057,14 +1085,10 @@ define('gfx/CanvasRenderer', [ 'game/mapObject', 'util/Cache', 'gfx/canvasShader
             resize: resize,
 
             mouseToGame: function (x, y) {
-                var playfieldX = (x - viewport.x) / viewport.width * 640;
-                var playfieldY = (y - viewport.y) / viewport.height * 480;
-                var mapCoords = View.map.playfieldToView(playfieldX, playfieldY);
-
                 return {
-                    x: mapCoords[0],
-                    y: mapCoords[1]
-                };
+                    x: (x - viewport.x) / viewport.width * 640,
+                    y: (y - viewport.y) / viewport.height * 480
+                }
             },
 
             beginRender: function () {
@@ -1141,6 +1165,10 @@ define('gfx/CanvasRenderer', [ 'game/mapObject', 'util/Cache', 'gfx/canvasShader
                 });
 
                 r.renderCursor();
+            },
+
+            renderColourOverlay: function (colour) {
+                r.renderColourOverlay(colour);
             }
         };
     }

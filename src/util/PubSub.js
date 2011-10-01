@@ -38,6 +38,12 @@ define('util/PubSub', [ ], function () {
                         delete subscribers[index];
                     }
                 };
+            },
+
+            pipeTo: function (otherPubSub) {
+                return this.subscribe(function () {
+                    otherPubSub.publish.apply(otherPubSub, arguments);
+                });
             }
         };
     };

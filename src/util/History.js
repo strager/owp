@@ -29,6 +29,18 @@ define('util/History', [ 'util/SortedMap' ], function (SortedMap) {
             }
 
             return this.map.values[0];
+        },
+
+        getLast: function (def) {
+            if (this.map.values.length === 0) {
+                if (arguments.length === 0) {
+                    throw new Error('Cannot get last history item of empty history');
+                } else {
+                    return def;
+                }
+            }
+
+            return this.map.values[this.map.values.length - 1];
         }
     };
 

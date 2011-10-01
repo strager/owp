@@ -1,6 +1,7 @@
 ROOT := $(CURDIR)
 
 BUILD_DIR := $(ROOT)/build
+BIN_DIR := $(ROOT)/bin
 PROD_DIR := $(ROOT)/prod_tmp
 
 BIN_DIR := $(ROOT)/bin
@@ -8,6 +9,7 @@ SRC_DIR := $(ROOT)/src
 SERVER_DIR := $(ROOT)/server
 
 JS_FILES := $(shell find $(SRC_DIR) -name '*.js') $(ROOT)/owp.js $(ROOT)/index.js
+DEV_FILES := $(JS_FILES) $(SRC_DIR)/loading.png $(shell find $(BIN_DIR) -perm /444 -type f) $(ROOT)/Makefile
 
 all:
 	@echo 'Targets: lint deploy_local deploy_staging deploy_prod' >&2
@@ -29,7 +31,7 @@ deploy_prod: $(PROD_DIR)
 lint:
 	@jshint $(JS_FILES)
 
-$(BUILD_DIR)/owp.js: $(JS_FILES) $(SRC_DIR)/loading.png
+$(BUILD_DIR)/owp.js: $(DEV_FILES)
 	@mkdir -p $(BUILD_DIR)
 	$(BIN_DIR)/build.sh "$@"
 
