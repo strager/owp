@@ -342,7 +342,7 @@ define('game/Game', [ 'q', 'game/MapState', 'AssetManager', 'util/PubSub', 'Soun
                         text: '${score}',
                         characterScale: 0.7,
                         x: 276,
-                        y: 105,
+                        y: 107,
                         alignX: 1,
                         alignY: 1
                     }

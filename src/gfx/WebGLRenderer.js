@@ -403,8 +403,6 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/gPubSub',
         }
 
         function renderCharacters(textures, options) {
-            var offset = 0;
-
             var scale = options.scale || 1;
             var spacing = options.spacing || 0;
 
@@ -412,37 +410,34 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/gPubSub',
                 return acc + texture.image.width;
             }, 0);
 
+            var maxHeight = textures.reduce(function (acc, texture) {
+                return Math.max(acc, texture.image.height * scale);
+            }, 0);
+
             totalWidth += spacing * (textures.length - 1);
 
-            switch (options.align) {
-            default:
-            case 'left':
-                offset = 0;
-                break;
-            case 'center':
-                offset = -totalWidth / 2;
-                break;
-            case 'right':
-                offset = -totalWidth;
-                break;
-            }
+            var alignX = 'alignX' in options ? options.alignX : 0.5;
+            var alignY = 'alignY' in options ? options.alignY : 0.5;
+
+            var xOffset = -totalWidth * alignX;
+            var yOffset = maxHeight / 2 - maxHeight * alignY;
 
             var x = options.x || 0;
             var y = options.y || 0;
 
             textures.forEach(function (texture, i) {
                 var width = texture.image.width;
-                var ox = (offset + width / 2) * scale;
+                var ox = (xOffset + width / 2) * scale;
 
                 sprite({
                     x: x + ox,
-                    y: y,
+                    y: y + yOffset,
                     color: [ 255, 255, 255, 255 ],
                     scale: scale,
                     texture: texture
                 });
 
-                offset += width + spacing;
+                xOffset += width + spacing;
             });
         }
         // Rendering helpers }}}
@@ -502,7 +497,7 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/gPubSub',
                 y: y,
                 scale: scale,
                 spacing: skin.hitCircleFontSpacing,
-                align: 'center'
+                alignX: 0.5
             });
         }
 
@@ -792,7 +787,7 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/gPubSub',
                 x: 640,
                 y: 20,
                 scale: 0.7,
-                align: 'right',
+                alignX: 1,
                 spacing: skin.scoreFontSpacing
             });
         }
@@ -804,7 +799,7 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/gPubSub',
                 x: 0,
                 y: 460,
                 scale: 0.7,
-                align: 'left',
+                alignX: 0,
                 spacing: skin.scoreFontSpacing
             });
         }
@@ -818,7 +813,7 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/gPubSub',
                 x: 640,
                 y: 45,
                 scale: 0.4,
-                align: 'right',
+                alignX: 1,
                 spacing: skin.scoreFontSpacing
             });
         }
@@ -973,12 +968,12 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/gPubSub',
             if (control.text) {
                 var text = control.text();
 
-                // TODO Align
                 renderCharacters(getStringTextures('score-', text), {
                     x: control.x(),
                     y: control.y(),
                     scale: control.characterScale(),
-                    align: 'right',
+                    alignX: control.alignX(),
+                    alignY: control.alignY(),
                     spacing: skin.scoreFontSpacing
                 });
             }
