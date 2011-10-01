@@ -233,12 +233,12 @@ define('game/Game', [ 'q', 'game/MapState', 'AssetManager', 'util/PubSub', 'Soun
             },
 
             exit_playing: function () {
-                audio.pause();
-
                 clearBoundEvents();
             },
 
             enter_paused: function () {
+                audio.pause();
+
                 renderCallback = function (renderer) {
                     var time = currentTime();
                     var breakiness = mapState.ruleSet.getBreakinessAt(time);
@@ -264,6 +264,10 @@ define('game/Game', [ 'q', 'game/MapState', 'AssetManager', 'util/PubSub', 'Soun
                     }, time);
                     renderer.renderColourOverlay([ 0, 0, 0, 128 ]);
                 };
+            },
+
+            exit_paused: function () {
+                audio.play();
             },
 
             enter_score_screen: function () {
