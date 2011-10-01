@@ -12,7 +12,7 @@ JS_FILES := $(shell find $(SRC_DIR) -name '*.js') $(ROOT)/owp.js $(ROOT)/index.j
 DEV_FILES := $(JS_FILES) $(SRC_DIR)/loading.png $(shell find $(BIN_DIR) -perm /444 -type f) $(ROOT)/Makefile
 
 all:
-	@echo 'Targets: lint deploy_local deploy_staging deploy_prod' >&2
+	@echo 'Targets: clean lint deploy_local deploy_staging deploy_prod' >&2
 
 clean:
 	rm -rf $(PROD_DIR) $(BUILD_DIR)
@@ -47,4 +47,4 @@ $(PROD_DIR): $(BUILD_DIR)/owp.js
 	rm $(PROD_DIR)/config.php $(PROD_DIR)/config.example.php
 	ln -s map-select.php $(PROD_DIR)/index.php
 
-.PHONY: all deploy_local deploy_staging deploy_prod lint $(PROD_DIR)
+.PHONY: all clean deploy_local deploy_staging deploy_prod lint $(PROD_DIR)
