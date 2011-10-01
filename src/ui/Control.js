@@ -1,10 +1,9 @@
 define('ui/Control', [ 'util/util', 'ui/helpers', 'util/PubSub' ], function (util, uiHelpers, PubSub) {
     function Control(ui, spec) {
         spec = util.extend({
-            text: '',
-            image: '',
             x: 0,
             y: 0,
+            characterScale: 1,
             scale: 1,
             width: null,
             height: null,
@@ -27,6 +26,8 @@ define('ui/Control', [ 'util/util', 'ui/helpers', 'util/PubSub' ], function (uti
 
         this.currentState = 'default';
 
+        var props = 'x,y,button,alignX,alignY'.split(',');
+
         if (spec.image) {
             var image = ui.assetManager.get(spec.image, 'image');
             uiHelpers.bindConstant(this, 'image', image);
@@ -39,11 +40,18 @@ define('ui/Control', [ 'util/util', 'ui/helpers', 'util/PubSub' ], function (uti
             } else if (!spec.height) {
                 spec.height = spec.width / image.width * image.height;
             }
+
+            props.push('width');
+            props.push('height');
         }
 
-        uiHelpers.bindTemplate(this, 'text', spec.text);
-        
-        'x,y,width,height,button,alignX,alignY'.split(',').forEach(function (n) {
+        if (typeof spec.text !== 'undefined') {
+            uiHelpers.bindTemplate(this, 'text', spec.text, ui.vars);
+
+            props.push('characterScale');
+        }
+
+        props.forEach(function (n) {
             uiHelpers.bindEasable(this, n, spec, n);
         }, this);
 

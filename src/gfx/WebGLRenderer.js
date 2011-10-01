@@ -955,18 +955,33 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/gPubSub',
 
         // User interface {{{
         function renderUiControl(control) {
-            var texture = textures.get(control.image());
+            if (control.image) {
+                var texture = textures.get(control.image());
 
-            // TODO Height scaling
-            var scale = control.width() / texture.image.width;
+                // TODO Height scaling
+                var scale = control.width() / texture.image.width;
 
-            sprite({
-                x: control.centerX(),
-                y: control.centerY(),
-                color: [ 255, 255, 255, 255 ],
-                scale: scale,
-                texture: texture
-            });
+                sprite({
+                    x: control.centerX(),
+                    y: control.centerY(),
+                    color: [ 255, 255, 255, 255 ],
+                    scale: scale,
+                    texture: texture
+                });
+            }
+
+            if (control.text) {
+                var text = control.text();
+
+                // TODO Align
+                renderCharacters(getStringTextures('score-', text), {
+                    x: control.x(),
+                    y: control.y(),
+                    scale: control.characterScale(),
+                    align: 'right',
+                    spacing: skin.scoreFontSpacing
+                });
+            }
         }
 
         function renderUi(ui) {

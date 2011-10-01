@@ -336,10 +336,19 @@ define('game/Game', [ 'q', 'game/MapState', 'AssetManager', 'util/PubSub', 'Soun
                         x: 530,
                         y: 155,
                         scale: 0.7
+                    }, {
+                        name: 'score',
+                        //text: '${score}',
+                        text: '0123456789',
+                        characterScale: 0.7,
+                        x: 276,
+                        y: 105,
+                        alignX: 1,
+                        alignY: 1
                     }
                 ]);
 
-                ui['back button'].events.mouseDown.subscribe(function () {
+                ui.controls['back button'].events.mouseDown.subscribe(function () {
                     // HACK =]
                     window.location = '.';
                 });

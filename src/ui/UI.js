@@ -1,7 +1,9 @@
 define('ui/UI', [ 'ui/Control', 'util/PubSub' ], function (Control, PubSub) {
     function UI(assetManager) {
-        this.controls = [ ];
         this.assetManager = assetManager;
+
+        this.controls = [ ];
+        this.vars = { };
 
         this.events = {
             mouse: new PubSub()
@@ -17,11 +19,11 @@ define('ui/UI', [ 'ui/Control', 'util/PubSub' ], function (Control, PubSub) {
 
         register: function (control) {
             if (control.name) {
-                if (this[control.name]) {
+                if (this.controls[control.name]) {
                     throw new Error('Invalid or duplicate control name: ' + control.name);
                 }
 
-                this[control.name] = control;
+                this.controls[control.name] = control;
             }
 
             control.bindMouse(this.events.mouse);
