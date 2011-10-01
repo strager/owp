@@ -57,6 +57,11 @@ $skinFiles = array(
     'ranking-xh-small',
     'ranking-xh',
 
+    'pause-back',
+    'pause-continue',
+    'pause-overlay',
+    'pause-retry',
+
     'default-0',
     'default-1',
     'default-2',

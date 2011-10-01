@@ -243,14 +243,54 @@ define('game/Game', [ 'q', 'game/MapState', 'AssetManager', 'util/PubSub', 'Soun
             enter_paused: function () {
                 audio.pause();
 
+                ui = new UI(skin.valueOf().assetManager);
+                boundEvents.push(mousePubSub.pipeTo(ui.mouse));
+
+                ui.build([
+                    {
+                        image: 'pause-continue.png',
+                        x: 320,
+                        y: 240,
+                        alignX: 0.5,
+                        alignY: 0.5,
+                        scale: 1.0,
+
+                        hover: { scale: 1.1 },
+                        click: { action: 'play' }
+                    }, {
+                        image: 'pause-back.png',
+                        x: 320,
+                        y: 310,
+                        alignX: 0.5,
+                        alignY: 0.5,
+                        scale: 1.0,
+
+                        hover: { scale: 1.1 },
+                        click: { action: 'menu' }
+                    }
+                ]);
+
+                ui.events.play = new PubSub();
+                ui.events.play.subscribe(function () {
+                    sm.unpause();
+                });
+
+                ui.events.menu = new PubSub();
+                ui.events.menu.subscribe(function () {
+                    // HACK =]
+                    window.location = '.';
+                });
+
                 renderCallback = function (renderer) {
                     var time = currentTime();
                     renderMap(renderer, time);
                     renderer.renderColourOverlay([ 0, 0, 0, 128 ]);
+                    renderer.renderUi(ui);
                 };
             },
 
             exit_paused: function () {
+                clearBoundEvents();
                 audio.play();
             },
 

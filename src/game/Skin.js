@@ -66,6 +66,11 @@ define('game/Skin', [ 'util/util' ], function (util) {
                     'ranking-xh-small.png',
                     'ranking-xh.png',
 
+                    'pause-back.png',
+                    'pause-continue.png',
+                    'pause-overlay.png',
+                    'pause-retry.png',
+
                     'default-0.png',
                     'default-1.png',
                     'default-2.png',
