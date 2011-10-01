@@ -1,4 +1,4 @@
-define('ui/helpers', [ 'util/ease' ], function (ease) {
+define('ui/helpers', [ 'util/ease', 'util/util' ], function (ease, util) {
     function bindTemplate(control, boundName, template, vars) {
         control[boundName] = function () {
             return template.replace(/\$\{([a-zA-Z_]+)\}/g, function (_, name) {
@@ -11,19 +11,54 @@ define('ui/helpers', [ 'util/ease' ], function (ease) {
         };
     }
 
-    function bindEasable(control, boundName, spec, name) {
-        var fromValue = spec[name];
-        var toValue = spec[name];
+    function buildEventValues(eventStatePriorities, property, sourceValues) {
+        // Converts
+        //
+        // esp   = { hoverIn: [ default, hover ], hoverOut: [ default ] }
+        // props = x
+        // vals  = { x: 42, hover: { x: 100 } }
+        //
+        // into
+        //
+        // { hoverIn: 100, hoverOut: 42, default: 42 }
+
+        var eventValues = { default: sourceValues[property] };
+
+        Object.keys(eventStatePriorities).forEach(function (eventType) {
+            var value /* = undefined */;
+            var states = eventStatePriorities[eventType];
+            states.forEach(function (state) {
+                var v;
+                if (state === 'default') {
+                    v = sourceValues[property];
+                } else if (sourceValues[state]) {
+                    v = sourceValues[state][property];
+                }
+
+                if (typeof v !== 'undefined') {
+                    value = v;
+                }
+            });
+
+            if (typeof value === 'undefined') {
+                throw new Error('Bad property: ' + property);
+            }
+
+            eventValues[eventType] = value;
+        });
+
+        return eventValues;
+    }
+
+    function bindEasable(control, boundName, valueTable, events) {
+        var fromValue = valueTable.default;
+        var toValue = valueTable.default;
 
         var startDate = Date.now();
 
-        var easeDuration = 0;
+        // TODO Overridable
+        var easeDuration = 300;
         var easeFn = ease.smoothstep;
-
-        if (spec.ease && spec.ease[name]) {
-            easeDuration = spec.ease[name][1];
-            easeFn = ease[spec.ease[name][0]] || ease.smoothstep;
-        }
 
         function currentValue() {
             if (easeDuration <= 0) {
@@ -36,16 +71,12 @@ define('ui/helpers', [ 'util/ease' ], function (ease) {
 
         control[boundName] = currentValue;
 
-        control.events.state.subscribe(function (state) {
-            fromValue = currentValue();
-
-            if (spec[state] && typeof spec[state][name] !== 'undefined') {
-                toValue = spec[state][name];
-            } else {
-                toValue = spec[name];
-            }
-
-            startDate = Date.now();
+        Object.keys(events).forEach(function (eventType) {
+            events[eventType].subscribe(function () {
+                fromValue = currentValue();
+                toValue = valueTable[eventType];
+                startDate = Date.now();
+            });
         });
     }
 
@@ -57,6 +88,7 @@ define('ui/helpers', [ 'util/ease' ], function (ease) {
 
     return {
         bindTemplate: bindTemplate,
+        buildEventValues: buildEventValues,
         bindEasable: bindEasable,
         bindConstant: bindConstant
     };

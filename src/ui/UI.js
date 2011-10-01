@@ -4,10 +4,9 @@ define('ui/UI', [ 'ui/Control', 'util/PubSub' ], function (Control, PubSub) {
 
         this.controls = [ ];
         this.vars = { };
+        this.events = { };
 
-        this.events = {
-            mouse: new PubSub()
-        };
+        this.mouse = new PubSub();
     }
 
     UI.prototype = {
@@ -18,15 +17,7 @@ define('ui/UI', [ 'ui/Control', 'util/PubSub' ], function (Control, PubSub) {
         },
 
         register: function (control) {
-            if (control.name) {
-                if (this.controls[control.name]) {
-                    throw new Error('Invalid or duplicate control name: ' + control.name);
-                }
-
-                this.controls[control.name] = control;
-            }
-
-            control.bindMouse(this.events.mouse);
+            control.bindMouse(this.mouse);
             this.controls.push(control);
         }
     };

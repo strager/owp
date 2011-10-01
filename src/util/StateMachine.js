@@ -55,20 +55,23 @@ define('util/StateMachine', [ 'q', 'util/util' ], function (Q, util) {
                         throw new Error('Invalid transition "' + name + '"');
                     }
 
-                    var ts = findTransitions(currentState, name);
+                    var t;
 
-                    if (ts.length > 1) {
-                        var destinations = ts.map(function (t) { return t.to; });
-                        throw new Error('Cannot transition "' + name + '" with multiple possible destinations from "' + currentState + '" (' + destinations.join(', '));
-                    }
+                    transitionQueue = transitionQueue
+                        .then(function () {
+                            var ts = findTransitions(currentState, name);
 
-                    if (ts.length === 0) {
-                        throw new Error('Cannot transition "' + name + '" with no possible destination from "' + currentState + '"');
-                    }
+                            if (ts.length > 1) {
+                                var destinations = ts.map(function (t) { return t.to; });
+                                throw new Error('Cannot transition "' + name + '" with multiple possible destinations from "' + currentState + '" (' + destinations.join(', '));
+                            }
 
-                    var t = ts[0];
+                            if (ts.length === 0) {
+                                throw new Error('Cannot transition "' + name + '" with no possible destination from "' + currentState + '"');
+                            }
 
-                    transitionQueue = Q.when()
+                            t = ts[0];
+                        })
                         .then(function () {
                             return call('exit_' + t.from, args);
                         })

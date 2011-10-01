@@ -1,4 +1,15 @@
 define('ui/Control', [ 'util/util', 'ui/helpers', 'util/PubSub' ], function (util, uiHelpers, PubSub) {
+    var eventTypes = 'click,hoverIn,hoverOut,mouseDown,mouseUp'.split(',');
+
+    // Values ordered by increasing priority
+    var eventStatePriorities = {
+        'click':     [ 'default', 'hover', 'click' ],
+        'hoverIn':   [ 'default', 'hover' ],
+        'hoverOut':  [ 'default' ],
+        'mouseDown': [ 'default', 'hover', 'mouseDown' ],
+        'mouseUp':   [ 'default', 'hover' ]
+    };
+
     function Control(ui, spec) {
         spec = util.extend({
             x: 0,
@@ -10,21 +21,18 @@ define('ui/Control', [ 'util/util', 'ui/helpers', 'util/PubSub' ], function (uti
             name: null,
             button: false,
             alignX: 0.5,
-            alignY: 0.5
+            alignY: 0.5,
+            action: null
         }, spec);
 
         util.extend(this, spec.vars);
 
-        this.events = {
-            click: new PubSub(),
-            hoverIn: new PubSub(),
-            hoverOut: new PubSub(),
-            mouseDown: new PubSub(),
-            mouseUp: new PubSub(),
-            state: new PubSub()
-        };
+        this.events = { };
+        eventTypes.forEach(function (type) {
+            this.events[type] = new PubSub();
+        }, this);
 
-        this.currentState = 'default';
+        var stateValues = { };
 
         var props = 'x,y,button,alignX,alignY'.split(',');
 
@@ -51,8 +59,25 @@ define('ui/Control', [ 'util/util', 'ui/helpers', 'util/PubSub' ], function (uti
             props.push('characterScale');
         }
 
-        props.forEach(function (n) {
-            uiHelpers.bindEasable(this, n, spec, n);
+        props.forEach(function (prop) {
+            var eventValues = uiHelpers.buildEventValues(eventStatePriorities, prop, spec);
+            uiHelpers.bindEasable(this, prop, eventValues, this.events);
+        }, this);
+
+
+        var eventActions = uiHelpers.buildEventValues(eventStatePriorities, 'action', spec);
+        Object.keys(eventActions).forEach(function (eventType) {
+            var action = eventActions[eventType];
+
+            if (action) {
+                this.events[eventType].subscribe(function () {
+                    var pubSub = ui.events[action];
+
+                    if (pubSub) {
+                        pubSub.publish();
+                    }
+                });
+            }
         }, this);
 
         this.name = spec.name;
@@ -73,38 +98,43 @@ define('ui/Control', [ 'util/util', 'ui/helpers', 'util/PubSub' ], function (uti
             return center(this.y(), this.alignY(), this.height());
         },
 
-        updateState: function (state) {
-            if (state !== this.currentState) {
-                this.currentState = state;
-                this.events.state.publish(state);
-            }
-        },
-
         bindMouse: function (mousePubSub) {
             var self = this;
 
             var wasDown = false;
             var wasInside = false;
 
+            var lastDownWasInside = false;
+
             mousePubSub.subscribe(function (m) {
                 var down = m.left || m.right;
                 var inside = self.hitTest(m.x, m.y);
+
+                if (down && !wasDown) {
+                    lastDownWasInside = inside;
+                }
 
                 if (down && inside && !wasDown) {
                     self.events.mouseDown.publish();
                 }
 
-                // TODO Other event types
+                if (!down && inside && wasDown) {
+                    self.events.mouseUp.publish();
 
-                if (inside) {
-                    if (down) {
-                        self.updateState('down');
-                    } else {
-                        self.updateState('hover');
+                    if (lastDownWasInside) {
+                        self.events.click.publish();
                     }
-                } else {
-                    self.updateState('default');
                 }
+
+                if (inside && !wasInside) {
+                    self.events.hoverIn.publish();
+                }
+
+                if (!inside && wasInside) {
+                    self.events.hoverOut.publish();
+                }
+
+                // TODO Other event types
 
                 wasDown = down;
                 wasInside = inside;
@@ -112,6 +142,10 @@ define('ui/Control', [ 'util/util', 'ui/helpers', 'util/PubSub' ], function (uti
         },
 
         bounds: function () {
+            if (!this.width || !this.height) {
+                return [ Infinity, Infinity, -Infinity, -Infinity ];
+            }
+
             var w = this.width();
             var h = this.height();
             var cx = this.centerX();

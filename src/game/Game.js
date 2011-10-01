@@ -268,7 +268,7 @@ define('game/Game', [ 'q', 'game/MapState', 'AssetManager', 'util/PubSub', 'Soun
 
             enter_score_screen: function () {
                 ui = new UI(skin.valueOf().assetManager);
-                boundEvents.push(mousePubSub.pipeTo(ui.events.mouse));
+                boundEvents.push(mousePubSub.pipeTo(ui.mouse));
 
                 ui.build([
                     {
@@ -321,7 +321,6 @@ define('game/Game', [ 'q', 'game/MapState', 'AssetManager', 'util/PubSub', 'Soun
                     //    hover: { width: 268 },
                     //    ease: { width: [ 'smoothstep', 200 ] }
                     }, {
-                        name: 'back button',
                         image: 'ranking-back.png',
                         x: 396,
                         y: 439,
@@ -330,6 +329,8 @@ define('game/Game', [ 'q', 'game/MapState', 'AssetManager', 'util/PubSub', 'Soun
                         width: 244,
 
                         hover: { width: 268 },
+                        click: { action: 'menu' },
+
                         ease: { width: [ 'smoothstep', 200 ] }
                     }, {
                         image: 'ranking-s.png',
@@ -348,7 +349,8 @@ define('game/Game', [ 'q', 'game/MapState', 'AssetManager', 'util/PubSub', 'Soun
                     }
                 ]);
 
-                ui.controls['back button'].events.mouseDown.subscribe(function () {
+                ui.events.menu = new PubSub();
+                ui.events.menu.subscribe(function () {
                     // HACK =]
                     window.location = '.';
                 });
