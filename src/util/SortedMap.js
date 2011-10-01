@@ -33,6 +33,14 @@ define('util/SortedMap', [ ], function () {
 
         getIndexForKey: function (key) {
             return sortIndex(this.keys, key);
+        },
+
+        forEach: function (callback, context) {
+            var i;
+
+            for (i = 0; i < this.keys.length; ++i) {
+                callback.call(context, this.keys[i], this.values[i]);
+            }
         }
     };
 

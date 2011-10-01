@@ -368,6 +368,20 @@ define('game/Game', [ 'q', 'game/MapState', 'AssetManager', 'util/PubSub', 'Soun
                         y: 107,
                         alignX: 1,
                         alignY: 1
+                    }, {
+                        text: '${accuracy}%',
+                        characterScale: 0.7,
+                        x: 194,
+                        y: 346,
+                        alignX: 0,
+                        alignY: 0.5
+                    }, {
+                        text: '${maxCombo}x',
+                        characterScale: 0.7,
+                        x: 18,
+                        y: 346,
+                        alignX: 0,
+                        alignY: 0.5
                     }
                 ]);
 
@@ -377,20 +391,20 @@ define('game/Game', [ 'q', 'game/MapState', 'AssetManager', 'util/PubSub', 'Soun
                     window.location = '.';
                 });
 
-                var hit300 = 0, hit100 = 0, hit50 = 0, hit0 = 0;
+                ui.vars.hit300 = ui.vars.hit100 = ui.vars.hit50 = ui.vars.hit0 = 0;
                 mapState.getAllHitMarkers().forEach(function (hitMarker) {
                     switch (mapState.ruleSet.getHitMarkerImageName(hitMarker)) {
                     case 'hit300.png':
-                        ++hit300;
+                        ++ui.vars.hit300;
                         break;
                     case 'hit100.png':
-                        ++hit100;
+                        ++ui.vars.hit100;
                         break;
                     case 'hit50.png':
-                        ++hit50;
+                        ++ui.vars.hit50;
                         break;
                     case 'hit0.png':
-                        ++hit0;
+                        ++ui.vars.hit0;
                         break;
                     default:
                         // Ignore
@@ -398,12 +412,14 @@ define('game/Game', [ 'q', 'game/MapState', 'AssetManager', 'util/PubSub', 'Soun
                     }
                 });
 
-                ui.vars.hit300 = hit300;
-                ui.vars.hit100 = hit100;
-                ui.vars.hit50 = hit50;
-                ui.vars.hit0 = hit0;
+                ui.vars.maxCombo = 0;
+                debugger;
+                comboHistory.map.forEach(function (time, combo) {
+                    ui.vars.maxCombo = Math.max(ui.vars.maxCombo, combo);
+                });
 
                 ui.vars.score = scoreHistory.getLast(0);
+                ui.vars.accuracy = (accuracyHistory.getLast(0) * 100).toFixed(2);
 
                 renderCallback = function (renderer) {
                     renderer.renderUi(ui);
