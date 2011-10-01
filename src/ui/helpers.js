@@ -22,7 +22,7 @@ define('ui/helpers', [ 'util/ease', 'util/util' ], function (ease, util) {
         //
         // { hoverIn: 100, hoverOut: 42, default: 42 }
 
-        var eventValues = { default: sourceValues[property] };
+        var eventValues = { 'default': sourceValues[property] };
 
         Object.keys(eventStatePriorities).forEach(function (eventType) {
             var value /* = undefined */;
@@ -51,8 +51,8 @@ define('ui/helpers', [ 'util/ease', 'util/util' ], function (ease, util) {
     }
 
     function bindEasable(control, boundName, valueTable, events) {
-        var fromValue = valueTable.default;
-        var toValue = valueTable.default;
+        var fromValue = valueTable['default'];
+        var toValue = valueTable['default'];
 
         var startDate = Date.now();
 
