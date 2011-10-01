@@ -14,6 +14,9 @@ DEV_FILES := $(JS_FILES) $(SRC_DIR)/loading.png $(shell find $(BIN_DIR) -perm /4
 all:
 	@echo 'Targets: lint deploy_local deploy_staging deploy_prod' >&2
 
+clean:
+	rm -rf $(PROD_DIR) $(BUILD_DIR)
+
 deploy_local: $(PROD_DIR)
 	@mkdir -p $(ROOT)/demo
 	rsync -rlt -v $(PROD_DIR)/ $(ROOT)/demo
