@@ -284,20 +284,44 @@ define('game/Game', [ 'q', 'game/MapState', 'AssetManager', 'util/PubSub', 'Soun
                         y: 180,
                         scale: 0.3
                     }, {
+                        text: '${hit300}x',
+                        x: 70,
+                        y: 180,
+                        characterScale: 0.6,
+                        alignX: 0
+                    }, {
                         image: 'hit100.png',
                         x: 40,
                         y: 230,
                         scale: 0.3
+                    }, {
+                        text: '${hit100}x',
+                        x: 70,
+                        y: 230,
+                        characterScale: 0.6,
+                        alignX: 0
                     }, {
                         image: 'hit50.png',
                         x: 40,
                         y: 280,
                         scale: 0.3
                     }, {
+                        text: '${hit50}x',
+                        x: 70,
+                        y: 280,
+                        characterScale: 0.6,
+                        alignX: 0
+                    }, {
                         image: 'hit0.png',
                         x: 220,
                         y: 280,
                         scale: 0.3
+                    }, {
+                        text: '${hit0}x',
+                        x: 250,
+                        y: 280,
+                        characterScale: 0.6,
+                        alignX: 0
                     //}, {
                     //    name: 'retry button',
                     //    image: 'ranking-retry.png',
@@ -338,7 +362,6 @@ define('game/Game', [ 'q', 'game/MapState', 'AssetManager', 'util/PubSub', 'Soun
                         y: 155,
                         scale: 0.7
                     }, {
-                        name: 'score',
                         text: '${score}',
                         characterScale: 0.7,
                         x: 276,
@@ -353,6 +376,32 @@ define('game/Game', [ 'q', 'game/MapState', 'AssetManager', 'util/PubSub', 'Soun
                     // HACK =]
                     window.location = '.';
                 });
+
+                var hit300 = 0, hit100 = 0, hit50 = 0, hit0 = 0;
+                mapState.getAllHitMarkers().forEach(function (hitMarker) {
+                    switch (mapState.ruleSet.getHitMarkerImageName(hitMarker)) {
+                    case 'hit300.png':
+                        ++hit300;
+                        break;
+                    case 'hit100.png':
+                        ++hit100;
+                        break;
+                    case 'hit50.png':
+                        ++hit50;
+                        break;
+                    case 'hit0.png':
+                        ++hit0;
+                        break;
+                    default:
+                        // Ignore
+                        break;
+                    }
+                });
+
+                ui.vars.hit300 = hit300;
+                ui.vars.hit100 = hit100;
+                ui.vars.hit50 = hit50;
+                ui.vars.hit0 = hit0;
 
                 ui.vars.score = scoreHistory.getLast(0);
 

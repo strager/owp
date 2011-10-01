@@ -98,6 +98,10 @@ define('game/MapState', [ 'game/mapObject', 'util/Timeline', 'util/Map', 'util/P
             return this.ruleSet.getTotalScore(hitMarkers);
         },
 
+        getAllHitMarkers: function () {
+            return this.timeline.getAllInTimeRange(-Infinity, Infinity, MapState.HIT_MARKER_CREATION);
+        },
+
         getActiveCombo: function (time) {
             var hitMarkers = this.timeline.getAllInTimeRange(0, time, MapState.HIT_MARKER_CREATION);
 
