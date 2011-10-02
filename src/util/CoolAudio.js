@@ -145,7 +145,29 @@ define('util/CoolAudio', [ ], function () {
 
                 self.play();
             } else {
-                this.audioElement.currentTime = time / 1000;
+                var ct = time / 1000;
+                this.audioElement.currentTime = ct;
+            }
+        },
+
+        canSeek: function (time) {
+            if (time < 0) {
+                return true;
+            } else {
+                var tr = this.audioElement.seekable;
+                if (!tr) {
+                    return false;
+                }
+
+                var t = time / 1000;
+                var i;
+                for (i = 0; i < tr.length; ++i) {
+                    if (tr.start(i) <= t && t <= tr.end(i)) {
+                        return true;
+                    }
+                }
+
+                return false;
             }
         },
 

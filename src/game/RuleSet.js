@@ -826,6 +826,28 @@ define('game/RuleSet', [ 'util/util', 'game/mapObject', 'util/History', 'util/Cu
             });
         },
 
+        getMapSkipToTime: function (map) {
+            var startTime = this.getMapStartTime(map);
+
+            // TODO Configurable measure length
+            var measureLength = 4;
+            var bpm = this.getEffectiveBPM(startTime);
+
+            // Start one measure early
+            return startTime - measureLength * 60 * 1000 / bpm;
+        },
+
+        getMapLatestSkipTime: function (map) {
+            var startTime = this.getMapStartTime(map);
+
+            // TODO Configurable measure length
+            var measureLength = 4;
+            var bpm = this.getEffectiveBPM(startTime);
+
+            // One and a half measures early
+            return startTime - 1.5 * measureLength * 60 * 1000 / bpm;
+        },
+
         getMapStartTime: function (map) {
             return this.getObjectStartAppearTime(map.objects[0]);
         },

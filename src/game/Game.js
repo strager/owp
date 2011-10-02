@@ -150,9 +150,47 @@ define('game/Game', [ 'q', 'game/MapState', 'AssetManager', 'util/PubSub', 'Soun
                     'soft-slidertick.wav'
                 ]);
 
+                var latestSkipTime = mapState.ruleSet.getMapLatestSkipTime(mapInfo.map);
+                var skipToTime = mapState.ruleSet.getMapSkipToTime(mapInfo.map);
+
+                function canSkip() {
+                    var time = audio.currentTime();
+                    return time < latestSkipTime && audio.canSeek(skipToTime);
+                }
+
+                ui = new UI(skin.valueOf().assetManager);
+                boundEvents.push(mousePubSub.subscribe(function (e) {
+                    if (canSkip()) {
+                        ui.mouse.publish(e);
+                    }
+                }));
+
+                ui.build([
+                    {
+                        image: 'pause-continue.png',
+                        x: 320,
+                        y: 200,
+                        alignX: 0.5,
+                        alignY: 0.5,
+                        scale: 1.0,
+
+                        hover: { scale: 1.1 },
+                        click: { action: 'skip' }
+                    }
+                ]);
+
+                ui.events.skip = new PubSub();
+                ui.events.skip.subscribe(function () {
+                    audio.seek(skipToTime);
+                });
+
                 renderCallback = function (renderer) {
                     var time = audio.currentTime();
                     renderMap(renderer, time);
+
+                    if (canSkip()) {
+                        renderer.renderUi(ui);
+                    }
                 };
 
                 debugInfoCallback = function () {
