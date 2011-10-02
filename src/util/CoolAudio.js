@@ -8,6 +8,8 @@ define('util/CoolAudio', [ ], function () {
     // world.  Because of all this, we completely wrap the audio element so
     // things don't get out of sync accidentally.
 
+    // NOTE: This code is super flaky and anything can break it.  Anything.
+
     function CoolAudio(audioElement) {
         this.audioElement = audioElement;
 
@@ -23,7 +25,15 @@ define('util/CoolAudio', [ ], function () {
 
         this.isPaused = false;
 
+        this.negativeZone = false;
+        this.negativeZoneTimer = null;
+        this.negativeZoneTime = 0;
+
         function update() {
+            if (self.negativeZone) {
+                return;
+            }
+
             var currentTime = self.rawCurrentTime();
             var rtcCurrentTime = Date.now();
             self.rtcStartTime = rtcCurrentTime - currentTime;
@@ -71,20 +81,81 @@ define('util/CoolAudio', [ ], function () {
 
     CoolAudio.prototype = {
         pause: function () {
+            if (this.isPaused) {
+                return;
+            }
+
+            this.isPaused = true;
             this.audioElement.pause();
+
+            if (this.negativeZone) {
+                if (this.negativeZoneTimer !== null) {
+                    window.clearTimeout(this.negativeZoneTimer);
+                    this.negativeZoneTimer = null;
+                }
+
+                this.negativeZoneTime = Date.now() - this.rtcStartTime;
+            }
         },
 
         play: function () {
-            this.audioElement.play();
+            if (!this.isPaused) {
+                return;
+            }
+
+            this.isPaused = false;
+
+            if (this.negativeZone) {
+                var self = this;
+
+                if (self.negativeZoneTimer !== null) {
+                    window.clearTimeout(self.negativeZoneTimer);
+                    self.negativeZoneTimer = null;
+                }
+
+                self.rtcStartTime = Date.now() - self.negativeZoneTime;
+
+                self.negativeZoneTimer = window.setTimeout(function () {
+                    self.negativeZone = false;
+
+                    var ct = Date.now() - self.rtcStartTime;
+                    self.audioElement.currentTime = ct / 1000;
+                    self.audioElement.play();
+                }, -self.negativeZoneTime);
+            } else {
+                this.audioElement.play();
+            }
         },
 
         seek: function (time) {
-            // TODO
+            if (time < 0) {
+                var self = this;
+                var paused = self.isPaused;
+
+                if (!paused) {
+                    self.pause();
+                }
+
+                self.negativeZone = true;
+                self.negativeZoneTime = time;
+
+                if (paused) {
+                    return;
+                }
+
+                self.play();
+            } else {
+                this.audioElement.currentTime = time / 1000;
+            }
         },
 
         currentTime: function () {
             if (this.isPaused) {
-                return this.rawCurrentTime();
+                if (this.negativeZone) {
+                    return this.negativeZoneTime;
+                } else {
+                    return this.rawCurrentTime();
+                }
             }
 
             return Date.now() - this.rtcStartTime;
