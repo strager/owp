@@ -385,7 +385,7 @@ define('game/Game', [ 'q', 'game/MapState', 'AssetManager', 'util/PubSub', 'Soun
 
                         ease: { width: [ 'smoothstep', 200 ] }
                     }, {
-                        image: 'ranking-s.png',
+                        image: 'ranking-${rank}.png',
                         x: 530,
                         y: 155,
                         scale: 0.7
@@ -419,35 +419,20 @@ define('game/Game', [ 'q', 'game/MapState', 'AssetManager', 'util/PubSub', 'Soun
                     window.location = '.';
                 });
 
-                ui.vars.hit300 = ui.vars.hit100 = ui.vars.hit50 = ui.vars.hit0 = 0;
-                mapState.getAllHitMarkers().forEach(function (hitMarker) {
-                    switch (mapState.ruleSet.getHitMarkerImageName(hitMarker)) {
-                    case 'hit300.png':
-                        ++ui.vars.hit300;
-                        break;
-                    case 'hit100.png':
-                        ++ui.vars.hit100;
-                        break;
-                    case 'hit50.png':
-                        ++ui.vars.hit50;
-                        break;
-                    case 'hit0.png':
-                        ++ui.vars.hit0;
-                        break;
-                    default:
-                        // Ignore
-                        break;
-                    }
-                });
+                var hist = mapState.ruleSet.getHitMarkerHistogram(mapState.getAllHitMarkers())
+                ui.vars.hit300 = hist.hit300;
+                ui.vars.hit100 = hist.hit100;
+                ui.vars.hit50 = hist.hit50;
+                ui.vars.hit0 = hist.hit0;
 
                 ui.vars.maxCombo = 0;
-
                 comboHistory.map.forEach(function (time, combo) {
                     ui.vars.maxCombo = Math.max(ui.vars.maxCombo, combo);
                 });
 
                 ui.vars.score = scoreHistory.getLast(0);
                 ui.vars.accuracy = (accuracyHistory.getLast(0) * 100).toFixed(2);
+                ui.vars.rank = mapState.ruleSet.getTotalRank(mapState.getAllHitMarkers());
 
                 renderCallback = function (renderer) {
                     renderer.renderUi(ui);

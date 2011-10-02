@@ -1,13 +1,17 @@
 define('ui/helpers', [ 'util/ease', 'util/util' ], function (ease, util) {
+    function templateReplace(template, vars) {
+        return template.replace(/\$\{([^}]+)\}/g, function (_, name) {
+            if (Object.prototype.hasOwnProperty.call(vars, name)) {
+                return vars[name];
+            } else {
+                return _;
+            }
+        });
+    }
+
     function bindTemplate(control, boundName, template, vars) {
         control[boundName] = function () {
-            return template.replace(/\$\{([^}]+)\}/g, function (_, name) {
-                if (Object.prototype.hasOwnProperty.call(vars, name)) {
-                    return vars[name];
-                } else {
-                    return _;
-                }
-            });
+            return templateReplace(template, vars);
         };
     }
 
@@ -50,9 +54,31 @@ define('ui/helpers', [ 'util/ease', 'util/util' ], function (ease, util) {
         return eventValues;
     }
 
-    function bindEasable(control, boundName, valueTable, events) {
-        var fromValue = valueTable['default'];
-        var toValue = valueTable['default'];
+    function bindValue(control, boundName, events, valueCallback) {
+        var valueLoaded = false;
+        var value;
+
+        function currentValue() {
+            if (!valueLoaded) {
+                value = valueCallback.call(control, 'init');
+                valueLoaded = true;
+            }
+
+            return value;
+        }
+
+        control[boundName] = currentValue;
+
+        Object.keys(events).forEach(function (eventType) {
+            events[eventType].subscribe(function () {
+                value = valueCallback.call(control, eventType);
+            });
+        });
+    }
+
+    function bindEasable(control, boundName, events, valueCallback) {
+        var valueLoaded = false;
+        var fromValue, toValue;
 
         var startDate = Date.now();
 
@@ -61,6 +87,13 @@ define('ui/helpers', [ 'util/ease', 'util/util' ], function (ease, util) {
         var easeFn = ease.smoothstep;
 
         function currentValue() {
+            if (!valueLoaded) {
+                fromValue = valueCallback.call(control, 'init');
+                toValue = fromValue;
+                valueLoaded = true;
+                return fromValue;
+            }
+
             if (easeDuration <= 0) {
                 return toValue;
             }
@@ -74,7 +107,7 @@ define('ui/helpers', [ 'util/ease', 'util/util' ], function (ease, util) {
         Object.keys(events).forEach(function (eventType) {
             events[eventType].subscribe(function () {
                 fromValue = currentValue();
-                toValue = valueTable[eventType];
+                toValue = valueCallback.call(control, eventType);
                 startDate = Date.now();
             });
         });
@@ -87,8 +120,10 @@ define('ui/helpers', [ 'util/ease', 'util/util' ], function (ease, util) {
     }
 
     return {
+        templateReplace: templateReplace,
         bindTemplate: bindTemplate,
         buildEventValues: buildEventValues,
+        bindValue: bindValue,
         bindEasable: bindEasable,
         bindConstant: bindConstant
     };
