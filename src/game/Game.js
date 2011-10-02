@@ -250,7 +250,7 @@ define('game/Game', [ 'q', 'game/MapState', 'AssetManager', 'util/PubSub', 'Soun
                     {
                         image: 'pause-continue.png',
                         x: 320,
-                        y: 240,
+                        y: 200,
                         alignX: 0.5,
                         alignY: 0.5,
                         scale: 1.0,
@@ -260,7 +260,7 @@ define('game/Game', [ 'q', 'game/MapState', 'AssetManager', 'util/PubSub', 'Soun
                     }, {
                         image: 'pause-back.png',
                         x: 320,
-                        y: 310,
+                        y: 330,
                         alignX: 0.5,
                         alignY: 0.5,
                         scale: 1.0,
