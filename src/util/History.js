@@ -23,9 +23,13 @@ define('util/History', [ 'util/SortedMap' ], function (SortedMap) {
             return this.map.values[index];
         },
 
-        getFirst: function () {
+        getFirst: function (def) {
             if (this.map.values.length === 0) {
-                throw new Error('Cannot get first history item of empty history');
+                if (arguments.length === 0) {
+                    throw new Error('Cannot get first history item of empty history');
+                } else {
+                    return def;
+                }
             }
 
             return this.map.values[0];
