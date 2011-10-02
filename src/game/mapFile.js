@@ -56,6 +56,7 @@ define('game/mapFile', [ 'game/RuleSet', 'game/Map', 'game/Combo', 'game/MapInfo
             sliderMultiplier:   assetConfig.Difficulty.values.SliderMultiplier,
             sliderTickRate:     assetConfig.Difficulty.values.SliderTickRate,
             stackLeniency:      assetConfig.General.values.StackLeniency,
+            audioLeadIn:        assetConfig.General.values.AudioLeadIn,
             timingPoints:       readTimingPoints(assetConfig),
             breakRanges:        readBreakRanges(assetConfig)
         });

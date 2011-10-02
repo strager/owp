@@ -20,7 +20,7 @@ define('game/RuleSet', [ 'util/util', 'game/mapObject', 'util/History', 'util/Cu
         var ruleSet = new RuleSet();
 
         var fields = (
-            'approachRate,overallDifficulty,hpDrain,circleSize,sliderMultiplier,sliderTickRate,stackLeniency'
+            'approachRate,overallDifficulty,hpDrain,circleSize,sliderMultiplier,sliderTickRate,stackLeniency,audioLeadIn'
         ).split(',');
 
         util.extendObjectWithFields(ruleSet, fields, settings);

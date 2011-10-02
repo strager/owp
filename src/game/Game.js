@@ -105,8 +105,7 @@ define('game/Game', [ 'q', 'game/MapState', 'AssetManager', 'util/PubSub', 'Soun
                 var exitTime = mapState.ruleSet.getMapExitTime(mapInfo.map);
                 timeline.add(MAP_END, true, exitTime);
 
-                // TODO Map-specified lead-in
-                audio.seek(-4000);
+                audio.seek(-mapState.ruleSet.audioLeadIn);
             },
 
             enter_ready_to_play: function () {
