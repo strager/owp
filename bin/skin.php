@@ -62,6 +62,8 @@ $skinFiles = array(
     'pause-overlay',
     'pause-retry',
 
+    'play-skip',
+
     'default-0',
     'default-1',
     'default-2',

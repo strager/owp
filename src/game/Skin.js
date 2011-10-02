@@ -71,6 +71,8 @@ define('game/Skin', [ 'util/util' ], function (util) {
                     'pause-overlay.png',
                     'pause-retry.png',
 
+                    'play-skip.png',
+
                     'default-0.png',
                     'default-1.png',
                     'default-2.png',

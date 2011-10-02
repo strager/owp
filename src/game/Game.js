@@ -1,4 +1,4 @@
-define('game/Game', [ 'q', 'game/MapState', 'AssetManager', 'util/PubSub', 'Soundboard', 'util/Timeline', 'util/gPubSub', 'util/History', 'agentInfo', 'util/audioTimer', 'game/RuleSet', 'game/mapObject', 'game/Combo', 'game/TimingPoint', 'game/BezierSliderCurve', 'util/StateMachine', 'ui/UI', 'util/util', 'gfx/View' ], function (Q, MapState, AssetManager, PubSub, Soundboard, Timeline, gPubSub, History, agentInfo, audioTimer, RuleSet, mapObject, Combo, TimingPoint, BezierSliderCurve, StateMachine, UI, util, View) {
+define('game/Game', [ 'q', 'game/MapState', 'AssetManager', 'util/PubSub', 'Soundboard', 'util/Timeline', 'util/gPubSub', 'util/History', 'agentInfo', 'game/RuleSet', 'game/mapObject', 'game/Combo', 'game/TimingPoint', 'game/BezierSliderCurve', 'util/StateMachine', 'ui/UI', 'util/util', 'gfx/View', 'util/CoolAudio' ], function (Q, MapState, AssetManager, PubSub, Soundboard, Timeline, gPubSub, History, agentInfo, RuleSet, mapObject, Combo, TimingPoint, BezierSliderCurve, StateMachine, UI, util, View, CoolAudio) {
     var GameStateMachine = StateMachine.create([
         { name: 'load_play',   from: 'none',          to: 'loading'       },
         { name: 'loaded_play', from: 'loading',       to: 'ready_to_play' },
@@ -35,7 +35,6 @@ define('game/Game', [ 'q', 'game/MapState', 'AssetManager', 'util/PubSub', 'Soun
         var isLeftDown = false;
         var isRightDown = false;
         var trackMouse = true;
-        var currentTime = null;
 
         var scoreHistory = new History();
         var accuracyHistory = new History();
@@ -91,8 +90,7 @@ define('game/Game', [ 'q', 'game/MapState', 'AssetManager', 'util/PubSub', 'Soun
                             ]);
                         })
                         .then(function (r) {
-                            audio = r[0];
-                            currentTime = audioTimer.auto(audio);
+                            audio = new CoolAudio(r[0]);
                             mapState = MapState.fromMapInfo(mapInfo, timeline);
                         }),
                     Q.ref(skin)
@@ -106,6 +104,8 @@ define('game/Game', [ 'q', 'game/MapState', 'AssetManager', 'util/PubSub', 'Soun
             on_loaded_play: function () {
                 var exitTime = mapState.ruleSet.getMapExitTime(mapInfo.map);
                 timeline.add(MAP_END, true, exitTime);
+
+                audio.seek(-mapState.ruleSet.audioLeadIn);
             },
 
             enter_ready_to_play: function () {
@@ -150,13 +150,50 @@ define('game/Game', [ 'q', 'game/MapState', 'AssetManager', 'util/PubSub', 'Soun
                     'soft-slidertick.wav'
                 ]);
 
+                var latestSkipTime = mapState.ruleSet.getMapLatestSkipTime(mapInfo.map);
+                var skipToTime = mapState.ruleSet.getMapSkipToTime(mapInfo.map);
+
+                function canSkip() {
+                    var time = audio.currentTime();
+                    return time < latestSkipTime && audio.canSeek(skipToTime);
+                }
+
+                ui = new UI(skin.valueOf().assetManager);
+                boundEvents.push(mousePubSub.subscribe(function (e) {
+                    if (canSkip()) {
+                        ui.mouse.publish(e);
+                    }
+                }));
+
+                ui.build([
+                    {
+                        image: 'play-skip.png',
+                        x: 640,
+                        y: 480,
+                        alignX: 1,
+                        alignY: 1,
+                        scale: 0.5,
+
+                        click: { action: 'skip' }
+                    }
+                ]);
+
+                ui.events.skip = new PubSub();
+                ui.events.skip.subscribe(function () {
+                    audio.seek(skipToTime);
+                });
+
                 renderCallback = function (renderer) {
-                    var time = currentTime();
+                    var time = audio.currentTime();
                     renderMap(renderer, time);
+
+                    if (canSkip()) {
+                        renderer.renderUi(ui);
+                    }
                 };
 
                 debugInfoCallback = function () {
-                    var time = currentTime();
+                    var time = audio.currentTime();
 
                     return {
                         'current map time (ms)': time,
@@ -169,7 +206,7 @@ define('game/Game', [ 'q', 'game/MapState', 'AssetManager', 'util/PubSub', 'Soun
                 audio.play();
 
                 boundEvents.push(mousePubSub.subscribe(function (e) {
-                    var time = currentTime();
+                    var time = audio.currentTime();
 
                     e = util.clone(e);
                     var pos = View.map.playfieldToView(e.x, e.y);
@@ -227,7 +264,7 @@ define('game/Game', [ 'q', 'game/MapState', 'AssetManager', 'util/PubSub', 'Soun
                 }));
 
                 boundEvents.push(gPubSub.subscribe(function () {
-                    var time = currentTime();
+                    var time = audio.currentTime();
 
                     mapState.processSlides(time, mouseHistory);
                     mapState.processMisses(time);
@@ -282,7 +319,7 @@ define('game/Game', [ 'q', 'game/MapState', 'AssetManager', 'util/PubSub', 'Soun
                 });
 
                 renderCallback = function (renderer) {
-                    var time = currentTime();
+                    var time = audio.currentTime();
                     renderMap(renderer, time);
                     renderer.renderColourOverlay([ 0, 0, 0, 128 ]);
                     renderer.renderUi(ui);
