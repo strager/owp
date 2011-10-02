@@ -1,4 +1,4 @@
-define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/gPubSub', 'util/Cache', 'util/util', 'loading', 'gfx/View' ], function (MapState, mapObject, gPubSub, Cache, util, loadingImageSrc, View) {
+define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/gPubSub', 'util/Cache', 'util/util', 'loading', 'gfx/View', 'game/storyboardObject' ], function (MapState, mapObject, gPubSub, Cache, util, loadingImageSrc, View, storyboardObject) {
     function makeTexture(gl, image) {
         var texture = gl.createTexture();
         texture.image = image;
@@ -846,12 +846,12 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/gPubSub',
         function renderBackground() {
             clear(1, 1, 1, 1);
 
-            var bg = storyboard.getBackground(0);
+            var bg = storyboard.getBackgroundFilename(time);
             if (!bg) {
                 return;
             }
 
-            var texture = textures.get(bg.fileName, storyboardKey);
+            var texture = textures.get(bg, storyboardKey);
             var backgroundImage = texture.image;
 
             var containerW = 640;
@@ -872,6 +872,28 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/gPubSub',
             });
         }
 
+        function renderStoryboardSprite(object) {
+            var texture = textures.get(object.filename, storyboardKey);
+
+            // TODO Alignment, scale, rotation
+
+            sprite({
+                x: object.x,
+                y: object.y,
+                color: [ object.color[0], object.color[1], object.color[2], object.color[3] * object.alpha ],
+                scale: 1,
+                texture: texture
+            });
+        }
+
+        function renderStoryboardObject(object) {
+            if (object instanceof storyboardObject.Sprite) {
+                renderStoryboardSprite(object);
+            }
+
+            // Ignore unknown objects
+        }
+
         function renderStoryboard() {
             // Video rendering is more trouble than its worth right now.
             // Sorry.  =[
@@ -888,7 +910,8 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/gPubSub',
             view(View.storyboard, function () {
                 renderBackground();
 
-                // TODO Real storyboard stuff
+                var objects = storyboard.getObjectsAtTime(time);
+                objects.forEach(renderStoryboardObject);
             });
         }
         // Storyboard rendering }}}
@@ -1420,26 +1443,7 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/gPubSub',
                 return;
             }
 
-            var storyboardKey = assetManager;
-
-            // A bit of a HACK
-            var background = storyboard.getBackground(0);
-            if (background) {
-                var backgroundGraphic = assetManager.get(background.fileName, 'image');
-                textureCache.get(background.fileName, storyboardKey);
-            }
-
-            var video = storyboard.videos[0];
-            if (video) {
-                var v = assetManager.get(video.fileName, 'video');
-                if (v) {
-                    videoElement = v;
-                    videoElement.style.position = 'absolute';
-                    videoElement.volume = 0;
-                    videoElement.pause();
-                    container.insertBefore(videoElement, canvas);
-                }
-            }
+            // TODO Preload stuff
 
             storyboardInitd = true;
         }

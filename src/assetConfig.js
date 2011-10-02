@@ -21,6 +21,9 @@ define('assetConfig', [ ], function () {
             for (i = 0; i < lines.length; ++i) {
                 line = lines[i];
 
+                // Strip comments
+                line = line.replace(/\/\/.*$/, '');
+
                 if (line.trim() === '') {
                     // Ignore blank lines
                     continue;

@@ -1,5 +1,5 @@
 /*jshint bitwise: false */
-define('game/mapFile', [ 'game/RuleSet', 'game/Map', 'game/Combo', 'game/MapInfo', 'game/mapObject', 'game/Storyboard', 'game/Skin', 'game/BezierSliderCurve', 'game/CatmullSliderCurve', 'game/TimingPoint', 'game/BreakRange' ], function (RuleSet, Map, Combo, MapInfo, mapObject, Storyboard, Skin, BezierSliderCurve, CatmullSliderCurve, TimingPoint, BreakRange) {
+define('game/mapFile', [ 'game/RuleSet', 'game/Map', 'game/Combo', 'game/MapInfo', 'game/mapObject', 'game/Storyboard', 'game/Skin', 'game/BezierSliderCurve', 'game/CatmullSliderCurve', 'game/TimingPoint', 'game/BreakRange', 'game/storyboardObject' ], function (RuleSet, Map, Combo, MapInfo, mapObject, Storyboard, Skin, BezierSliderCurve, CatmullSliderCurve, TimingPoint, BreakRange, storyboardObject) {
     function readSkin(assetConfig, assetManager) {
         return Skin.fromSettings(assetManager, {
             name:   assetConfig.General.values.Name,
@@ -249,41 +249,103 @@ define('game/mapFile', [ 'game/RuleSet', 'game/Map', 'game/Combo', 'game/MapInfo
         });
     }
 
-    function readStoryboard(assetConfig) {
-        var storyboard = new Storyboard();
+    function readStoryboardSprite(data) {
+        // Sprite,Background,Centre,"Storyboard\Blurry.jpg",320,240
+        var defLine = data.shift();
+        if (defLine.length !== 6) {
+            return null;
+        }
 
-        var data = assetConfig.Events.lists;
-        var i, line;
+        // TODO Read alignment (data[2])
+        var sprite = new storyboardObject.Sprite({
+            layer: defLine[1],
+            filename: defLine[3].replace(/^"([^"]*)"$/, '$1'),
+            x: parseFloat(defLine[4], 10),
+            y: parseFloat(defLine[5], 10)
+        });
 
-        for (i = 0; i < data.length; ++i) {
-            line = data[i];
+        while (data.length) {
+            if (data[0][0].substr(0, 1) !== ' ') {
+                break;
+            }
 
-            switch (line[0]) {
-            case '0':
-                storyboard.backgrounds.push({
-                    time: parseInt(line[1], 10),
-                    fileName: line[2].replace(/^"([^"]*)"$/, '$1')
-                });
-
+            var line = data.shift();
+            switch (line[0].trim()) {
+            case 'F':
+                sprite.addCommand(new storyboardObject.AlphaCommand(
+                    storyboardObject.easeFunctions[line[1]],
+                    parseFloat(line[2], 10),
+                    parseFloat(line[3], 10),
+                    parseFloat(line[4], 10),
+                    parseFloat(line[5], 10)
+                ));
                 break;
 
-                // TODO Support more storyboard command types
-
-            case 'Video':
-                storyboard.videos.push({
-                    time: parseInt(line[1], 10),
-                    fileName: line[2].replace(/^"([^"]*)"$/, '$1')
-                });
-
+            case 'M':
+                sprite.addCommand(new storyboardObject.MoveCommand(
+                    storyboardObject.easeFunctions[line[1]],
+                    parseFloat(line[2], 10),
+                    parseFloat(line[3], 10),
+                    [ parseFloat(line[4], 10), parseFloat(line[5], 10) ],
+                    [ parseFloat(line[6], 10), parseFloat(line[7], 10) ]
+                ));
                 break;
+
+            // TODO More storyboard commands
 
             default:
-                // Ignore
+                console.warn('Unknown storyboard command:', line[0].trim());
                 break;
             }
         }
 
-        return storyboard;
+        return sprite;
+    }
+
+    function readStoryboard(assetConfig) {
+        var objects = [ ];
+        var data = assetConfig.Events.lists.slice();
+        var line;
+
+        while (data.length > 0) {
+            var line = data[0];
+            var object = null;
+            switch (line[0]) {
+            case '0':
+                object = new storyboardObject.Background(
+                    line[2].replace(/^"([^"]*)"$/, '$1'),
+                    parseFloat(line[1], 10)
+                );
+                data.shift();
+                break;
+
+            case 'Video':
+                object = new storyboardObject.Video(
+                    line[2].replace(/^"([^"]*)"$/, '$1'),
+                    parseFloat(line[1], 10)
+                );
+                data.shift();
+                break;
+
+            case 'Sprite':
+                object = readStoryboardSprite(data);
+                break;
+
+            // TODO Support more storyboard object types
+
+            default:
+                // Ignore
+                console.warn('Unknown storyboard object type:', line[0]);
+                data.shift();
+                break;
+            }
+
+            if (object) {
+                objects.push(object);
+            }
+        }
+
+        return new Storyboard(objects);
     }
 
     function readMap(assetConfig) {
@@ -303,6 +365,7 @@ define('game/mapFile', [ 'game/RuleSet', 'game/Map', 'game/Combo', 'game/MapInfo
 
     return {
         readSkin: readSkin,
-        readMap: readMap
+        readMap: readMap,
+        readStoryboard: readStoryboard
     };
 });

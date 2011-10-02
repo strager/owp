@@ -1,38 +1,60 @@
-define('game/Storyboard', [ ], function () {
-    function Storyboard() {
-        this.sounds = [ ];
-        this.backgrounds = [ ];
-        this.videos = [ ];
-        this.images = [ ];
+define('game/Storyboard', [ 'game/storyboardObject', 'util/Timeline', 'util/History' ], function (storyboardObject, Timeline, History) {
+    var OBJECT_LIFETIME = 'object lifetime';
+
+    function Storyboard(objects) {
+        var images = [ ];
+        var videos = [ ];
+        var sounds = [ ];
+
+        var objectTimeline = new Timeline();
+        var backgroundHistory = new History();
+
+        objects.forEach(function (object) {
+            if (object instanceof storyboardObject.Sprite) {
+                var lifetime = object.getLifetime();
+                objectTimeline.add(OBJECT_LIFETIME, object, lifetime[0], lifetime[1]);
+
+                images.push(object.filename);
+            }
+
+            if (object instanceof storyboardObject.Background) {
+                backgroundHistory.add(object.time, object);
+
+                images.push(object.filename);
+            }
+            
+            if (object instanceof storyboardObject.Video) {
+                videos.push(object.filename);
+            }
+        });
+
+        this.assetFilenames = {
+            'image': images,
+            //'video': videos,
+            'sound': sounds
+        };
+
+        this.objects = objects.slice();
+
+        this.objectTimeline = objectTimeline;
+        this.backgroundHistory = backgroundHistory;
     }
 
     Storyboard.prototype = {
-        getBackground: function (time) {
-            var i, background = null;
+        getBackgroundFilename: function (time) {
+            var bg = this.backgroundHistory.getDataAtTime(time);
+            return bg && bg.filename;
+        },
 
-            for (i = 0; i < this.backgrounds.length; ++i) {
-                if (this.backgrounds[i].time <= time) {
-                    if (background === null || this.backgrounds[i].time < background.time) {
-                        background = this.backgrounds[i];
-                    }
-                }
-            }
-
-            return background;
+        getObjectsAtTime: function (time) {
+            var objects = this.objectTimeline.getAllAtTime(time, OBJECT_LIFETIME);
+            return objects.map(function (object) {
+                return object.getAtTime(time);
+            });
         },
 
         preload: function (assetManager) {
-            var files = {
-                'image': this.backgrounds.map(function (background) {
-                    return background.fileName;
-                }),
-
-                'video': this.videos.map(function (video) {
-                    return video.fileName;
-                })
-            };
-
-            return assetManager.preload(files);
+            return assetManager.preload(this.assetFilenames);
         }
     };
 
