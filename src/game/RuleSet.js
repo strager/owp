@@ -486,7 +486,7 @@ define('game/RuleSet', [ 'util/util', 'game/mapObject', 'util/History', 'util/Cu
             var hist = this.getHitMarkerHistogram(hitMarkers);
 
             if (hist.hit100 === 0 && hist.hit50 === 0 && hist.hit0 === 0) {
-                return 'ss';
+                return 'x';
             }
 
             var total = hist.hit300 + hist.hit100 + hist.hit50 + hist.hit0;
