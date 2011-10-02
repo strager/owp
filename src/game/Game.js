@@ -167,14 +167,13 @@ define('game/Game', [ 'q', 'game/MapState', 'AssetManager', 'util/PubSub', 'Soun
 
                 ui.build([
                     {
-                        image: 'pause-continue.png',
-                        x: 320,
-                        y: 200,
-                        alignX: 0.5,
-                        alignY: 0.5,
-                        scale: 1.0,
+                        image: 'play-skip.png',
+                        x: 640,
+                        y: 480,
+                        alignX: 1,
+                        alignY: 1,
+                        scale: 0.5,
 
-                        hover: { scale: 1.1 },
                         click: { action: 'skip' }
                     }
                 ]);
