@@ -448,6 +448,68 @@ define('game/RuleSet', [ 'util/util', 'game/mapObject', 'util/History', 'util/Cu
             return currentScore;
         },
 
+        getHitMarkerHistogram: function (hitMarkers) {
+            var hit300 = 0;
+            var hit100 = 0;
+            var hit50 = 0;
+            var hit0 = 0;
+
+            hitMarkers.forEach(function (hitMarker) {
+                switch (this.getHitMarkerImageName(hitMarker)) {
+                case 'hit300.png':
+                    ++hit300;
+                    break;
+                case 'hit100.png':
+                    ++hit100;
+                    break;
+                case 'hit50.png':
+                    ++hit50;
+                    break;
+                case 'hit0.png':
+                    ++hit0;
+                    break;
+                default:
+                    // Ignore
+                    break;
+                }
+            }, this);
+
+            return {
+                hit300: hit300,
+                hit100: hit100,
+                hit50: hit50,
+                hit0: hit0
+            };
+        },
+
+        getTotalRank: function (hitMarkers) {
+            var hist = this.getHitMarkerHistogram(hitMarkers);
+
+            if (hist.hit100 === 0 && hist.hit50 === 0 && hist.hit0 === 0) {
+                return 'x';
+            }
+
+            var total = hist.hit300 + hist.hit100 + hist.hit50 + hist.hit0;
+
+            if ((hist.hit300 / total) > 0.90 && (hist.hit50 / total) < 0.01 && hist.hit0 === 0) {
+                return 's';
+            }
+
+            if (((hist.hit300 / total) > 0.80 && hist.hit0 === 0) || (hist.hit300 / total) > 0.90) {
+                return 'a';
+            }
+
+            if (((hist.hit300 / total) > 0.70 && hist.hit0 === 0) || (hist.hit300 / total) > 0.80) {
+                return 'b';
+            }
+
+            if ((hist.hit300 / total) > 0.60) {
+                return 'c';
+            }
+
+            return 'd';
+        },
+
         getActiveCombo: function (hitMarkers) {
             hitMarkers = hitMarkers.sort(function (a, b) {
                 return a.time > b.time ? 1 : -1;

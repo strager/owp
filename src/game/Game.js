@@ -43,6 +43,30 @@ define('game/Game', [ 'q', 'game/MapState', 'AssetManager', 'util/PubSub', 'Soun
 
         var ui = null;
 
+        function renderMap(renderer, time) {
+            var breakiness = mapState.ruleSet.getBreakinessAt(time);
+
+            renderer.renderStoryboard({
+                storyboard: mapInfo.storyboard,
+                assetManager: mapAssetManager,
+                breakiness: breakiness
+            }, time);
+            renderer.renderMap({
+                ruleSet: mapState.ruleSet,
+                objects: mapState.getVisibleObjects(time),
+                skin: skin.valueOf(),
+                mouseHistory: mouseHistory
+            }, time);
+            renderer.renderHud({
+                skin: skin.valueOf(),
+                ruleSet: mapState.ruleSet,
+                scoreHistory: scoreHistory,
+                accuracyHistory: accuracyHistory,
+                comboHistory: comboHistory,
+                mapProgress: mapState.ruleSet.getMapProgress(mapInfo.map, time)
+            }, time);
+        }
+
         var sm = new GameStateMachine('none', {
             on_load_play: function (mapRoot, mapName) {
                 if (!skin) {
@@ -128,27 +152,7 @@ define('game/Game', [ 'q', 'game/MapState', 'AssetManager', 'util/PubSub', 'Soun
 
                 renderCallback = function (renderer) {
                     var time = currentTime();
-                    var breakiness = mapState.ruleSet.getBreakinessAt(time);
-
-                    renderer.renderStoryboard({
-                        storyboard: mapInfo.storyboard,
-                        assetManager: mapAssetManager,
-                        breakiness: breakiness
-                    }, time);
-                    renderer.renderMap({
-                        ruleSet: mapState.ruleSet,
-                        objects: mapState.getVisibleObjects(time),
-                        skin: skin.valueOf(),
-                        mouseHistory: mouseHistory
-                    }, time);
-                    renderer.renderHud({
-                        skin: skin.valueOf(),
-                        ruleSet: mapState.ruleSet,
-                        scoreHistory: scoreHistory,
-                        accuracyHistory: accuracyHistory,
-                        comboHistory: comboHistory,
-                        mapProgress: mapState.ruleSet.getMapProgress(mapInfo.map, time)
-                    }, time);
+                    renderMap(renderer, time);
                 };
 
                 debugInfoCallback = function () {
@@ -239,34 +243,54 @@ define('game/Game', [ 'q', 'game/MapState', 'AssetManager', 'util/PubSub', 'Soun
             enter_paused: function () {
                 audio.pause();
 
+                ui = new UI(skin.valueOf().assetManager);
+                boundEvents.push(mousePubSub.pipeTo(ui.mouse));
+
+                ui.build([
+                    {
+                        image: 'pause-continue.png',
+                        x: 320,
+                        y: 200,
+                        alignX: 0.5,
+                        alignY: 0.5,
+                        scale: 1.0,
+
+                        hover: { scale: 1.1 },
+                        click: { action: 'play' }
+                    }, {
+                        image: 'pause-back.png',
+                        x: 320,
+                        y: 330,
+                        alignX: 0.5,
+                        alignY: 0.5,
+                        scale: 1.0,
+
+                        hover: { scale: 1.1 },
+                        click: { action: 'menu' }
+                    }
+                ]);
+
+                ui.events.play = new PubSub();
+                ui.events.play.subscribe(function () {
+                    sm.unpause();
+                });
+
+                ui.events.menu = new PubSub();
+                ui.events.menu.subscribe(function () {
+                    // HACK =]
+                    window.location = '.';
+                });
+
                 renderCallback = function (renderer) {
                     var time = currentTime();
-                    var breakiness = mapState.ruleSet.getBreakinessAt(time);
-
-                    renderer.renderStoryboard({
-                        storyboard: mapInfo.storyboard,
-                        assetManager: mapAssetManager,
-                        breakiness: breakiness
-                    }, time);
-                    renderer.renderMap({
-                        ruleSet: mapState.ruleSet,
-                        objects: mapState.getVisibleObjects(time),
-                        skin: skin.valueOf(),
-                        mouseHistory: mouseHistory
-                    }, time);
-                    renderer.renderHud({
-                        skin: skin.valueOf(),
-                        ruleSet: mapState.ruleSet,
-                        scoreHistory: scoreHistory,
-                        accuracyHistory: accuracyHistory,
-                        comboHistory: comboHistory,
-                        mapProgress: mapState.ruleSet.getMapProgress(mapInfo.map, time)
-                    }, time);
+                    renderMap(renderer, time);
                     renderer.renderColourOverlay([ 0, 0, 0, 128 ]);
+                    renderer.renderUi(ui);
                 };
             },
 
             exit_paused: function () {
+                clearBoundEvents();
                 audio.play();
             },
 
@@ -361,7 +385,7 @@ define('game/Game', [ 'q', 'game/MapState', 'AssetManager', 'util/PubSub', 'Soun
 
                         ease: { width: [ 'smoothstep', 200 ] }
                     }, {
-                        image: 'ranking-s.png',
+                        image: 'ranking-${rank}.png',
                         x: 530,
                         y: 155,
                         scale: 0.7
@@ -395,35 +419,20 @@ define('game/Game', [ 'q', 'game/MapState', 'AssetManager', 'util/PubSub', 'Soun
                     window.location = '.';
                 });
 
-                ui.vars.hit300 = ui.vars.hit100 = ui.vars.hit50 = ui.vars.hit0 = 0;
-                mapState.getAllHitMarkers().forEach(function (hitMarker) {
-                    switch (mapState.ruleSet.getHitMarkerImageName(hitMarker)) {
-                    case 'hit300.png':
-                        ++ui.vars.hit300;
-                        break;
-                    case 'hit100.png':
-                        ++ui.vars.hit100;
-                        break;
-                    case 'hit50.png':
-                        ++ui.vars.hit50;
-                        break;
-                    case 'hit0.png':
-                        ++ui.vars.hit0;
-                        break;
-                    default:
-                        // Ignore
-                        break;
-                    }
-                });
+                var hist = mapState.ruleSet.getHitMarkerHistogram(mapState.getAllHitMarkers())
+                ui.vars.hit300 = hist.hit300;
+                ui.vars.hit100 = hist.hit100;
+                ui.vars.hit50 = hist.hit50;
+                ui.vars.hit0 = hist.hit0;
 
                 ui.vars.maxCombo = 0;
-
                 comboHistory.map.forEach(function (time, combo) {
                     ui.vars.maxCombo = Math.max(ui.vars.maxCombo, combo);
                 });
 
                 ui.vars.score = scoreHistory.getLast(0);
                 ui.vars.accuracy = (accuracyHistory.getLast(0) * 100).toFixed(2);
+                ui.vars.rank = mapState.ruleSet.getTotalRank(mapState.getAllHitMarkers());
 
                 renderCallback = function (renderer) {
                     renderer.renderUi(ui);

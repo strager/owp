@@ -3,12 +3,32 @@ define('ui/Control', [ 'util/util', 'ui/helpers', 'util/PubSub' ], function (uti
 
     // Values ordered by increasing priority
     var eventStatePriorities = {
+        'init':      [ 'default' ],
         'click':     [ 'default', 'hover', 'click' ],
         'hoverIn':   [ 'default', 'hover' ],
         'hoverOut':  [ 'default' ],
         'mouseDown': [ 'default', 'hover', 'mouseDown' ],
         'mouseUp':   [ 'default', 'hover' ]
     };
+
+    function getValue(spec, name, eventType) {
+        var value /* = undefined */;
+        var states = eventStatePriorities[eventType];
+        states.forEach(function (state) {
+            var v;
+            if (state === 'default') {
+                v = spec[name];
+            } else if (spec[state]) {
+                v = spec[state][name];
+            }
+
+            if (typeof v !== 'undefined') {
+                value = v;
+            }
+        });
+
+        return value;
+    }
 
     function Control(ui, spec) {
         spec = util.extend({
@@ -25,8 +45,6 @@ define('ui/Control', [ 'util/util', 'ui/helpers', 'util/PubSub' ], function (uti
             action: null
         }, spec);
 
-        util.extend(this, spec.vars);
-
         this.events = { };
         eventTypes.forEach(function (type) {
             this.events[type] = new PubSub();
@@ -37,20 +55,51 @@ define('ui/Control', [ 'util/util', 'ui/helpers', 'util/PubSub' ], function (uti
         var props = 'x,y,button,alignX,alignY'.split(',');
 
         if (spec.image) {
-            var image = ui.assetManager.get(spec.image, 'image');
-            uiHelpers.bindConstant(this, 'image', image);
+            uiHelpers.bindValue(this, 'image', this.events, function (eventType) {
+                var imageTemplate = getValue(spec, 'image', eventType);
+                var imageName = uiHelpers.templateReplace(imageTemplate, ui.vars);
+                return ui.assetManager.get(imageName, 'image');
+            });
 
-            if (!spec.width && !spec.height) {
-                spec.width = image.width * spec.scale;
-                spec.height = image.height * spec.scale;
-            } else if (!spec.width) {
-                spec.width = spec.height / image.height * image.width;
-            } else if (!spec.height) {
-                spec.height = spec.width / image.width * image.height;
-            }
+            uiHelpers.bindEasable(this, 'width', this.events, function (eventType) {
+                var image = this.image();
 
-            props.push('width');
-            props.push('height');
+                var width = getValue(spec, 'width', eventType);
+                if (!width) {
+                    var height = getValue(spec, 'height', eventType);
+                    if (!height) {
+                        // Neither width nor height given; use image width
+                        width = image.width;
+                    } else {
+                        // Given height but not width; calculate width given
+                        // height and correct aspect ratio
+                        width = height / image.height * image.width;
+                    }
+                }
+
+                var scale = getValue(spec, 'scale', eventType);
+                return width * scale;
+            });
+
+            uiHelpers.bindEasable(this, 'height', this.events, function (eventType) {
+                var image = this.image();
+
+                var height = getValue(spec, 'height', eventType);
+                if (!height) {
+                    var width = getValue(spec, 'width', eventType);
+                    if (!width) {
+                        // Neither width nor height given; use image height
+                        height = image.height;
+                    } else {
+                        // Given width but not height; calculate height given
+                        // width and correct aspect ratio
+                        height = width / image.width * image.height;
+                    }
+                }
+
+                var scale = getValue(spec, 'scale', eventType);
+                return height * scale;
+            });
         }
 
         if (typeof spec.text !== 'undefined') {
@@ -60,10 +109,10 @@ define('ui/Control', [ 'util/util', 'ui/helpers', 'util/PubSub' ], function (uti
         }
 
         props.forEach(function (prop) {
-            var eventValues = uiHelpers.buildEventValues(eventStatePriorities, prop, spec);
-            uiHelpers.bindEasable(this, prop, eventValues, this.events);
+            uiHelpers.bindEasable(this, prop, this.events, function (eventType) {
+                return getValue(spec, prop, eventType);
+            });
         }, this);
-
 
         var eventActions = uiHelpers.buildEventValues(eventStatePriorities, 'action', spec);
         Object.keys(eventActions).forEach(function (eventType) {
