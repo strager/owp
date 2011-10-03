@@ -344,6 +344,20 @@ define('game/mapFile', [ 'game/RuleSet', 'game/Map', 'game/Combo', 'game/MapInfo
                 ));
                 break;
 
+            case 'C':
+                var fromTime = number(line[2], 0);
+                var fromR = number(line[4], 0);
+                var fromG = number(line[5], 0);
+                var fromB = number(line[6], 0);
+                commands.push(new storyboardObject.ColorCommand(
+                    storyboardObject.easeFunctions[line[1]],
+                    fromTime,
+                    number(line[3], fromTime),
+                    [ fromR, fromG, fromB ],
+                    [ number(line[7], fromR), number(line[8], fromG), number(line[0], fromB) ]
+                ));
+                break;
+
             case 'L':
                 // TODO
                 console.warn('Storyboard loops not supported');

@@ -155,6 +155,27 @@ define('game/storyboardObject', [ 'util/util', 'util/ease', 'util/CueList' ], fu
         sprite.y = this.fromValue;
     };
 
+    function ColorCommand(easeFn, fromTime, toTime, fromValue, toValue) {
+        this.easeFn = easeFn;
+        this.fromTime = fromTime;
+        this.toTime = toTime;
+        this.fromValue = fromValue;
+        this.toValue = toValue;
+    }
+
+    ColorCommand.prototype.applyTo = function (sprite, time) {
+        var t = this.easeFn(this.fromTime, this.toTime, time);
+        sprite.color[0] = ease.scale(this.fromValue[0], this.toValue[0], t);
+        sprite.color[1] = ease.scale(this.fromValue[1], this.toValue[1], t);
+        sprite.color[2] = ease.scale(this.fromValue[2], this.toValue[2], t);
+    };
+
+    ColorCommand.prototype.initialize = function (sprite) {
+        sprite.color[0] = this.fromValue[0];
+        sprite.color[1] = this.fromValue[1];
+        sprite.color[2] = this.fromValue[2];
+    };
+
     return {
         Background: Background,
         Video: Video,
@@ -165,6 +186,7 @@ define('game/storyboardObject', [ 'util/util', 'util/ease', 'util/CueList' ], fu
         MoveCommand: MoveCommand,
         MoveXCommand: MoveXCommand,
         MoveYCommand: MoveYCommand,
+        ColorCommand: ColorCommand,
 
         easeFunctions: {
             // TODO Real easing functions
