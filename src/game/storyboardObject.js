@@ -85,6 +85,23 @@ define('game/storyboardObject', [ 'util/util', 'util/ease', 'util/CueList' ], fu
         sprite.alpha = this.fromValue;
     };
 
+    function RotateCommand(easeFn, fromTime, toTime, fromValue, toValue) {
+        this.easeFn = easeFn;
+        this.fromTime = fromTime;
+        this.toTime = toTime;
+        this.fromValue = fromValue;
+        this.toValue = toValue;
+    }
+
+    RotateCommand.prototype.applyTo = function (sprite, time) {
+        var t = this.easeFn(this.fromTime, this.toTime, time);
+        sprite.rotation = ease.scale(this.fromValue, this.toValue, t);
+    };
+
+    RotateCommand.prototype.initialize = function (sprite) {
+        sprite.rotation = this.fromValue;
+    };
+
     function ScaleCommand(easeFn, fromTime, toTime, fromValue, toValue) {
         this.easeFn = easeFn;
         this.fromTime = fromTime;
@@ -183,6 +200,7 @@ define('game/storyboardObject', [ 'util/util', 'util/ease', 'util/CueList' ], fu
 
         AlphaCommand: AlphaCommand,
         ScaleCommand: ScaleCommand,
+        RotateCommand: RotateCommand,
         MoveCommand: MoveCommand,
         MoveXCommand: MoveXCommand,
         MoveYCommand: MoveYCommand,

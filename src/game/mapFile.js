@@ -307,6 +307,18 @@ define('game/mapFile', [ 'game/RuleSet', 'game/Map', 'game/Combo', 'game/MapInfo
                 ));
                 break;
 
+            case 'R':
+                var fromTime = number(line[2], 0);
+                var fromValue = number(line[4], 0);
+                commands.push(new storyboardObject.RotateCommand(
+                    storyboardObject.easeFunctions[line[1]],
+                    fromTime,
+                    number(line[3], fromTime),
+                    fromValue,
+                    number(line[5], fromValue)
+                ));
+                break;
+
             case 'M':
                 var fromTime = number(line[2], 0);
                 var fromX = number(line[4], 0);

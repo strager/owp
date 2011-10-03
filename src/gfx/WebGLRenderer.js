@@ -175,6 +175,7 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/gPubSub',
                 gl.uniform2f(programs.sprite.uni.position, sprite.x, sprite.y);
                 gl.uniform4fv(programs.sprite.uni.color, sprite.color.map(adjustColour));
                 gl.uniform1f(programs.sprite.uni.scale, sprite.scale);
+                gl.uniform1f(programs.sprite.uni.rotation, sprite.rotation || 0);
 
                 gl.uniform2f(programs.sprite.uni.size, sprite.texture.image.width, sprite.texture.image.height);
                 gl.activeTexture(gl.TEXTURE0);
@@ -875,13 +876,14 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/gPubSub',
         function renderStoryboardSprite(object) {
             var texture = textures.get(object.filename, storyboardKey);
 
-            // TODO Alignment, scale, rotation
+            // TODO Alignment, scale x/y
 
             sprite({
                 x: object.x,
                 y: object.y,
                 color: [ object.color[0], object.color[1], object.color[2], object.color[3] * object.alpha ],
                 scale: object.scale,
+                rotation: object.rotation,
                 texture: texture
             });
         }
@@ -1046,6 +1048,7 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/gPubSub',
             'uniform vec2 uSize;',
             'uniform vec2 uPosition;',
             'uniform float uScale;',
+            'uniform float uRotation;',
 
             'varying vec2 vTextureCoord;',
 
@@ -1056,8 +1059,13 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/gPubSub',
                 '0.0, 0.0, 0.0, 1.0',
             ');',
 
+            'mat2 rotation = mat2(',
+                'cos(uRotation), -sin(uRotation),',
+                'sin(uRotation), cos(uRotation)',
+            ');',
+
             'void main(void) {',
-                'gl_Position = vec4((aCoord - vec2(0.5, 0.5)) * uSize * uScale + uView + uPosition, 0.0, 1.0) * projection;',
+                'gl_Position = vec4((aCoord - vec2(0.5, 0.5)) * uSize * uScale * rotation + uView + uPosition, 0.0, 1.0) * projection;',
                 'vTextureCoord = aCoord;',
             '}'
         ].join('\n');
@@ -1292,6 +1300,7 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/gPubSub',
                 size: gl.getUniformLocation(programs.sprite, 'uSize'),
                 position: gl.getUniformLocation(programs.sprite, 'uPosition'),
                 scale: gl.getUniformLocation(programs.sprite, 'uScale'),
+                rotation: gl.getUniformLocation(programs.sprite, 'uRotation'),
                 color: gl.getUniformLocation(programs.sprite, 'uColor')
             };
 
