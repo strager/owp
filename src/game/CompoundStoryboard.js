@@ -17,9 +17,9 @@ define('game/CompoundStoryboard', [ 'q' ], function (Q) {
             return null;
         },
 
-        getObjectsAtTime: function (time) {
+        getObjectsAtTime: function (time, layer) {
             return this.storyboards.reduce(function (acc, storyboard) {
-                return acc.concat(storyboard.getObjectsAtTime(time));
+                return acc.concat(storyboard.getObjectsAtTime(time, layer));
             }, [ ]);
         },
 

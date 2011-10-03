@@ -1,4 +1,4 @@
-define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/gPubSub', 'util/Cache', 'util/util', 'loading', 'gfx/View', 'game/storyboardObject' ], function (MapState, mapObject, gPubSub, Cache, util, loadingImageSrc, View, storyboardObject) {
+define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/gPubSub', 'util/Cache', 'util/util', 'loading', 'gfx/View', 'game/storyboardObject', 'game/Storyboard' ], function (MapState, mapObject, gPubSub, Cache, util, loadingImageSrc, View, storyboardObject, Storyboard) {
     function makeTexture(gl, image) {
         var texture = gl.createTexture();
         texture.image = image;
@@ -910,7 +910,12 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/gPubSub',
             view(View.storyboard, function () {
                 renderBackground();
 
-                var objects = storyboard.getObjectsAtTime(time);
+                var objects;
+
+                objects = storyboard.getObjectsAtTime(time, Storyboard.BACKGROUND_LAYER);
+                objects.forEach(renderStoryboardObject);
+
+                objects = storyboard.getObjectsAtTime(time, Storyboard.FOREGROUND_LAYER);
                 objects.forEach(renderStoryboardObject);
             });
         }

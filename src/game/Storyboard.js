@@ -1,6 +1,4 @@
 define('game/Storyboard', [ 'game/storyboardObject', 'util/Timeline', 'util/History' ], function (storyboardObject, Timeline, History) {
-    var OBJECT_LIFETIME = 'object lifetime';
-
     function Storyboard(objects) {
         var images = [ ];
         var videos = [ ];
@@ -11,8 +9,10 @@ define('game/Storyboard', [ 'game/storyboardObject', 'util/Timeline', 'util/Hist
 
         objects.forEach(function (object) {
             if (object instanceof storyboardObject.Sprite) {
+                var layer = object.layer.toLowerCase();
+
                 var lifetime = object.getLifetime();
-                objectTimeline.add(OBJECT_LIFETIME, object, lifetime[0], lifetime[1]);
+                objectTimeline.add(layer, object, lifetime[0], lifetime[1]);
 
                 images.push(object.filename);
             }
@@ -46,8 +46,8 @@ define('game/Storyboard', [ 'game/storyboardObject', 'util/Timeline', 'util/Hist
             return bg && bg.filename;
         },
 
-        getObjectsAtTime: function (time) {
-            var objects = this.objectTimeline.getAllAtTime(time, OBJECT_LIFETIME);
+        getObjectsAtTime: function (time, layer) {
+            var objects = this.objectTimeline.getAllAtTime(time, layer);
             return objects.map(function (object) {
                 return object.getAtTime(time);
             });
@@ -57,6 +57,9 @@ define('game/Storyboard', [ 'game/storyboardObject', 'util/Timeline', 'util/Hist
             return assetManager.preload(this.assetFilenames);
         }
     };
+
+    Storyboard.BACKGROUND_LAYER = 'background';
+    Storyboard.FOREGROUND_LAYER = 'foreground';
 
     return Storyboard;
 });
