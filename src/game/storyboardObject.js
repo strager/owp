@@ -191,8 +191,8 @@ define('game/storyboardObject', [ 'util/util', 'util/ease', 'util/CueList' ], fu
         easeFunctions: {
             // TODO Real easing functions
             '0': ease.lerp,
-            '1': ease.lerp,
-            '2': ease.lerp
+            '1': ease.sinOut,
+            '2': ease.sinIn
         }
     };
 });
