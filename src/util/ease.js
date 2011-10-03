@@ -7,6 +7,16 @@ define('util/ease', [ ], function () {
         return Math.min(Math.max((value - a) / (b - a), 0), 1);
     }
 
+    function sinIn(a, b, value) {
+        var x = lerp(a, b, value);
+        return 1 - Math.sin(Math.PI / 2 * (x + 1));
+    }
+
+    function sinOut(a, b, value) {
+        var x = lerp(a, b, value);
+        return Math.sin(Math.PI / 2 * x);
+    }
+
     function smoothstep(a, b, value) {
         var x = lerp(a, b, value);
         return x * x * x * (x * (x * 6 - 15) + 10);
@@ -32,6 +42,8 @@ define('util/ease', [ ], function () {
     return {
         scale: scale,
         lerp: lerp,
+        sinIn: sinIn,
+        sinOut: sinOut,
         smoothstep: smoothstep,
         table: table
     }

@@ -1,5 +1,17 @@
 /*jshint bitwise: false */
-define('game/mapFile', [ 'game/RuleSet', 'game/Map', 'game/Combo', 'game/MapInfo', 'game/mapObject', 'game/Storyboard', 'game/Skin', 'game/BezierSliderCurve', 'game/CatmullSliderCurve', 'game/TimingPoint', 'game/BreakRange' ], function (RuleSet, Map, Combo, MapInfo, mapObject, Storyboard, Skin, BezierSliderCurve, CatmullSliderCurve, TimingPoint, BreakRange) {
+define('game/mapFile', [ 'game/RuleSet', 'game/Map', 'game/Combo', 'game/MapInfo', 'game/mapObject', 'game/Storyboard', 'game/Skin', 'game/BezierSliderCurve', 'game/CatmullSliderCurve', 'game/TimingPoint', 'game/BreakRange', 'game/storyboardObject' ], function (RuleSet, Map, Combo, MapInfo, mapObject, Storyboard, Skin, BezierSliderCurve, CatmullSliderCurve, TimingPoint, BreakRange, storyboardObject) {
+    function number(str, def) {
+        var f = parseFloat(str, 10);
+        if (isNaN(f)) {
+            return def;
+        } else {
+            return f;
+        }
+    }
+    function filterFilename(str) {
+        return str.replace(/^"([^"]*)"$/, '$1').replace(/\\/g, '/');
+    }
+
     function readSkin(assetConfig, assetManager) {
         return Skin.fromSettings(assetManager, {
             name:   assetConfig.General.values.Name,
@@ -30,9 +42,9 @@ define('game/mapFile', [ 'game/RuleSet', 'game/Map', 'game/Combo', 'game/MapInfo
             };
 
             if (isInherited) {
-                options.bpm = -100 / parseFloat(data[1], 10);
+                options.bpm = -100 / number(data[1], 1);
             } else {
-                options.bpm = 60 / parseFloat(data[1], 10) * 1000;
+                options.bpm = 60 / number(data[1], 1) * 1000;
             }
 
             return new TimingPoint(options);
@@ -249,41 +261,203 @@ define('game/mapFile', [ 'game/RuleSet', 'game/Map', 'game/Combo', 'game/MapInfo
         });
     }
 
-    function readStoryboard(assetConfig) {
-        var storyboard = new Storyboard();
+    function isOfLevel(level, str) {
+        var i;
+        for (i = 0; i < level; ++i) {
+            if (str.substr(i, 1) !== ' ') {
+                return false;
+            }
+        }
 
-        var data = assetConfig.Events.lists;
-        var i, line;
+        return str.substr(i, 1) !== ' ';
+    }
 
-        for (i = 0; i < data.length; ++i) {
-            line = data[i];
+    function readStoryboardCommands(data, level) {
+        var commands = [ ];
 
-            switch (line[0]) {
-            case '0':
-                storyboard.backgrounds.push({
-                    time: parseInt(line[1], 10),
-                    fileName: line[2].replace(/^"([^"]*)"$/, '$1')
-                });
+        while (data.length) {
+            if (!isOfLevel(level, data[0][0])) {
+                break;
+            }
 
+            // TODO Remove duplicated code
+            var line = data.shift();
+            switch (line[0].trim()) {
+            case 'F':
+                var fromTime = number(line[2], 0);
+                var fromValue = number(line[4], 0);
+                commands.push(new storyboardObject.AlphaCommand(
+                    storyboardObject.easeFunctions[line[1]],
+                    fromTime,
+                    number(line[3], fromTime),
+                    fromValue,
+                    number(line[5], fromValue)
+                ));
                 break;
 
-                // TODO Support more storyboard command types
-
-            case 'Video':
-                storyboard.videos.push({
-                    time: parseInt(line[1], 10),
-                    fileName: line[2].replace(/^"([^"]*)"$/, '$1')
-                });
-
+            case 'S':
+                var fromTime = number(line[2], 0);
+                var fromValue = number(line[4], 0);
+                commands.push(new storyboardObject.ScaleCommand(
+                    storyboardObject.easeFunctions[line[1]],
+                    fromTime,
+                    number(line[3], fromTime),
+                    fromValue,
+                    number(line[5], fromValue)
+                ));
                 break;
+
+            case 'R':
+                var fromTime = number(line[2], 0);
+                var fromValue = number(line[4], 0);
+                commands.push(new storyboardObject.RotateCommand(
+                    storyboardObject.easeFunctions[line[1]],
+                    fromTime,
+                    number(line[3], fromTime),
+                    fromValue,
+                    number(line[5], fromValue)
+                ));
+                break;
+
+            case 'M':
+                var fromTime = number(line[2], 0);
+                var fromX = number(line[4], 0);
+                var fromY = number(line[5], 0);
+                commands.push(new storyboardObject.MoveCommand(
+                    storyboardObject.easeFunctions[line[1]],
+                    fromTime,
+                    number(line[3], fromTime),
+                    [ fromX, fromY ],
+                    [ number(line[6], fromX), number(line[7], fromY) ]
+                ));
+                break;
+
+            case 'MX':
+                var fromTime = number(line[2], 0);
+                var fromValue = number(line[4], 0);
+                commands.push(new storyboardObject.MoveXCommand(
+                    storyboardObject.easeFunctions[line[1]],
+                    fromTime,
+                    number(line[3], fromTime),
+                    fromValue,
+                    number(line[5], fromValue)
+                ));
+                break;
+
+            case 'MY':
+                var fromTime = number(line[2], 0);
+                var fromValue = number(line[4], 0);
+                commands.push(new storyboardObject.MoveYCommand(
+                    storyboardObject.easeFunctions[line[1]],
+                    fromTime,
+                    number(line[3], fromTime),
+                    fromValue,
+                    number(line[5], fromValue)
+                ));
+                break;
+
+            case 'C':
+                var fromTime = number(line[2], 0);
+                var fromR = number(line[4], 0);
+                var fromG = number(line[5], 0);
+                var fromB = number(line[6], 0);
+                commands.push(new storyboardObject.ColorCommand(
+                    storyboardObject.easeFunctions[line[1]],
+                    fromTime,
+                    number(line[3], fromTime),
+                    [ fromR, fromG, fromB ],
+                    [ number(line[7], fromR), number(line[8], fromG), number(line[0], fromB) ]
+                ));
+                break;
+
+            case 'L':
+                // TODO
+                console.warn('Storyboard loops not supported');
+
+                readStoryboardCommands(data, level + 1);
+                break;
+
+            // TODO More storyboard commands
 
             default:
-                // Ignore
+                console.warn('Unknown storyboard command:', line[0].trim());
                 break;
             }
         }
 
-        return storyboard;
+        return commands;
+    }
+
+    function readStoryboardSprite(data) {
+        // Sprite,Background,Centre,"Storyboard\Blurry.jpg",320,240
+        var defLine = data.shift();
+        if (defLine.length !== 6) {
+            return null;
+        }
+
+        // TODO Read alignment (data[2])
+        var sprite = new storyboardObject.Sprite({
+            layer: defLine[1],
+            filename: filterFilename(defLine[3]),
+            x: parseFloat(defLine[4], 10),
+            y: parseFloat(defLine[5], 10)
+        });
+
+        var commands = readStoryboardCommands(data, 1);
+        commands.forEach(sprite.addCommand.bind(sprite));
+
+        return sprite;
+    }
+
+    function readStoryboard(assetConfig) {
+        var objects = [ ];
+        var data = assetConfig.Events.lists.slice();
+        var line;
+
+        while (data.length > 0) {
+            var line = data[0];
+            var object = null;
+            switch (line[0]) {
+            case '0':
+                object = new storyboardObject.Background(
+                    filterFilename(line[2]),
+                    parseFloat(line[1], 10)
+                );
+                data.shift();
+                break;
+
+            case '2':
+                // Break; ignore
+                data.shift();
+                break;
+
+            case 'Video':
+                object = new storyboardObject.Video(
+                    filterFilename(line[2]),
+                    parseFloat(line[1], 10)
+                );
+                data.shift();
+                break;
+
+            case 'Sprite':
+                object = readStoryboardSprite(data);
+                break;
+
+            // TODO Support more storyboard object types
+
+            default:
+                // Ignore
+                console.warn('Unknown storyboard object type:', line[0]);
+                data.shift();
+                break;
+            }
+
+            if (object) {
+                objects.push(object);
+            }
+        }
+
+        return new Storyboard(objects);
     }
 
     function readMap(assetConfig) {
@@ -303,6 +477,7 @@ define('game/mapFile', [ 'game/RuleSet', 'game/Map', 'game/Combo', 'game/MapInfo
 
     return {
         readSkin: readSkin,
-        readMap: readMap
+        readMap: readMap,
+        readStoryboard: readStoryboard
     };
 });

@@ -73,14 +73,11 @@ define('util/CueList', [ ], function () {
             return values;
         },
 
-        getTimeRange: function (value) {
-            var index = this.cueValues.indexOf(value);
-
-            if (index < 0) {
-                return null;
-            }
-
-            return [ this.cueStarts[index], this.cueEnds[index] ];
+        getTimeRange: function () {
+            return [
+                Math.min.apply(Math, this.cueStarts),
+                Math.max.apply(Math, this.cueEnds)
+            ];
         }
     };
 

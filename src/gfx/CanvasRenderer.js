@@ -896,13 +896,12 @@ define('gfx/CanvasRenderer', [ 'game/mapObject', 'util/Cache', 'gfx/canvasShader
 
         // Storyboard rendering {{{
         function renderBackground() {
-            var background = storyboard.getBackground(time);
-
+            var background = storyboard.getBackgroundFilename(time);
             if (!background) {
                 return;
             }
 
-            var backgroundGraphic = assetManager.get(background.fileName, 'image');
+            var backgroundGraphic = assetManager.get(background, 'image');
 
             var el = dom.get(backgroundGraphic, function () {
                 return cloneAbsolute(backgroundGraphic);

@@ -270,6 +270,13 @@ define('AssetManager', [ 'game/MapInfo', 'game/mapFile', 'assetConfig', 'util/Ma
                 });
         },
 
+        storyboard: function (assetManager, name) {
+            return Q.ref(assetManager.load(name + '.osb', 'asset-config'))
+                .then(function (assetConfig) {
+                    return mapFile.readStoryboard(assetConfig);
+                });
+        },
+
         'asset-config': function (assetManager, name) {
             return xhr(assetManager.root + '/' + name)
                 .then(function (xhr) {
