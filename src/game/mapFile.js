@@ -1,5 +1,13 @@
 /*jshint bitwise: false */
 define('game/mapFile', [ 'game/RuleSet', 'game/Map', 'game/Combo', 'game/MapInfo', 'game/mapObject', 'game/Storyboard', 'game/Skin', 'game/BezierSliderCurve', 'game/CatmullSliderCurve', 'game/TimingPoint', 'game/BreakRange', 'game/storyboardObject' ], function (RuleSet, Map, Combo, MapInfo, mapObject, Storyboard, Skin, BezierSliderCurve, CatmullSliderCurve, TimingPoint, BreakRange, storyboardObject) {
+    function number(str, def) {
+        var f = parseFloat(str, 10);
+        if (isNaN(f)) {
+            return def;
+        } else {
+            return f;
+        }
+    }
     function filterFilename(str) {
         return str.replace(/^"([^"]*)"$/, '$1').replace(/\\/g, '/');
     }
@@ -34,9 +42,9 @@ define('game/mapFile', [ 'game/RuleSet', 'game/Map', 'game/Combo', 'game/MapInfo
             };
 
             if (isInherited) {
-                options.bpm = -100 / parseFloat(data[1], 10);
+                options.bpm = -100 / number(data[1], 1);
             } else {
-                options.bpm = 60 / parseFloat(data[1], 10) * 1000;
+                options.bpm = 60 / number(data[1], 1) * 1000;
             }
 
             return new TimingPoint(options);
@@ -275,32 +283,39 @@ define('game/mapFile', [ 'game/RuleSet', 'game/Map', 'game/Combo', 'game/MapInfo
             var line = data.shift();
             switch (line[0].trim()) {
             case 'F':
+                var fromTime = number(line[2], 0);
+                var fromValue = number(line[4], 0);
                 commands.push(new storyboardObject.AlphaCommand(
                     storyboardObject.easeFunctions[line[1]],
-                    parseFloat(line[2], 10),
-                    parseFloat(line[3], 10),
-                    parseFloat(line[4], 10),
-                    parseFloat(line[5], 10)
+                    fromTime,
+                    number(line[3], fromTime),
+                    fromValue,
+                    number(line[5], fromValue)
                 ));
                 break;
 
             case 'S':
+                var fromTime = number(line[2], 0);
+                var fromValue = number(line[4], 0);
                 commands.push(new storyboardObject.ScaleCommand(
                     storyboardObject.easeFunctions[line[1]],
-                    parseFloat(line[2], 10),
-                    parseFloat(line[3], 10),
-                    parseFloat(line[4], 10),
-                    parseFloat(line[5], 10)
+                    fromTime,
+                    number(line[3], fromTime),
+                    fromValue,
+                    number(line[5], fromValue)
                 ));
                 break;
 
             case 'M':
+                var fromTime = number(line[2], 0);
+                var fromX = number(line[4], 0);
+                var fromY = number(line[5], 0);
                 commands.push(new storyboardObject.MoveCommand(
                     storyboardObject.easeFunctions[line[1]],
-                    parseFloat(line[2], 10),
-                    parseFloat(line[3], 10),
-                    [ parseFloat(line[4], 10), parseFloat(line[5], 10) ],
-                    [ parseFloat(line[6], 10), parseFloat(line[7], 10) ]
+                    fromTime,
+                    number(line[3], fromTime),
+                    [ fromX, fromY ],
+                    [ number(line[6], fromX), number(line[7], fromY) ]
                 ));
                 break;
 

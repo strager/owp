@@ -43,10 +43,29 @@ define('game/storyboardObject', [ 'util/util', 'util/ease', 'util/CueList' ], fu
     Sprite.prototype.getAtTime = function (time) {
         // TODO Some intelligent caching
 
+        var sprite = new Sprite(this);
+
+        // osu! has this logic where the first time a command of its type is
+        // placed, that command "initializes" itself on the sprite at time
+        // -Infinity.
+
+        var initialized = [ ];
+        this.commands.cueValues.forEach(function (command) {
+            var Type = command.constructor;
+            if (initialized.indexOf(Type) >= 0) {
+                return;
+            }
+
+            command.initialize(sprite);
+            initialized.push(Type);
+        });
+
         var commands = this.commands.getAllInTimeRange(-Infinity, time);
-        return commands.reduce(function (acc, command) {
-            return command.applyTo(acc, time);
-        }, this);
+        commands.forEach(function (command) {
+            command.applyTo(sprite, time);
+        });
+
+        return sprite;
     };
 
     function AlphaCommand(easeFn, fromTime, toTime, fromValue, toValue) {
@@ -58,12 +77,12 @@ define('game/storyboardObject', [ 'util/util', 'util/ease', 'util/CueList' ], fu
     }
 
     AlphaCommand.prototype.applyTo = function (sprite, time) {
-        var nsprite = new Sprite(sprite);
-
         var t = this.easeFn(this.fromTime, this.toTime, time);
-        nsprite.alpha = ease.scale(this.fromValue, this.toValue, t);
+        sprite.alpha = ease.scale(this.fromValue, this.toValue, t);
+    };
 
-        return nsprite;
+    AlphaCommand.prototype.initialize = function (sprite) {
+        sprite.alpha = this.fromValue;
     };
 
     function ScaleCommand(easeFn, fromTime, toTime, fromValue, toValue) {
@@ -75,12 +94,12 @@ define('game/storyboardObject', [ 'util/util', 'util/ease', 'util/CueList' ], fu
     }
 
     ScaleCommand.prototype.applyTo = function (sprite, time) {
-        var nsprite = new Sprite(sprite);
-
         var t = this.easeFn(this.fromTime, this.toTime, time);
-        nsprite.scale = ease.scale(this.fromValue, this.toValue, t);
+        sprite.scale = ease.scale(this.fromValue, this.toValue, t);
+    };
 
-        return nsprite;
+    ScaleCommand.prototype.initialize = function (sprite) {
+        sprite.scale = this.fromValue;
     };
 
     function MoveCommand(easeFn, fromTime, toTime, fromValue, toValue) {
@@ -92,13 +111,14 @@ define('game/storyboardObject', [ 'util/util', 'util/ease', 'util/CueList' ], fu
     }
 
     MoveCommand.prototype.applyTo = function (sprite, time) {
-        var nsprite = new Sprite(sprite);
-
         var t = this.easeFn(this.fromTime, this.toTime, time);
-        nsprite.x = ease.scale(this.fromValue[0], this.toValue[0], t);
-        nsprite.y = ease.scale(this.fromValue[1], this.toValue[1], t);
+        sprite.x = ease.scale(this.fromValue[0], this.toValue[0], t);
+        sprite.y = ease.scale(this.fromValue[1], this.toValue[1], t);
+    };
 
-        return nsprite;
+    MoveCommand.prototype.initialize = function (sprite) {
+        sprite.x = this.fromValue[0];
+        sprite.y = this.fromValue[1];
     };
 
     return {
