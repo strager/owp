@@ -83,8 +83,7 @@ define('game/Game', [ 'q', 'game/MapState', 'AssetManager', 'util/PubSub', 'Soun
 
                 // TODO Refactor this mess
                 var load = Q.all([
-                    //Q.ref(mapAssetManager.load(mapName.replace(/ \[[^\]]+\]$/, ''), 'storyboard'))
-                    Q.ref(mapAssetManager.load('HTT - NO, Thank You! (CDFA)', 'storyboard'))
+                    Q.ref(mapAssetManager.load(mapName.replace(/ \[[^\]]+\]$/, ''), 'storyboard'))
                         .then(function (storyboard) {
                             return storyboard.preload(mapAssetManager)
                                 .then(function () {
