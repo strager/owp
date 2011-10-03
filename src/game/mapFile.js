@@ -426,6 +426,11 @@ define('game/mapFile', [ 'game/RuleSet', 'game/Map', 'game/Combo', 'game/MapInfo
                 data.shift();
                 break;
 
+            case '2':
+                // Break; ignore
+                data.shift();
+                break;
+
             case 'Video':
                 object = new storyboardObject.Video(
                     filterFilename(line[2]),
