@@ -20,6 +20,7 @@ define('game/storyboardObject', [ 'util/util', 'util/ease', 'util/CueList' ], fu
             alignX: 0.5,
             alignY: 0.5,
             alpha: 1,
+            scale: 1,
             rotation: 0,
             color: [ 255, 255, 255, 255 ]
         }, spec);
@@ -65,6 +66,23 @@ define('game/storyboardObject', [ 'util/util', 'util/ease', 'util/CueList' ], fu
         return nsprite;
     };
 
+    function ScaleCommand(easeFn, fromTime, toTime, fromValue, toValue) {
+        this.easeFn = easeFn;
+        this.fromTime = fromTime;
+        this.toTime = toTime;
+        this.fromValue = fromValue;
+        this.toValue = toValue;
+    }
+
+    ScaleCommand.prototype.applyTo = function (sprite, time) {
+        var nsprite = new Sprite(sprite);
+
+        var t = this.easeFn(this.fromTime, this.toTime, time);
+        nsprite.scale = ease.scale(this.fromValue, this.toValue, t);
+
+        return nsprite;
+    };
+
     function MoveCommand(easeFn, fromTime, toTime, fromValue, toValue) {
         this.easeFn = easeFn;
         this.fromTime = fromTime;
@@ -89,6 +107,7 @@ define('game/storyboardObject', [ 'util/util', 'util/ease', 'util/CueList' ], fu
         Sprite: Sprite,
 
         AlphaCommand: AlphaCommand,
+        ScaleCommand: ScaleCommand,
         MoveCommand: MoveCommand,
 
         easeFunctions: {

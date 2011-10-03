@@ -284,6 +284,16 @@ define('game/mapFile', [ 'game/RuleSet', 'game/Map', 'game/Combo', 'game/MapInfo
                 ));
                 break;
 
+            case 'S':
+                commands.push(new storyboardObject.ScaleCommand(
+                    storyboardObject.easeFunctions[line[1]],
+                    parseFloat(line[2], 10),
+                    parseFloat(line[3], 10),
+                    parseFloat(line[4], 10),
+                    parseFloat(line[5], 10)
+                ));
+                break;
+
             case 'M':
                 commands.push(new storyboardObject.MoveCommand(
                     storyboardObject.easeFunctions[line[1]],

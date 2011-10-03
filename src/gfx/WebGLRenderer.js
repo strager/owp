@@ -881,7 +881,7 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/gPubSub',
                 x: object.x,
                 y: object.y,
                 color: [ object.color[0], object.color[1], object.color[2], object.color[3] * object.alpha ],
-                scale: 1,
+                scale: object.scale,
                 texture: texture
             });
         }
