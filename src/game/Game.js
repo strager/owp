@@ -1,4 +1,4 @@
-define('game/Game', [ 'q', 'game/MapState', 'AssetManager', 'util/PubSub', 'Soundboard', 'util/Timeline', 'util/gPubSub', 'util/History', 'agentInfo', 'game/RuleSet', 'game/mapObject', 'game/Combo', 'game/TimingPoint', 'game/BezierSliderCurve', 'util/StateMachine', 'ui/UI', 'util/util', 'gfx/View', 'util/CoolAudio' ], function (Q, MapState, AssetManager, PubSub, Soundboard, Timeline, gPubSub, History, agentInfo, RuleSet, mapObject, Combo, TimingPoint, BezierSliderCurve, StateMachine, UI, util, View, CoolAudio) {
+define('game/Game', [ 'q', 'game/MapState', 'AssetManager', 'util/PubSub', 'Soundboard', 'util/Timeline', 'util/gPubSub', 'util/History', 'agentInfo', 'game/RuleSet', 'game/mapObject', 'game/Combo', 'game/TimingPoint', 'game/BezierSliderCurve', 'util/StateMachine', 'ui/UI', 'util/util', 'gfx/View', 'util/CoolAudio', 'game/CompoundStoryboard' ], function (Q, MapState, AssetManager, PubSub, Soundboard, Timeline, gPubSub, History, agentInfo, RuleSet, mapObject, Combo, TimingPoint, BezierSliderCurve, StateMachine, UI, util, View, CoolAudio, CompoundStoryboard) {
     var GameStateMachine = StateMachine.create([
         { name: 'load_play',   from: 'none',          to: 'loading'       },
         { name: 'loaded_play', from: 'loading',       to: 'ready_to_play' },
@@ -15,6 +15,7 @@ define('game/Game', [ 'q', 'game/MapState', 'AssetManager', 'util/PubSub', 'Soun
         var mousePubSub = new PubSub();
 
         var mapInfo, mapState, audio;
+        var storyboard = null;
         var mapAssetManager = null;
         var timeline = new Timeline();
 
@@ -46,7 +47,7 @@ define('game/Game', [ 'q', 'game/MapState', 'AssetManager', 'util/PubSub', 'Soun
             var breakiness = mapState.ruleSet.getBreakinessAt(time);
 
             renderer.renderStoryboard({
-                storyboard: mapInfo.storyboard,
+                storyboard: storyboard,
                 assetManager: mapAssetManager,
                 breakiness: breakiness
             }, time);
@@ -78,8 +79,21 @@ define('game/Game', [ 'q', 'game/MapState', 'AssetManager', 'util/PubSub', 'Soun
 
                 mapAssetManager = new AssetManager(mapRoot);
 
+                var extraStoryboard = null;
+
                 // TODO Refactor this mess
                 var load = Q.all([
+                    //Q.ref(mapAssetManager.load(mapName.replace(/ \[[^\]]+\]$/, ''), 'storyboard'))
+                    Q.ref(mapAssetManager.load('HTT - NO, Thank You! (CDFA)', 'storyboard'))
+                        .then(function (storyboard) {
+                            return storyboard.preload(mapAssetManager)
+                                .then(function () {
+                                    extraStoryboard = storyboard;
+                                });
+                        }, function (err) {
+                            // Storyboard couldn't be loaded.  Not the end of
+                            // the world.  Just keep on goin'.
+                        }),
                     Q.ref(mapAssetManager.load(mapName, 'map'))
                         .then(function (mapInfo_) {
                             mapInfo = mapInfo_;
@@ -94,7 +108,16 @@ define('game/Game', [ 'q', 'game/MapState', 'AssetManager', 'util/PubSub', 'Soun
                             mapState = MapState.fromMapInfo(mapInfo, timeline);
                         }),
                     Q.ref(skin)
-                ]);
+                ]).then(function () {
+                    if (extraStoryboard) {
+                        storyboard = new CompoundStoryboard([
+                            extraStoryboard,
+                            mapInfo.storyboard
+                        ]);
+                    } else {
+                        storyboard = mapInfo.storyboard;
+                    }
+                });
 
                 Q.fail(load, agentInfo.crash);
 
@@ -113,7 +136,7 @@ define('game/Game', [ 'q', 'game/MapState', 'AssetManager', 'util/PubSub', 'Soun
                     var time = 0;
 
                     renderer.renderStoryboard({
-                        storyboard: mapInfo.storyboard,
+                        storyboard: storyboard,
                         assetManager: mapAssetManager,
                         breakiness: 0
                     }, time);

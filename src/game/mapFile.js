@@ -1,5 +1,9 @@
 /*jshint bitwise: false */
 define('game/mapFile', [ 'game/RuleSet', 'game/Map', 'game/Combo', 'game/MapInfo', 'game/mapObject', 'game/Storyboard', 'game/Skin', 'game/BezierSliderCurve', 'game/CatmullSliderCurve', 'game/TimingPoint', 'game/BreakRange', 'game/storyboardObject' ], function (RuleSet, Map, Combo, MapInfo, mapObject, Storyboard, Skin, BezierSliderCurve, CatmullSliderCurve, TimingPoint, BreakRange, storyboardObject) {
+    function filterFilename(str) {
+        return str.replace(/^"([^"]*)"$/, '$1').replace(/\\/g, '/');
+    }
+
     function readSkin(assetConfig, assetManager) {
         return Skin.fromSettings(assetManager, {
             name:   assetConfig.General.values.Name,
@@ -259,7 +263,7 @@ define('game/mapFile', [ 'game/RuleSet', 'game/Map', 'game/Combo', 'game/MapInfo
         // TODO Read alignment (data[2])
         var sprite = new storyboardObject.Sprite({
             layer: defLine[1],
-            filename: defLine[3].replace(/^"([^"]*)"$/, '$1'),
+            filename: filterFilename(defLine[3]),
             x: parseFloat(defLine[4], 10),
             y: parseFloat(defLine[5], 10)
         });
@@ -313,7 +317,7 @@ define('game/mapFile', [ 'game/RuleSet', 'game/Map', 'game/Combo', 'game/MapInfo
             switch (line[0]) {
             case '0':
                 object = new storyboardObject.Background(
-                    line[2].replace(/^"([^"]*)"$/, '$1'),
+                    filterFilename(line[2]),
                     parseFloat(line[1], 10)
                 );
                 data.shift();
@@ -321,7 +325,7 @@ define('game/mapFile', [ 'game/RuleSet', 'game/Map', 'game/Combo', 'game/MapInfo
 
             case 'Video':
                 object = new storyboardObject.Video(
-                    line[2].replace(/^"([^"]*)"$/, '$1'),
+                    filterFilename(line[2]),
                     parseFloat(line[1], 10)
                 );
                 data.shift();
