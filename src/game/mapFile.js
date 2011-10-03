@@ -280,6 +280,7 @@ define('game/mapFile', [ 'game/RuleSet', 'game/Map', 'game/Combo', 'game/MapInfo
                 break;
             }
 
+            // TODO Remove duplicated code
             var line = data.shift();
             switch (line[0].trim()) {
             case 'F':
@@ -316,6 +317,30 @@ define('game/mapFile', [ 'game/RuleSet', 'game/Map', 'game/Combo', 'game/MapInfo
                     number(line[3], fromTime),
                     [ fromX, fromY ],
                     [ number(line[6], fromX), number(line[7], fromY) ]
+                ));
+                break;
+
+            case 'MX':
+                var fromTime = number(line[2], 0);
+                var fromValue = number(line[4], 0);
+                commands.push(new storyboardObject.MoveXCommand(
+                    storyboardObject.easeFunctions[line[1]],
+                    fromTime,
+                    number(line[3], fromTime),
+                    fromValue,
+                    number(line[5], fromValue)
+                ));
+                break;
+
+            case 'MY':
+                var fromTime = number(line[2], 0);
+                var fromValue = number(line[4], 0);
+                commands.push(new storyboardObject.MoveYCommand(
+                    storyboardObject.easeFunctions[line[1]],
+                    fromTime,
+                    number(line[3], fromTime),
+                    fromValue,
+                    number(line[5], fromValue)
                 ));
                 break;
 

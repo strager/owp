@@ -121,6 +121,40 @@ define('game/storyboardObject', [ 'util/util', 'util/ease', 'util/CueList' ], fu
         sprite.y = this.fromValue[1];
     };
 
+    function MoveXCommand(easeFn, fromTime, toTime, fromValue, toValue) {
+        this.easeFn = easeFn;
+        this.fromTime = fromTime;
+        this.toTime = toTime;
+        this.fromValue = fromValue;
+        this.toValue = toValue;
+    }
+
+    MoveXCommand.prototype.applyTo = function (sprite, time) {
+        var t = this.easeFn(this.fromTime, this.toTime, time);
+        sprite.x = ease.scale(this.fromValue, this.toValue, t);
+    };
+
+    MoveXCommand.prototype.initialize = function (sprite) {
+        sprite.x = this.fromValue;
+    };
+
+    function MoveYCommand(easeFn, fromTime, toTime, fromValue, toValue) {
+        this.easeFn = easeFn;
+        this.fromTime = fromTime;
+        this.toTime = toTime;
+        this.fromValue = fromValue;
+        this.toValue = toValue;
+    }
+
+    MoveYCommand.prototype.applyTo = function (sprite, time) {
+        var t = this.easeFn(this.fromTime, this.toTime, time);
+        sprite.y = ease.scale(this.fromValue, this.toValue, t);
+    };
+
+    MoveYCommand.prototype.initialize = function (sprite) {
+        sprite.y = this.fromValue;
+    };
+
     return {
         Background: Background,
         Video: Video,
@@ -129,6 +163,8 @@ define('game/storyboardObject', [ 'util/util', 'util/ease', 'util/CueList' ], fu
         AlphaCommand: AlphaCommand,
         ScaleCommand: ScaleCommand,
         MoveCommand: MoveCommand,
+        MoveXCommand: MoveXCommand,
+        MoveYCommand: MoveYCommand,
 
         easeFunctions: {
             // TODO Real easing functions
