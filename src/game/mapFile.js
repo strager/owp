@@ -253,6 +253,65 @@ define('game/mapFile', [ 'game/RuleSet', 'game/Map', 'game/Combo', 'game/MapInfo
         });
     }
 
+    function isOfLevel(level, str) {
+        var i;
+        for (i = 0; i < level; ++i) {
+            if (str.substr(i, 1) !== ' ') {
+                return false;
+            }
+        }
+
+        return str.substr(i, 1) !== ' ';
+    }
+
+    function readStoryboardCommands(data, level) {
+        var commands = [ ];
+
+        while (data.length) {
+            if (!isOfLevel(level, data[0][0])) {
+                break;
+            }
+
+            var line = data.shift();
+            switch (line[0].trim()) {
+            case 'F':
+                commands.push(new storyboardObject.AlphaCommand(
+                    storyboardObject.easeFunctions[line[1]],
+                    parseFloat(line[2], 10),
+                    parseFloat(line[3], 10),
+                    parseFloat(line[4], 10),
+                    parseFloat(line[5], 10)
+                ));
+                break;
+
+            case 'M':
+                commands.push(new storyboardObject.MoveCommand(
+                    storyboardObject.easeFunctions[line[1]],
+                    parseFloat(line[2], 10),
+                    parseFloat(line[3], 10),
+                    [ parseFloat(line[4], 10), parseFloat(line[5], 10) ],
+                    [ parseFloat(line[6], 10), parseFloat(line[7], 10) ]
+                ));
+                break;
+
+            case 'L':
+                // TODO
+                console.warn('Storyboard loops not supported');
+
+                readStoryboardCommands(data, level + 1);
+                break;
+
+            // TODO More storyboard commands
+
+            default:
+                console.warn('Unknown storyboard command:', line[0].trim());
+                break;
+            }
+        }
+
+        return commands;
+    }
+
     function readStoryboardSprite(data) {
         // Sprite,Background,Centre,"Storyboard\Blurry.jpg",320,240
         var defLine = data.shift();
@@ -268,40 +327,8 @@ define('game/mapFile', [ 'game/RuleSet', 'game/Map', 'game/Combo', 'game/MapInfo
             y: parseFloat(defLine[5], 10)
         });
 
-        while (data.length) {
-            if (data[0][0].substr(0, 1) !== ' ') {
-                break;
-            }
-
-            var line = data.shift();
-            switch (line[0].trim()) {
-            case 'F':
-                sprite.addCommand(new storyboardObject.AlphaCommand(
-                    storyboardObject.easeFunctions[line[1]],
-                    parseFloat(line[2], 10),
-                    parseFloat(line[3], 10),
-                    parseFloat(line[4], 10),
-                    parseFloat(line[5], 10)
-                ));
-                break;
-
-            case 'M':
-                sprite.addCommand(new storyboardObject.MoveCommand(
-                    storyboardObject.easeFunctions[line[1]],
-                    parseFloat(line[2], 10),
-                    parseFloat(line[3], 10),
-                    [ parseFloat(line[4], 10), parseFloat(line[5], 10) ],
-                    [ parseFloat(line[6], 10), parseFloat(line[7], 10) ]
-                ));
-                break;
-
-            // TODO More storyboard commands
-
-            default:
-                console.warn('Unknown storyboard command:', line[0].trim());
-                break;
-            }
-        }
+        var commands = readStoryboardCommands(data, 1);
+        commands.forEach(sprite.addCommand.bind(sprite));
 
         return sprite;
     }
