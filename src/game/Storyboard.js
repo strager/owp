@@ -1,4 +1,6 @@
 define('game/Storyboard', [ 'game/storyboardObject', 'util/Timeline', 'util/History' ], function (storyboardObject, Timeline, History) {
+    var ENABLE_STORYBOARDS = false;
+
     function Storyboard(objects) {
         var images = [ ];
         var videos = [ ];
@@ -8,13 +10,15 @@ define('game/Storyboard', [ 'game/storyboardObject', 'util/Timeline', 'util/Hist
         var backgroundHistory = new History();
 
         objects.forEach(function (object) {
-            if (object instanceof storyboardObject.Sprite) {
-                var layer = object.layer.toLowerCase();
+            if (ENABLE_STORYBOARDS) {
+                if (object instanceof storyboardObject.Sprite) {
+                    var layer = object.layer.toLowerCase();
 
-                var lifetime = object.getLifetime();
-                objectTimeline.add(layer, object, lifetime[0], lifetime[1]);
+                    var lifetime = object.getLifetime();
+                    objectTimeline.add(layer, object, lifetime[0], lifetime[1]);
 
-                images.push(object.filename);
+                    images.push(object.filename);
+                }
             }
 
             if (object instanceof storyboardObject.Background) {
@@ -47,6 +51,10 @@ define('game/Storyboard', [ 'game/storyboardObject', 'util/Timeline', 'util/Hist
         },
 
         getObjectsAtTime: function (time, layer) {
+            if (!ENABLE_STORYBOARDS) {
+                return [ ];
+            }
+
             var objects = this.objectTimeline.getAllAtTime(time, layer);
             return objects.map(function (object) {
                 return object.getAtTime(time);
