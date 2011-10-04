@@ -223,34 +223,11 @@ define('game/RuleSet', [ 'util/util', 'game/mapObject', 'util/History', 'util/Cu
             }
         }),
 
-        // Meh, code duplication
         canHitObject: function (object, x, y, time) {
-            return mapObject.match(object, {
-                HitCircle: function (object) {
-                    var distance = Math.pow(object.x - x, 2) + Math.pow(object.y - y, 2);
-                    var radius = this.getCircleSize() / 2;
+            var distance = Math.pow(object.x - x, 2) + Math.pow(object.y - y, 2);
+            var radius = this.getHitRadius(object);
 
-                    return distance <= radius * radius;
-                },
-                Slider: function (object) {
-                    var distance = Math.pow(object.x - x, 2) + Math.pow(object.y - y, 2);
-                    var radius = this.getCircleSize() / 2;
-
-                    return distance <= radius * radius;
-                },
-                SliderTick: function (object) {
-                    var distance = Math.pow(object.x - x, 2) + Math.pow(object.y - y, 2);
-                    var radius = this.getSliderSize() / 2;
-
-                    return distance <= radius * radius;
-                },
-                SliderEnd: function (object) {
-                    var distance = Math.pow(object.x - x, 2) + Math.pow(object.y - y, 2);
-                    var radius = this.getSliderSize() / 2;
-
-                    return distance <= radius * radius;
-                }
-            }, this);
+            return distance <= radius * radius;
         },
 
         // Gives diameter
@@ -261,6 +238,21 @@ define('game/RuleSet', [ 'util/util', 'game/mapObject', 'util/History', 'util/Cu
         getSliderSize: function () {
             return this.getCircleSize() * 2;
         },
+
+        getHitRadius: mapObject.matcher({
+            HitCircle: function (object) {
+                return this.getCircleSize() / 2;
+            },
+            Slider: function (object) {
+                return this.getCircleSize() / 2;
+            },
+            SliderTick: function (object) {
+                return this.getSliderSize() / 2;
+            },
+            SliderEnd: function (object) {
+                return this.getSliderSize() / 2;
+            },
+        }),
 
         getHitMarkerImageName: function (hitMarker) {
             // Should this be here?
