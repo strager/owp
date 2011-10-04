@@ -46,7 +46,7 @@ define('game/Storyboard', [ 'game/storyboardObject', 'util/Timeline', 'util/Hist
 
     Storyboard.prototype = {
         getBackgroundFilename: function (time) {
-            var bg = this.backgroundHistory.getDataAtTime(time);
+            var bg = this.backgroundHistory.getDataAtTime(time) || this.backgroundHistory.getFirst(null);
             return bg && bg.filename;
         },
 
