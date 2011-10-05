@@ -22,7 +22,7 @@ $reportText = file_get_contents('php://input');
 $db = new mysqli($dbHostname, $dbUsername, $dbPassword, $dbDatabase);
 mysqli_connect_errno() and err();
 
-$statement = $db->prepare('INSERT INTO reports (date, source_ip, report_text) VALUES (?, ?, ?)')
+$statement = $db->prepare('INSERT INTO owp_reports (date, source_ip, report_text) VALUES (?, ?, ?)')
     or err();
 $statement->bind_param('sss', $date, $sourceIP, $reportText);
 $statement->execute() or err();
