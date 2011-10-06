@@ -95,6 +95,8 @@ $skinFiles = array(
     'ready-to-play'
 );
 
+$skinFiles = array_unique($skinFiles);
+
 if (count($argv) < 2) {
     error('Not enough arguments.  Usage: ' . $argv[0] . ' skin_directory');
 }
