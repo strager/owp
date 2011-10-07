@@ -1,19 +1,23 @@
+<!DOCTYPE html>
 <html>
-  <head>
-<title><?php e($title); ?></title>
+<head>
+    <title><?php e($title); ?></title>
 <?php foreach ($styles as $style): ?>
     <link rel="stylesheet" href="<?php e($style); ?>" />
 <?php endforeach; ?>
+</head>
+<body>
+
+<?php echo $content; ?>
+
 <?php foreach ($scripts as $script): ?>
-    <script type="text/javascript" src="<?php e($script); ?>"></script>
+    <script src="<?php e($script); ?>"></script>
 <?php endforeach; ?>
-  </head>
-  <body>
-    <?php echo $content; ?>
-  </body>
 <?php foreach ($onload as $javascript): ?>
-    <script type="text/javascript">
+    <script>
       <?php echo $javascript; ?>
     </script>
 <?php endforeach; ?>
+
+</body>
 </html>
