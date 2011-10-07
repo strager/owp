@@ -3,11 +3,13 @@ VERSION = 'debug-build';
 
 // =D?
 
-document.write('<script src="vendor/es5-shim.js"></script>');
-document.write('<script src="vendor/unrequirejs/lib/unrequire.js"></script>');
+OWP_ROOT = '/';
+
+document.write('<script src="' + OWP_ROOT + 'vendor/es5-shim.js"></script>');
+document.write('<script src="' + OWP_ROOT + 'vendor/unrequirejs/lib/unrequire.js"></script>');
 document.write('<script>(' + function () {
     require({
-        baseUrl: 'src',
+        baseUrl: OWP_ROOT + 'src',
         aliases: {
             'q': '../vendor/q/q'
         }
