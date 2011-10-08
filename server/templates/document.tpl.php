@@ -13,6 +13,10 @@
 </script>
 <?php endif; ?>
 
+<script>
+OWP_CRASH_URL = <?php echo json_encode(url(array('crash-report'))); ?>;
+</script>
+
 </head>
 <body>
 
