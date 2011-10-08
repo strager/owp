@@ -251,7 +251,7 @@ define('game/RuleSet', [ 'util/util', 'game/mapObject', 'util/History', 'util/Cu
             },
             SliderEnd: function (object) {
                 return this.getSliderSize() / 2;
-            },
+            }
         }),
 
         getHitMarkerImageName: function (hitMarker) {
