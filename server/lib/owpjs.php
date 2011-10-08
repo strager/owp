@@ -35,8 +35,10 @@ class owpjs {
             return;
         }
 
+        $js = '';
+
         $playfieldIdJson = json_encode($this->playfieldId);
-        $js = "owp.init(document.getElementById(${playfieldIdJson}));";
+        $js .= "owp.init(document.getElementById(${playfieldIdJson}));";
 
         foreach ($this->actions as $action) {
             switch ($action[0]) {

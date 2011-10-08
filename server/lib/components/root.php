@@ -15,6 +15,8 @@ class components_Root extends k_Component {
         switch ($name) {
         case 'game':
             return 'components_game_game';
+        case 'crash-report':
+            return 'components_crashreport';
         }
     }
 
