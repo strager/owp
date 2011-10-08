@@ -3,7 +3,7 @@
 error_reporting(E_ALL | E_STRICT);
 
 define('APP_ROOT', dirname(dirname(__FILE__)));
-define('WEB_ROOT', dirname(dirname(__FILE__)) . '/www');
+define('WEB_ROOT', dirname(dirname(__FILE__)) . '/..');
 
 set_include_path(
     get_include_path()

@@ -1,6 +1,6 @@
 <?php
 
-require_once dirname(__FILE__) . '/config/global.inc.php';
+require_once dirname(__FILE__) . '/src/config/global.inc.php';
 
 k()
     // Use container for wiring of components
