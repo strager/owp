@@ -41,7 +41,6 @@ class components_Root extends k_Component {
     }
 
     function renderHtml() {
-        $t = $this->templates->create('root');
-        return $t->render($this);
+        return new k_SeeOther($this->url(array('game')));
     }
 }
