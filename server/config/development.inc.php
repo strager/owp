@@ -18,5 +18,7 @@ function create_container() {
     $factory->owp_maps_root = APP_ROOT . '/..';
     $factory->owp_skin_root = APP_ROOT . '/../skin';
 
+    $factory->ga_account_id = null;
+
     return $container;
 }
