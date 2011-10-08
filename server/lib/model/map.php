@@ -40,16 +40,20 @@ class model_Map {
         return $this->fullPath;
     }
 
+    function title() {
+        return $this->name() . ' [' . $this->difficulty() . ']';
+    }
+
     function name() {
         return $this->name;
     }
 
     function artist() {
-        return $this->name;
+        return $this->artist;
     }
 
     function difficulty() {
-        return $this->name;
+        return $this->difficulty;
     }
 
     function urlParams() {

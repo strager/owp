@@ -8,6 +8,8 @@
 </head>
 <body>
 
+<h1><?php e($title); ?></h1>
+
 <?php echo $content; ?>
 
 <?php foreach ($scripts as $script): ?>
