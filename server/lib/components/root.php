@@ -19,6 +19,9 @@ class components_Root extends k_Component {
     }
 
     function wrapHtml($content) {
+        // FIXME Where should I put this?
+        $this->document->addStyle($this->url('css/main.css'));
+
         $t = $this->templates->create('document');
 
         return $t->render($this, array(
