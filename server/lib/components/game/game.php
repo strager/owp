@@ -1,6 +1,14 @@
 <?php
 
-class components_game_game extends k_Component {
+class components_game_game extends owpcomponent {
+    protected $templates;
+    protected $mapGateway;
+
+    function __construct(k_TemplateFactory $templates, model_MapGateway $mapGateway) {
+        $this->templates = $templates;
+        $this->mapGateway = $mapGateway;
+    }
+
     function map($name) {
         switch ($name) {
         case 'play':
@@ -9,6 +17,9 @@ class components_game_game extends k_Component {
     }
 
     function renderHtml() {
-        return 'game';
+        $t = $this->templates->create('maplist');
+        return $t->render($this, array(
+            'maps' => $this->mapGateway->getAllMaps()
+        ));
     }
 }

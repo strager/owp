@@ -8,14 +8,15 @@ function create_container() {
     $factory = new ApplicationFactory();
     $container = new bucket_Container($factory);
 
-    $factory->template_dir = realpath(dirname(__FILE__) . '/../templates');
+    $factory->template_dir = realpath(APP_ROOT . '/templates');
 
     $factory->pdo_dsn = 'mysql:host=localhost;dbname=test';
     $factory->pdo_username = 'root';
 
-    $factory->owp_script_path = '/owp.min.js'; // TODO
-    $factory->owp_skin_root = ''; // TODO
-    $factory->owp_maps_root = '/assets';
+    // TODO
+    $factory->owp_script_path = '/owp.min.js';
+    $factory->owp_maps_root = APP_ROOT . '/..';
+    $factory->owp_skin_root = APP_ROOT . '/../skin';
 
     return $container;
 }

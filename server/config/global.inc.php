@@ -1,10 +1,18 @@
 <?php
+
 error_reporting(E_ALL | E_STRICT);
+
+define('APP_ROOT', dirname(dirname(__FILE__)));
+define('WEB_ROOT', dirname(dirname(__FILE__)) . '/www');
+
 set_include_path(
-  get_include_path()
-  . PATH_SEPARATOR . dirname(dirname(__FILE__))
-  . PATH_SEPARATOR . dirname(dirname(__FILE__)).'/vendor'
-  . PATH_SEPARATOR . dirname(dirname(__FILE__)).'/lib');
+    get_include_path()
+    . PATH_SEPARATOR . APP_ROOT
+    . PATH_SEPARATOR . APP_ROOT . '/vendor'
+    . PATH_SEPARATOR . APP_ROOT . '/lib'
+);
+
+require_once 'util.php';
 
 require_once 'konstrukt/konstrukt.inc.php';
 set_error_handler('k_exceptions_error_handler');
@@ -30,8 +38,7 @@ spl_autoload_register('k_autoload');
 $debug_log_path = null;
 $debug_enabled = false;
 if (is_file(dirname(__FILE__) . '/local.inc.php')) {
-  require_once dirname(__FILE__) . '/local.inc.php';
+    require_once dirname(__FILE__) . '/local.inc.php';
 } else {
-  require_once dirname(__FILE__) . '/development.inc.php';
+    require_once dirname(__FILE__) . '/development.inc.php';
 }
-

@@ -3,44 +3,60 @@
 class owpjs {
     public $playfieldId;
 
-    protected $owpScriptPath;
-    protected $skinRoot;
-    protected $mapRoot;
+    public $owpScriptPath;
+    public $skinRoot;
+    public $mapsRoot;
 
     protected $actions;
 
-    function __construct($owpScriptPath, $skinRoot, $mapRoot) {
+    function __construct($owpScriptPath, $skinRoot, $mapsRoot) {
         $this->owpScriptPath = $owpScriptPath;
         $this->skinRoot = $skinRoot;
-        $this->mapRoot = $mapRoot;
+        $this->mapsRoot = $mapsRoot;
 
         $this->playfieldId = 'my_playfield';
     }
 
     function loadSkin($skinName = null) {
         // TODO Use $skinName
-        $skinRootJson = json_encode($this->skinRoot);
-        $this->actions[] = "owp.game.loadSkin(${skinRootJson});";
+        $this->actions[] = array('loadSkin', $this->skinRoot);
 
         return $this;
     }
 
-    function startMap($mapName) {
-        $mapRootJson = json_encode($this->mapRoot);
-        $mapNameJson = json_encode($mapName);
-        $this->actions[] = "owp.game.startMap(${mapRootJson}, ${mapNameJson});";
+    function startMap($map) {
+        $this->actions[] = array('startMap', $map);
 
         return $this;
     }
 
-    function render($document) {
+    function render($context, $document) {
         if (empty($this->actions)) {
             return;
         }
 
         $playfieldIdJson = json_encode($this->playfieldId);
         $js = "owp.init(document.getElementById(${playfieldIdJson}));";
-        $js .= implode('', $this->actions);
+
+        foreach ($this->actions as $action) {
+            switch ($action[0]) {
+            case 'loadSkin':
+                list($_, $skinRoot) = $action;
+                $skinRootJson = json_encode($context->url(relativePath(WEB_ROOT, dirname($skinRoot))));
+                $js .= "owp.game.loadSkin(${skinRootJson});";
+                break;
+
+            case 'startMap':
+                list($_, $map) = $action;
+                $mapRootJson = json_encode($context->url(dirname($map->webPath())));
+                $mapNameJson = json_encode(basename($map->filename(), '.osu'));
+                $js .= "owp.game.startMap(${mapRootJson}, ${mapNameJson});";
+                break;
+
+            default:
+                throw new Exception('Unknown action type: ' . $action[0]);
+            }
+        }
 
         $document->addScript($this->owpScriptPath);
         $document->addOnload($js);
