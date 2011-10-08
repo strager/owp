@@ -1,13 +1,12 @@
-php_value error_log              "../log/error.log"
-php_value log_errors             on
-php_value html_errors            off
+php_value error_log "../log/error.log"
+php_value log_errors on
+php_value html_errors off
 
 # Enable display errors in browser
 # For a production site, set the following two lines to off
 php_value display_startup_errors on
-php_value display_errors         on
+php_value display_errors on
 
-# These settings routes all traffic, except concrete files, to the dispatcher
 DirectorySlash On
 Options FollowSymLinks Indexes
 DirectoryIndex index.php
@@ -15,9 +14,9 @@ DirectoryIndex index.php
 RewriteEngine on
 
 RewriteCond %{REQUEST_FILENAME}  -d
-RewriteRule  ^.*$  -  [L]
+RewriteRule ^.*$ - [L]
 
 RewriteCond %{REQUEST_FILENAME}  -f
-RewriteRule  ^.*$  -  [L]
+RewriteRule ^.*$ - [L]
 
-RewriteRule ^.*$	index.php [L]
+RewriteRule ^.*$ index.php [L]
