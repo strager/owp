@@ -3,10 +3,12 @@
 class components_Root extends k_Component {
     protected $templates;
     protected $ga;
+    protected $social;
 
-    function __construct(k_TemplateFactory $templates, googleanalytics $ga) {
+    function __construct(k_TemplateFactory $templates, googleanalytics $ga, socialnetworks $social) {
         $this->templates = $templates;
         $this->ga = $ga;
+        $this->social = $social;
     }
 
     function map($name) {
@@ -31,7 +33,8 @@ class components_Root extends k_Component {
             'scripts' => $this->document->scripts(),
             'styles' => $this->document->styles(),
             'onload' => $this->document->onload(),
-            'ga' => $this->ga->renderJs()
+            'ga' => $this->ga->renderJs(),
+            'social' => $this->social->renderHtml()
         ));
     }
 

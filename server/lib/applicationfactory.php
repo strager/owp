@@ -13,6 +13,8 @@ class ApplicationFactory {
 
     public $ga_account_id;
 
+    public $twitter;
+
     function new_PDO($c) {
         return new PDO($this->pdo_dsn, $this->pdo_username, $this->pdo_password);
     }
@@ -27,5 +29,11 @@ class ApplicationFactory {
 
     function new_googleanalytics($c) {
         return new googleanalytics($c->create('k_TemplateFactory'), $this->ga_account_id);
+    }
+
+    function new_socialnetworks($c) {
+        $sn = new socialnetworks($c->create('k_TemplateFactory'));
+        $sn->twitter = $this->twitter;
+        return $sn;
     }
 }

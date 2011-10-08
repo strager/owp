@@ -17,6 +17,7 @@
 <body>
 
 <h1><?php e($title); ?></h1>
+<?php echo $social; ?>
 
 <?php echo $content; ?>
 

@@ -20,5 +20,7 @@ function create_container() {
 
     $factory->ga_account_id = null;
 
+    $factory->twitter = 'owpgame';
+
     return $container;
 }
