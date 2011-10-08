@@ -34,6 +34,9 @@ deploy_prod: $(PROD_DIR)
 lint:
 	@jshint $(JS_FILES)
 
+owp.min.js: $(BUILD_DIR)/owp.js
+	@cp "$<" "$@"
+
 $(BUILD_DIR)/owp.js: $(DEV_FILES)
 	@mkdir -p $(BUILD_DIR)
 	$(BIN_DIR)/build.sh "$@"
