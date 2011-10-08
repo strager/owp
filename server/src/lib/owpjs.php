@@ -60,7 +60,7 @@ class owpjs {
             }
         }
 
-        $document->addScript($this->owpScriptPath);
+        $document->addScript($context->url(relativePath(WEB_ROOT, $this->owpScriptPath)));
         $document->addOnload($js);
     }
 }
