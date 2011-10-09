@@ -17,6 +17,8 @@ class components_Root extends k_Component {
             return 'components_game_game';
         case 'crash-report':
             return 'components_crashreport';
+        case 'blog':
+            return 'components_blog';
         }
     }
 
