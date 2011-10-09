@@ -3,9 +3,13 @@
 class ApplicationFactory {
     public $template_dir;
 
-    public $pdo_dsn;
-    public $pdo_username;
-    public $pdo_password;
+    public $db_host;
+    public $db_database;
+    public $db_port;
+    public $db_username;
+    public $db_password;
+
+    public $forum_table_prefix;
 
     public $owp_script_path;
     public $owp_skin_root;
@@ -16,7 +20,8 @@ class ApplicationFactory {
     public $twitter;
 
     function new_PDO($c) {
-        return new PDO($this->pdo_dsn, $this->pdo_username, $this->pdo_password);
+        $dsn = 'mysql:host=' . $this->db_host . ';dbname=' . $this->db_database . ';port=' . $this->db_port;
+        return new PDO($dsn, $this->db_username, $this->db_password);
     }
 
     function new_k_TemplateFactory($c) {
