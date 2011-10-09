@@ -1,20 +1,11 @@
-{! The doctype declaration, which tells the browser what version of markup }
-{! is used in the document and what character set to use. Leave this }
-{! untouched, unless you know what you are doing. The default doctype }
-{! is targeted at "Standards Mode" in XHTML 1.0 Transitional. For more }
-{! info on this subject, see http://hsivonen.iki.fi/doctype/ }
 <?php
 if ($PHORUM['DATA']['CHARSET']) {
     header("Content-Type: text/html; charset=".htmlspecialchars($PHORUM['DATA']['CHARSET']));
-    echo '<?xml version="1.0" encoding="'.$PHORUM['DATA']['CHARSET'].'"?>';
-} else {
-    echo '<?xml version="1.0" ?>';
 }
 ?>
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<!DOCTYPE html>
 
-<!-- START TEMPLATE header.tpl -->
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="{LOCALE}" lang="{LOCALE}">
+<html lang="{LOCALE}">
 
 <head>
 

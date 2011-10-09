@@ -1,6 +1,5 @@
 <!-- BEGIN TEMPLATE list.tpl -->
 <div class="nav">
-    {INCLUDE "paging"}
     <!-- CONTINUE TEMPLATE list.tpl -->
     {IF URL->INDEX}<a class="icon icon-folder" href="{URL->INDEX}">{LANG->ForumList}</a>{/IF}
     <a class="icon icon-comment-add" href="{URL->POST}">{LANG->NewTopic}</a>

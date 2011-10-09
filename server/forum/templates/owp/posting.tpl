@@ -83,18 +83,18 @@
                   {LANG->Author}:<br />
                 {/IF}
                 {IF OPTION_ALLOWED->edit_author}
-                    <input type="text" name="author" size="30" value="{POSTING->author}" />
+                    <input type="text" name="author" size="30" value="{POSTING->author}" placeholder="Your name" />
                 {ELSE}
                     <big><strong>{POSTING->author}</strong></big><br />
                 {/IF}
                 <br/>
 
-                {IF MODE "post" OR MODE "reply"}
+                {IF MODE "post" OR MODE "reply" OR MODE "quote"}
 
                     {IF NOT LOGGEDIN}
 
                         {LANG->YourEmail}:<br />
-                        <input type="text" name="email" size="30" value="{POSTING->email}" /><br />
+                        <input type="text" name="email" size="30" value="{POSTING->email}" placeholder="you@gmail.com" /><br />
                         <br />
 
                     {/IF}
