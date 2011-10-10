@@ -26,11 +26,11 @@ body {
     margin: 0 auto;
 }
 
-#playfield {
+.playfield {
     margin: 0;
 }
 
-#playfield.fullscreen {
+.playfield.fullscreen {
     position: absolute;
     top: 0;
     left: 0;
