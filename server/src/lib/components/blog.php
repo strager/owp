@@ -40,7 +40,7 @@ class components_blog extends owpcomponent {
         );
 
         if (array_key_exists($path, $aliases)) {
-            return new k_MovedPermanently($this->url('forum/read.php?' . urlencode($this->forumId) . ',' . urlencode($aliases[$path])));
+            return new k_MovedPermanently($this->forum->getMessageUrl($this->forumId, $aliases[$path]));
         } else {
             return null;
         }

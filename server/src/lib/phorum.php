@@ -13,10 +13,16 @@ class phorum {
     private $rollBackStates = array();
     private $cwds = array();
 
-    function httpPath() {
+    function url($path = null) {
         global $PHORUM;
 
-        return $PHORUM['http_path'];
+        $base = $PHORUM['http_path'];
+
+        if ($path === null) {
+            return $base;
+        } else {
+            return $base . '/' . ltrim($path, '/');
+        }
     }
 
     function getThreads($forumId, $bodies) {
@@ -31,12 +37,15 @@ class phorum {
     }
 
     function getMessageUrl($thread) {
-        return sprintf(
-            '%s/read.php?%d,%d',
-            $this->httpPath(),
-            $thread['forum_id'],
-            $thread['message_id']
-        );
+        if (func_num_args() === 2) {
+            $forumId = func_get_arg(0);
+            $messageId = func_get_arg(1);
+        } else {
+            $forumId = $thread['forum_id'];
+            $messageId = $thread['message_id'];
+        }
+
+        return $this->url(sprintf('/read.php?%d,%d', $forumId, $messageId));
     }
 
     function formatMessage($message) {
