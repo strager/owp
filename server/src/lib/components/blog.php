@@ -4,11 +4,13 @@ class components_blog extends owpcomponent {
     protected $templates;
 
     protected $forumId;
+    protected $forum;
 
-    function __construct(k_TemplateFactory $templates) {
+    function __construct(k_TemplateFactory $templates, phorum $forum) {
         $this->templates = $templates;
 
         $this->forumId = 1;
+        $this->forum = $forum;
     }
 
     function dispatch() {
@@ -38,26 +40,23 @@ class components_blog extends owpcomponent {
         );
 
         if (array_key_exists($path, $aliases)) {
-            return new k_MovedPermanently ($this->url('forum/read.php?' . urlencode($this->forumId) . ',' . urlencode($aliases[$path])));
+            return new k_MovedPermanently($this->url('forum/read.php?' . urlencode($this->forumId) . ',' . urlencode($aliases[$path])));
         } else {
             return null;
         }
     }
 
     function renderHtml() {
-        // HACK FIXME
-        $feedUrl = 'http://localhost' . $this->url('forum/feed.php?' . urlencode($this->forumId) . ',type=rss');
-
-        $rss = file_get_contents($feedUrl);
-        $xml = new SimpleXmlElement($rss);
+        $threads = $this->forum->getThreads($this->forumId, true);
+        $messages = array_map(array($this->forum, 'formatMessage'), $threads);
 
         $posts = array();
-        foreach ($xml->channel->item as $item) {
+        foreach ($messages as $message) {
             $posts[] = array(
-                'title' => (string) $item->title,
-                'url' => (string) $item->link,
-                'bodyHtml' => (string) $item->description,
-                'date' => strtotime((string) $item->pubDate)
+                'title' => $message['subject'],
+                'url' => $this->forum->getMessageUrl($message),
+                'bodyHtml' => $message['body'],
+                'date' => (int) $message['datestamp']
             );
         }
 
