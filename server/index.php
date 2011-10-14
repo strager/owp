@@ -20,24 +20,14 @@ require_once 'konstrukt/konstrukt.inc.php';
 set_error_handler('k_exceptions_error_handler');
 spl_autoload_register('k_autoload');
 
-function create_container() {
-    require_once 'bucket.inc.php';
-    require_once APP_ROOT . '/config/global.inc.php';
-
-    $config = new ApplicationFactory();
-    $container = new bucket_Container($config);
-
-    reconfigure($config);
-
-    return $container;
-}
-
 $debug_log_path = null;
 $debug_enabled = false;
 
+require_once APP_ROOT . '/common.php';
+
 k()
     // Use container for wiring of components
-    ->setComponentCreator(new k_InjectorAdapter(create_container()))
+    ->setComponentCreator(new k_InjectorAdapter($OWP_CONTAINER))
     // Location of debug logging
     ->setLog($debug_log_path)
     // Enable/disable in-browser debugging
