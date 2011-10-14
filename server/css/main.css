@@ -23,13 +23,20 @@ a:hover {
 }
 
 body {
-    width: 640px;
+    width: 800px;
     margin: 0 auto;
 }
 
 header nav {
     background-color: #DDDDDD;
     text-align: center;
+    margin: 0.75em 0;
+}
+
+header nav ul {
+    margin: 0;
+    padding: 0;
+    display: block;
 }
 
 header nav li {
@@ -57,7 +64,8 @@ header nav li a:hover {
 }
 
 .playfield {
-    margin: 0;
+    margin: 0 auto;
+    width: 640px; /* HACK */
 }
 
 .playfield.fullscreen {
@@ -97,8 +105,13 @@ header nav li a:hover {
 .social {
     position: absolute;
     top: 0;
-    margin-left: 650px;
-    margin-top: 0.5em;
+    margin-left: 810px;
+    margin-top: 0.75em;
+    line-height: 2.5em;
+}
+
+.social img {
+    vertical-align: bottom;
 }
 
 .now-playing {
