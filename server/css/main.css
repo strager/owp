@@ -3,6 +3,9 @@ html {
     background-color: #F0F0F0;
     font-family: Helvetica, sans-serif;
     height: 100%;
+}
+
+body, p, input, textarea, button {
     font-size: 16pt;
 }
 
