@@ -20,6 +20,16 @@ OWP_CRASH_URL = <?php echo json_encode(url(array('crash-report'))); ?>;
 </head>
 <body>
 
+<header>
+<nav>
+<ul>
+<li><a href="<?php url(array('blog')); ?>">Blog</a></li>
+<li><a href="<?php url(array('game')); ?>">Play owp</a></li>
+<li><a href="<?php url(array('forums')); ?>">Forums</a></li>
+</ul>
+</nav>
+</header>
+
 <h1><?php e($title); ?></h1>
 <?php echo $social; ?>
 

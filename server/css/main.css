@@ -3,6 +3,7 @@ html {
     background-color: #0E0E0E;
     font-family: Helvetica, sans-serif;
     height: 100%;
+    font-size: 16pt;
 }
 
 a:link {
@@ -24,6 +25,35 @@ a:hover {
 body {
     width: 640px;
     margin: 0 auto;
+}
+
+header nav {
+    background-color: #222222;
+    text-align: center;
+}
+
+header nav li {
+    display: inline-block;
+    margin: 0 0.25em;
+}
+
+header nav li a {
+    display: inline-block;
+    padding: 0.75em 1.5em 0.5em 1.5em;
+    color: #CCCCCC;
+    font-weight: bold;
+    text-decoration: none;
+    border-bottom: 0.25em solid transparent;
+}
+
+header nav li a:visited {
+    color: #CCCCCC;
+}
+
+header nav li a:hover {
+    background-color: #0E0E0E;
+    color: #EEEEEE;
+    border-bottom-color: #555555;
 }
 
 .playfield {
