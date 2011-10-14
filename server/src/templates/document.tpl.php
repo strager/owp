@@ -23,9 +23,9 @@ OWP_CRASH_URL = <?php echo json_encode(url(array('crash-report'))); ?>;
 <header>
 <nav>
 <ul>
-<li><a href="<?php url(array('blog')); ?>">Blog</a></li>
-<li><a href="<?php url(array('game')); ?>">Play owp</a></li>
-<li><a href="<?php url(array('forums')); ?>">Forums</a></li>
+<li><a href="<?php e(url(array('blog'))); ?>">Blog</a></li>
+<li><a href="<?php e(url(array('game'))); ?>">Play owp</a></li>
+<li><a href="<?php e(url(array('forum'))); ?>">Forums</a></li>
 </ul>
 </nav>
 </header>
