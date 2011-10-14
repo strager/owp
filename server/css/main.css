@@ -1,6 +1,6 @@
 html {
-    color: #F0F0F0;
-    background-color: #0E0E0E;
+    color: #0E0E0E;
+    background-color: #F0F0F0;
     font-family: Helvetica, sans-serif;
     height: 100%;
     font-size: 16pt;
@@ -28,7 +28,7 @@ body {
 }
 
 header nav {
-    background-color: #222222;
+    background-color: #DDDDDD;
     text-align: center;
 }
 
@@ -40,20 +40,20 @@ header nav li {
 header nav li a:link {
     display: inline-block;
     padding: 0.75em 1.5em 0.5em 1.5em;
-    color: #CCCCCC;
+    color: #333333;
     font-weight: bold;
     text-decoration: none;
     border-bottom: 0.25em solid transparent;
 }
 
 header nav li a:visited {
-    color: #CCCCCC;
+    color: #333333;
 }
 
 header nav li a:hover {
-    background-color: #0E0E0E;
-    color: #EEEEEE;
-    border-bottom-color: #555555;
+    background-color: #EEEEEE;
+    color: #111111;
+    border-color: #BBBBBB;
 }
 
 .playfield {
