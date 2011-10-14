@@ -21,7 +21,9 @@ class ApplicationFactory {
 
     function new_PDO($c) {
         $dsn = 'mysql:host=' . $this->db_host . ';dbname=' . $this->db_database . ';port=' . $this->db_port;
-        return new PDO($dsn, $this->db_username, $this->db_password);
+        $pdo = new PDO($dsn, $this->db_username, $this->db_password);
+        $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+        return $pdo;
     }
 
     function new_k_TemplateFactory($c) {
