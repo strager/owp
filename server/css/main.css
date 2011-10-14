@@ -22,6 +22,10 @@ a:hover {
     color: #6E90FF;
 }
 
+p {
+    line-height: 1.5;
+}
+
 body {
     width: 800px;
     margin: 0 auto;
