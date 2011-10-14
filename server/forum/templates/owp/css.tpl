@@ -1,20 +1,5 @@
 /* BEGIN TEMPLATE css.tpl */
 
-/* overall style */
-
-body {
-    background-color: {body_background_color};
-    color: {default_font_color};
-}
-
-#phorum {
-    font-family: {default_font};
-    font-size: {base_font_size};
-    color: {default_font_color};
-    max-width: {max_width};
-    margin: auto;
-}
-
 /* HTML level styles */
 
 img {

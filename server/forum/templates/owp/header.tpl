@@ -17,6 +17,7 @@ if ($PHORUM['DATA']['CHARSET']) {
 {! Load CSS code. This code origins from css.tpl, css_print.tpl. }
 {! Additionally, modules can add their own CSS code to these, using the }
 {! "css_register" module hook. }
+  <link rel="stylesheet" type="text/css" href="{URL->BASE}../css/main.css" media="screen,print" />
 {IF PRINTVIEW}
   <meta name="robots" content="NOINDEX,NOFOLLOW">
   <link rel="stylesheet" type="text/css" href="{URL->CSS_PRINT}" media="screen,print" />
@@ -86,6 +87,16 @@ Some Icons courtesy of:
 {! The default onload code for the <body> uses the FOCUS_TO_ID template }
 {! variable to specify what page element should get the focus. }
 <body onload="{IF FOCUS_TO_ID}var focuselt=document.getElementById('{FOCUS_TO_ID}'); if (focuselt) focuselt.focus();{/IF}">
+
+  <header>
+  <nav>
+  <ul>
+  <li><a href="{URL->BASE}../blog">Blog</a></li>
+  <li><a href="{URL->BASE}../game">Play owp</a></li>
+  <li><a href="{URL->BASE}">Forums</a></li>
+  </ul>
+  </nav>
+  </header>
 
   {! Please, always keep this <div> in your template and do not change its id }
   {! It acts as the main Phorum content container, which will be used for }
