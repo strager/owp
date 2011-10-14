@@ -48,10 +48,11 @@ define('index', [ 'debugConsole', 'owp', 'agentInfo' ], function (debugConsole, 
             }
 
             try {
-                var xhr = new XMLHttpRequest();
                 // If we get an error, oh well.
+                var xhr = new XMLHttpRequest();
 
-                xhr.open('POST', '/crash-report', true);
+                xhr.open('POST', window.OWP_CRASH_URL, true);
+                xhr.setRequestHeader('content-type', 'application/json');
                 xhr.send(JSON.stringify(report));
             } catch (e) {
                 // Not much we can do now but annoy the user.  And we don't

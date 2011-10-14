@@ -19,32 +19,33 @@ clean:
 
 deploy_local: $(PROD_DIR)
 	@mkdir -p $(ROOT)/demo
-	rsync -rlt -v $(PROD_DIR)/ $(ROOT)/demo
+	rsync -rlt -v $(PROD_DIR)/server/ $(ROOT)/demo
 
 deploy_staging: $(PROD_DIR)
-	rsync -rlt -zv $(PROD_DIR)/ train:owp/staging
+	rsync -rlt -zv $(PROD_DIR)/server/ train:owp/staging
 
 deploy_prod: $(PROD_DIR)
 	@echo ''
 	@echo '_________________________________________'
 	@echo -e '\033[1;35mType "\033[4;35msrsly\033[0m\033[1;35m" to deploy owp to production:\033[0m'
 	@read entered_text ; [ "$$entered_text" = "srsly" ]
-	rsync -rlt -zv $(PROD_DIR)/ train:owp/demo
+	rsync -rlt -zv $(PROD_DIR)/server/ train:owp/demo
 
 lint:
 	@jshint $(JS_FILES)
+
+owp.min.js: $(BUILD_DIR)/owp.js
+	@cp "$<" "$@"
 
 $(BUILD_DIR)/owp.js: $(DEV_FILES)
 	@mkdir -p $(BUILD_DIR)
 	$(BIN_DIR)/build.sh "$@"
 
+# TODO Migrations
 $(PROD_DIR): $(BUILD_DIR)/owp.js
 	@rm -rf $(PROD_DIR)
 	@mkdir -p "$@"
-	cp "$<" $(PROD_DIR)
-	cp $(SERVER_DIR)/*.php $(PROD_DIR)
-	cp $(SERVER_DIR)/*.css $(PROD_DIR)
-	rm $(PROD_DIR)/config.php $(PROD_DIR)/config.example.php
-	ln -s map-select.php $(PROD_DIR)/index.php
+	git ls-files server | $(BIN_DIR)/copy-files.sh $(PROD_DIR)
+	cp "$<" $(PROD_DIR)/server
 
 .PHONY: all clean deploy_local deploy_staging deploy_prod lint $(PROD_DIR)

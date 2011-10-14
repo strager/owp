@@ -7,3 +7,6 @@
 [submodule "vendor/unrequirejs"]
 	path = vendor/unrequirejs
 	url = git://github.com/sibblingz/unrequirejs.git
+[submodule "vendor/mpm"]
+	path = vendor/mpm
+	url = https://github.com/davejkiger/mysql-php-migrations.git
