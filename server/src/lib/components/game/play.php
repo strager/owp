@@ -25,8 +25,14 @@ class components_game_play extends owpcomponent {
         $this->document->setTitle($map->title());
 
         $t = $this->templates->create('playfield');
-        return $t->render($this, array(
+        $playfieldHtml = $t->render($this, array(
             'playfieldId' => $this->owpjs->playfieldId
+        ));
+
+        $t = $this->templates->create('map');
+        return $t->render($this, array(
+            'map' => $map,
+            'playfieldHtml' => $playfieldHtml
         ));
     }
 }

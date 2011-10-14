@@ -37,7 +37,7 @@ header nav li {
     margin: 0 0.25em;
 }
 
-header nav li a {
+header nav li a:link {
     display: inline-block;
     padding: 0.75em 1.5em 0.5em 1.5em;
     color: #CCCCCC;
@@ -99,4 +99,16 @@ header nav li a:hover {
     top: 0;
     margin-left: 650px;
     margin-top: 0.5em;
+}
+
+.now-playing {
+    color: #888888;
+    font-style: italic;
+    font-weight: 100;
+}
+
+.now-playing .map {
+    color: #CCCCCC;
+    font-style: normal;
+    font-weight: normal;
 }

@@ -30,7 +30,6 @@ OWP_CRASH_URL = <?php echo json_encode(url(array('crash-report'))); ?>;
 </nav>
 </header>
 
-<h1><?php e($title); ?></h1>
 <?php echo $social; ?>
 
 <?php echo $content; ?>
