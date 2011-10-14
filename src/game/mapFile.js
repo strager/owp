@@ -8,6 +8,7 @@ define('game/mapFile', [ 'game/RuleSet', 'game/Map', 'game/Combo', 'game/MapInfo
             return f;
         }
     }
+
     function filterFilename(str) {
         return str.replace(/^"([^"]*)"$/, '$1').replace(/\\/g, '/');
     }
