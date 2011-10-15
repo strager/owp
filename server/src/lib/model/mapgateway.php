@@ -1,11 +1,15 @@
 <?php
 
 class model_MapGateway {
-    protected $mapsRoot;
+    private static $mapFields = 'id, song_name, artist_name, difficulty_name, mapper_name, map_root, map_file, UNIX_TIMESTAMP(submit_date) AS submit_date';
 
-    function __construct(owpjs $owpjs) {
+    protected $mapsRoot;
+    protected $db;
+
+    function __construct(owpjs $owpjs, PDO $db) {
         // FIXME MapGateway shouldn't depend upon owpjs
         $this->mapsRoot = $owpjs->mapsRoot;
+        $this->db = $db;
     }
 
     function mapsRoot() {
@@ -13,41 +17,31 @@ class model_MapGateway {
     }
 
     function getMapFromParts($parts) {
-        $mapPath = @$parts['map'];
+        $mapID = @$parts['map'];
 
-        if (!$mapPath) {
+        if (!$mapID) {
             return null;
         }
 
-        // FIXME This is totally lame
-        $maps = $this->getAllMaps();
-        foreach ($maps as $map) {
-            if ($map->mapPath() === $parts['map']) {
-                return $map;
-            }
+        $statement = $this->db->prepare('SELECT ' . self::$mapFields . ' FROM owp_maps WHERE is_public = 1 AND id = :id LIMIT 1');
+        $statement->bindValue('id', $mapID);
+        $statement->execute();
+
+        $row = $statement->fetch();
+        if ($row === false) {
+            return null;
         }
 
-        return null;
+        return new model_Map($this, $row);
     }
 
     function getAllMaps() {
+        $statement = $this->db->prepare('SELECT ' . self::$mapFields . ' FROM owp_maps WHERE is_public = 1');
+        $statement->execute();
+
         $maps = array();
-
-        $root = $this->mapsRoot;
-        $dirs = scandir($root);
-        foreach ($dirs as $dir) {
-            $mapDir = $root . DIRECTORY_SEPARATOR . $dir;
-            if (!is_dir($mapDir)) {
-                continue;
-            }
-
-            $files = scandir($mapDir);
-
-            foreach($files as $file) {
-                if (preg_match(model_Map::$filenameRe, $file)) {
-                    $maps[] = new model_Map($mapDir . DIRECTORY_SEPARATOR . $file, $this);
-                }
-            }
+        while (($row = $statement->fetch()) !== false) {
+            $maps[] = new model_Map($this, $row);
         }
 
         return $maps;

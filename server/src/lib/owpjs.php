@@ -50,8 +50,8 @@ class owpjs {
 
             case 'startMap':
                 list($_, $map) = $action;
-                $mapRootJson = json_encode($context->url(dirname($map->webPath())));
-                $mapNameJson = json_encode(basename($map->filename(), '.osu'));
+                $mapRootJson = json_encode($context->url($map->rootWebPath()));
+                $mapNameJson = json_encode(preg_replace('/\\.osu$/', '', $map->mapFile()));
                 $js .= "owp.game.startMap(${mapRootJson}, ${mapNameJson});";
                 break;
 
