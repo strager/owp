@@ -76,6 +76,7 @@ header nav li a:hover {
 }
 
 .playfield.fullscreen {
+    width: auto;
     position: absolute;
     top: 0;
     left: 0;
