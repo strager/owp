@@ -51,12 +51,7 @@ define('AssetManager', [ 'game/MapInfo', 'game/mapFile', 'assetConfig', 'util/Ma
         return ret.promise;
     }
 
-    function AssetManager(root) {
-        this.root = root;
-        this.cache = new Cache();
-    }
-
-    AssetManager.typeHandlers = {
+    var assetLoaders = {
         image: function (assetManager, name) {
             var ret = Q.defer();
 
@@ -72,7 +67,7 @@ define('AssetManager', [ 'game/MapInfo', 'game/mapFile', 'assetConfig', 'util/Ma
             }, false);
 
             // We need to attach the onload event first for IE
-            img.src = assetManager.root + '/' + name;
+            img.src = assetManager.path(name);
 
             return ret.promise;
         },
@@ -126,7 +121,7 @@ define('AssetManager', [ 'game/MapInfo', 'game/mapFile', 'assetConfig', 'util/Ma
                 });
             }
 
-            return xhr(assetManager.root + '/' + name)
+            return xhr(assetManager.path(name))
                 .then(function (xhr) {
                     var collection = JSON.parse(xhr.responseText);
 
@@ -171,12 +166,12 @@ define('AssetManager', [ 'game/MapInfo', 'game/mapFile', 'assetConfig', 'util/Ma
             }
 
             var originalTrack = document.createElement('source');
-            originalTrack.src = assetManager.root + '/' + name;
+            originalTrack.src = assetManager.path(name);
             setAudioSourceType(originalTrack);
             originalTrack.onerror = fail;
 
             var vorbisTrack = document.createElement('source');
-            vorbisTrack.src = assetManager.root + '/' + name + '.ogg';
+            vorbisTrack.src = assetManager.path(name + '.ogg');
             setAudioSourceType(vorbisTrack);
             vorbisTrack.onerror = fail;
 
@@ -202,7 +197,7 @@ define('AssetManager', [ 'game/MapInfo', 'game/mapFile', 'assetConfig', 'util/Ma
         },
 
         sound: function (assetManager, name) {
-            return AssetManager.typeHandlers.audio(assetManager, name);
+            return assetLoaders.audio(assetManager, name);
         },
 
         video: function (assetManager, name) {
@@ -231,15 +226,15 @@ define('AssetManager', [ 'game/MapInfo', 'game/mapFile', 'assetConfig', 'util/Ma
             }
 
             var originalTrack = document.createElement('source');
-            originalTrack.src = assetManager.root + '/' + name;
+            originalTrack.src = assetManager.path(name);
             originalTrack.onerror = fail;
 
             var webmTrack = document.createElement('source');
-            webmTrack.src = assetManager.root + '/' + name + '.webm';
+            webmTrack.src = assetManager.path(name + '.webm');
             webmTrack.onerror = fail;
 
             var theoraTrack = document.createElement('source');
-            theoraTrack.src = assetManager.root + '/' + name + '.ogv';
+            theoraTrack.src = assetManager.path(name + '.ogv');
             theoraTrack.onerror = fail;
 
             video.addEventListener('canplay', function () {
@@ -278,14 +273,14 @@ define('AssetManager', [ 'game/MapInfo', 'game/mapFile', 'assetConfig', 'util/Ma
         },
 
         'asset-config': function (assetManager, name) {
-            return xhr(assetManager.root + '/' + name)
+            return xhr(assetManager.path(name))
                 .then(function (xhr) {
                     return assetConfig.parseString(xhr.responseText);
                 });
         },
 
         skin: function (assetManager, name, loaded) {
-            var skinAssetManager = new AssetManager(assetManager.root + '/' + name);
+            var skinAssetManager = new AssetManager(assetManager.path(name));
 
             return Q.ref(assetManager.load(name + '/skin.ini', 'asset-config'))
                 .then(function (assetConfig) {
@@ -296,15 +291,27 @@ define('AssetManager', [ 'game/MapInfo', 'game/mapFile', 'assetConfig', 'util/Ma
         }
     };
 
+    function AssetManager(root) {
+        this.root = root;
+        this.cache = new Cache();
+    }
+
     AssetManager.prototype = {
+        path: function (name) {
+            var path = this.root + '/' + name;
+            // This fixes problems like a path beginning with //
+            path = path.replace(/\/{2,}/g, '/');
+            return path;
+        },
+
         loadUncached: function (name, type) {
             var assetManager = this;
 
-            if (!AssetManager.typeHandlers.hasOwnProperty(type)) {
+            if (!assetLoaders.hasOwnProperty(type)) {
                 throw 'Unknown asset type: ' + type;
             }
 
-            return AssetManager.typeHandlers[type](this, name);
+            return assetLoaders[type](this, name);
         },
 
         load: function (name, type) {

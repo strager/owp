@@ -11,7 +11,7 @@ $config->db_password = '';
 $config->forum_table_prefix = 'forum_';
 
 $config->owp_script_path = APP_ROOT . '/../../owp.js'; // KINDA BROKEN FIXME
-$config->owp_maps_root = APP_ROOT . '/../..';
+$config->owp_maps_root = APP_ROOT . '/../../maps';
 $config->owp_skin_root = APP_ROOT . '/../../skin';
 
 $config->ga_account_id = null;
