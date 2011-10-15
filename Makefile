@@ -29,7 +29,7 @@ deploy_prod: $(PROD_DIR)
 	@echo '_________________________________________'
 	@echo -e '\033[1;35mType "\033[4;35msrsly\033[0m\033[1;35m" to deploy owp to production:\033[0m'
 	@read entered_text ; [ "$$entered_text" = "srsly" ]
-	rsync -rlt -zv $(PROD_DIR)/server/ train:owp/demo
+	rsync -rlt -zv $(PROD_DIR)/server/ train:owp
 
 lint:
 	@jshint $(JS_FILES)
