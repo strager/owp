@@ -497,6 +497,7 @@ define('game/Game', [ 'q', 'game/MapState', 'AssetManager', 'util/PubSub', 'Soun
                 ui.vars.rank = mapState.ruleSet.getTotalRank(mapState.getAllHitMarkers());
 
                 renderCallback = function (renderer) {
+                    renderer.renderColourOverlay([ 0, 0, 0, 255 ]);
                     renderer.renderUi(ui);
                 };
             }
