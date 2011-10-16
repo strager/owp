@@ -142,8 +142,11 @@ define('game/Game', [ 'q', 'game/MapState', 'AssetManager', 'util/PubSub', 'Soun
                     renderer.renderReadyToPlay(skin.valueOf(), time);
                 };
 
+                var started = false;
+
                 boundEvents.push(mousePubSub.subscribe(function (e) {
-                    if (e.left || e.right) {
+                    if (e.left || e.right && !started) {
+                        started = true;
                         Q.fail(sm.play(), agentInfo.crash);
                     }
                 }));
