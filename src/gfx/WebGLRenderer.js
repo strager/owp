@@ -562,8 +562,7 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/gPubSub',
                 var key = [ object, ruleSet, skin ];
 
                 var c = caches.sliderTrack.get(key, function () {
-                    var adjustmentScale = 128 / (128 - 10); // Don't ask...
-                    var radius = ruleSet.getCircleSize() / adjustmentScale / 2;
+                    var radius = ruleSet.getSliderTrackWidth();
 
                     var b = createSliderTrack(object.curve, radius);
                     var buffer = b.buffer;

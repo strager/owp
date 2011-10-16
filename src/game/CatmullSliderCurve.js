@@ -113,7 +113,7 @@ define('game/CatmullSliderCurve', [ 'util/util' ], function (util) {
             });
         };
 
-        this.flattenContourPoints = util.memoize(function (radius) {
+        this.flattenContourPoints = util.memoize2(function (radius) {
             // TODO End caps
             // TODO Initial point
 

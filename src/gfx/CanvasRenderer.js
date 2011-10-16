@@ -533,8 +533,7 @@ define('gfx/CanvasRenderer', [ 'game/mapObject', 'util/Cache', 'gfx/canvasShader
                 c.closePath();
             }
 
-            var adjustmentScale = 128 / (128 - 10); // Don't ask...
-            var lineWidth = ruleSet.getCircleSize() / adjustmentScale;
+            var lineWidth = ruleSet.getSliderTrackWidth();
 
             c.save();
 

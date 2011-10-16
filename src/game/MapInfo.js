@@ -28,6 +28,13 @@ define('game/MapInfo', [ 'util/util', 'game/mapObject' ], function (util, mapObj
         objects = objects.reduce(function (acc, object) {
             return mapObject.match(object, {
                 Slider: function () {
+                    // Cache flattened slider
+                    // (functions should be memoized)
+                    object.curve.flattenCentrePoints();
+                    object.curve.flattenContourPoints(this.ruleSet.getSliderTrackWidth());
+                    this.ruleSet.getObjectBoundingRectangle(object);
+
+                    // Slider ticks and ends
                     var ticks = this.ruleSet.getSliderTicks(object);
                     object.ticks = ticks;
 
