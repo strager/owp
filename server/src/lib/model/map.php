@@ -1,64 +1,70 @@
 <?
 
 class model_Map {
-    public static $filenameRe = '/^((?<name>.*) \((?<artist>.*)\) \\[(?<difficulty>.*)\\])\.osu$/';
-
-    protected $fullPath;
     protected $gateway;
+    protected $id;
 
-    protected $name;
-    protected $artist;
-    protected $difficulty;
+    protected $songName;
+    protected $artistName;
+    protected $difficultyName;
+    protected $mapperName;
+    protected $submitDate;
 
-    function __construct($fullPath, $gateway) {
-        $this->fullPath = $fullPath;
+    protected $mapRoot;
+    protected $mapFile;
+
+    function __construct($gateway, $dbData) {
         $this->gateway = $gateway;
 
-        $matches = null;
-        if (!preg_match(self::$filenameRe, $this->filename(), $matches)) {
-            throw new Error('Bad map name');
-        }
-
-        $this->name = $matches['name'];
-        $this->artist = $matches['artist'];
-        $this->difficulty = $matches['difficulty'];
+        $this->id = $dbData['id'];
+        $this->songName = $dbData['song_name'];
+        $this->artistName = $dbData['artist_name'];
+        $this->difficultyName = $dbData['difficulty_name'];
+        $this->mapperName = $dbData['mapper_name'];
+        $this->submitDate = $dbData['submit_date'];
+        $this->mapRoot = $dbData['map_root'];
+        $this->mapFile = $dbData['map_file'];
     }
 
-    function filename() {
-        return basename($this->fullPath);
+    function id() {
+        return $this->id;
     }
 
-    function webPath() {
-        return relativePath(WEB_ROOT, $this->fullPath);
+    function rootFullPath() {
+        return $this->gateway->mapsRoot() . '/' . $this->mapRoot;
     }
 
-    function mapPath() {
-        return relativePath($this->gateway->mapsRoot(), $this->fullPath);
+    function rootWebPath() {
+        return relativePath(WEB_ROOT, $this->rootFullPath());
     }
 
-    function fullPath() {
-        return $this->fullPath;
+    function mapRoot() {
+        return $this->mapRoot;
+    }
+
+    function mapFile() {
+        return $this->mapFile;
     }
 
     function title() {
-        return $this->name() . ' [' . $this->difficulty() . ']';
+        return $this->artistName() . ' - ' . $this->songName() . ' [' . $this->difficultyName() . ']';
     }
 
-    function name() {
-        return $this->name;
+    function songName() {
+        return $this->songName;
     }
 
-    function artist() {
-        return $this->artist;
+    function artistName() {
+        return $this->artistName;
     }
 
-    function difficulty() {
-        return $this->difficulty;
+    function difficultyName() {
+        return $this->difficultyName;
     }
 
     function urlParams() {
         return array(
-            'map' => $this->mapPath()
+            'map' => $this->id()
         );
     }
 }

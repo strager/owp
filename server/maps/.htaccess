@@ -1,0 +1,3 @@
+# Prevent maps from being evil
+Options -Indexes -ExecCGI
+php_flag engine off

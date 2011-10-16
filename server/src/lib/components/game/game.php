@@ -13,6 +13,8 @@ class components_game_game extends owpcomponent {
         switch ($name) {
         case 'play':
             return 'components_game_play';
+        case 'upload':
+            return 'components_game_upload';
         }
     }
 

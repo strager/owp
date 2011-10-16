@@ -43,4 +43,8 @@ class ApplicationFactory {
         $sn->twitter = $this->twitter;
         return $sn;
     }
+
+    function new_model_MapGateway($c) {
+        return new model_MapGateway($this->owp_maps_root, $c->create('PDO'));
+    }
 }
