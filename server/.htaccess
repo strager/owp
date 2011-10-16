@@ -2,6 +2,9 @@ DirectorySlash On
 Options FollowSymLinks Indexes
 DirectoryIndex index.php
 
+# User upload is probably under 60MB
+php_value upload_max_filesize 60M
+
 RewriteEngine on
 
 RewriteCond %{REQUEST_FILENAME}  -d
