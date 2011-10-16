@@ -123,7 +123,8 @@ define('util/util', [ 'util/Cache' ], function (Cache) {
         return function () {
             var args = arguments;
             var self = this;
-            var cargs = [ self ].concat(Array.prototype.slice.call(args));
+            var cargs = [ self ];
+            cargs.push.apply(cargs, args);
 
             return cache.get(cargs, function () {
                 return fn.apply(self, args);
