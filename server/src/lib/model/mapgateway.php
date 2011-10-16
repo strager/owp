@@ -62,6 +62,20 @@ class model_MapGateway {
         return $maps;
     }
 
+    function getRelatedMaps($map) {
+        $statement = $this->db->prepare('SELECT ' . self::$mapFields . ' FROM owp_maps WHERE is_public = 1 AND id != :id AND map_root = :map_root');
+        $statement->bindValue('id', $map->id());
+        $statement->bindValue('map_root', $map->mapRoot());
+        $statement->execute();
+
+        $maps = array();
+        while (($row = $statement->fetch()) !== false) {
+            $maps[] = new model_Map($this, $row);
+        }
+
+        return $maps;
+    }
+
     function saveOsz($oszFilePath) {
         $zip = new ZipArchive();
         if ($zip->open($oszFilePath) !== true) {

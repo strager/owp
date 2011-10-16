@@ -26,12 +26,20 @@ class model_Map {
         $this->mapFile = $dbData['map_file'];
     }
 
+    function id() {
+        return $this->id;
+    }
+
     function rootFullPath() {
         return $this->gateway->mapsRoot() . '/' . $this->mapRoot;
     }
 
     function rootWebPath() {
         return relativePath(WEB_ROOT, $this->rootFullPath());
+    }
+
+    function mapRoot() {
+        return $this->mapRoot;
     }
 
     function mapFile() {
@@ -56,7 +64,7 @@ class model_Map {
 
     function urlParams() {
         return array(
-            'map' => $this->id
+            'map' => $this->id()
         );
     }
 }

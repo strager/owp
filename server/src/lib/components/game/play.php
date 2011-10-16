@@ -32,6 +32,7 @@ class components_game_play extends owpcomponent {
         $t = $this->templates->create('map');
         return $t->render($this, array(
             'map' => $map,
+            'relatedMaps' => $this->mapGateway->getRelatedMaps($map),
             'playfieldHtml' => $playfieldHtml
         ));
     }

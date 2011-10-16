@@ -71,11 +71,12 @@ header nav li a:hover {
 }
 
 .playfield {
-    margin: 0 auto;
+    margin: 1em auto;
     width: 640px; /* HACK */
 }
 
 .playfield.fullscreen {
+    margin: 0;
     width: auto;
     position: absolute;
     top: 0;
@@ -122,13 +123,33 @@ header nav li a:hover {
 }
 
 .now-playing {
-    color: #888888;
+    color: #CCCCCC;
     font-style: italic;
     font-weight: 100;
+    margin: 0.5em 0;
 }
 
 .now-playing .map {
+    color: #888888;
+    font-style: normal;
+    font-weight: normal;
+}
+
+.related-maps {
     color: #CCCCCC;
+    font-style: italic;
+    font-weight: 100;
+    margin: 0.5em 0;
+}
+
+.related-maps ul, .related-maps li {
+    margin: 0;
+    padding: 0;
+    display: inline;
+}
+
+.related-maps a:link, .related-maps a:visited {
+    color: #888888;
     font-style: normal;
     font-weight: normal;
 }
