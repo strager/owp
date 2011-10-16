@@ -4,6 +4,7 @@ DirectoryIndex index.php
 
 # User upload is probably under 60MB
 php_value upload_max_filesize 60M
+php_value post_max_size 60M
 
 RewriteEngine on
 
