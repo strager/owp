@@ -28,22 +28,26 @@ class components_game_upload extends owpcomponent {
                 return new k_HttpResponse(500, 'Error code ' . $osz['error']);
             }
 
-            $maps = null;
             $oszFilePath = $osz['tmp_name'];
-            try {
-                $upload = $this->uploadGateway->reportUpload('osz', $osz['name'], $oszFilePath, $this->remoteAddr());
+            register_shutdown_function('unlink', $oszFilePath);
+
+            $uploadKey = $this->uploadGateway->getFileUploadKey($oszFilePath);
+            $upload = $this->uploadGateway->findUploadByKey($uploadKey);
+
+            $maps = null;
+            if ($upload) {
+                // File already uploaded and extracted
+                // TODO Redirect properly
+                return '.osz already uploaded';
+            } else {
+                $upload = $this->uploadGateway->reportUpload('osz', $uploadKey, $osz['name'], $this->remoteAddr());
                 $maps = $this->mapGateway->saveOsz($oszFilePath, $upload);
-            } catch (Exception $e) {
-                // wtb finally
-                unlink($oszFilePath);
-                throw $e;
             }
 
             if (empty($maps)) {
                 return new k_HttpResponse(500);
             }
 
-            // TODO Uploaded maps page
             return new k_SeeOther($this->url(array('game', 'play'), $maps[0]->urlParams()));
         } else {
             return new k_HttpResponse(400, 'Bad request'); // Bad request
