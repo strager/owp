@@ -37,9 +37,9 @@ class components_game_upload extends owpcomponent {
             $maps = null;
             if ($upload) {
                 // File already uploaded and extracted
-                // TODO Redirect properly
-                return '.osz already uploaded';
+                $maps = $this->mapGateway->getMapsFromUpload($upload);
             } else {
+                // New file; report and extract
                 $upload = $this->uploadGateway->reportUpload('osz', $uploadKey, $osz['name'], $this->remoteAddr());
                 $maps = $this->mapGateway->saveOsz($oszFilePath, $upload);
             }

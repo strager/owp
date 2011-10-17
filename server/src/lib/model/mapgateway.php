@@ -62,6 +62,19 @@ class model_MapGateway {
         return $maps;
     }
 
+    function getMapsFromUpload($upload) {
+        $statement = $this->db->prepare('SELECT ' . self::$mapFields . ' FROM owp_maps WHERE is_public = 1 AND upload_id = :upload_id');
+        $statement->bindValue('upload_id', $upload->id());
+        $statement->execute();
+
+        $maps = array();
+        while (($row = $statement->fetch()) !== false) {
+            $maps[] = new model_Map($this, $row);
+        }
+
+        return $maps;
+    }
+
     function getRelatedMaps($map) {
         $statement = $this->db->prepare('SELECT ' . self::$mapFields . ' FROM owp_maps WHERE is_public = 1 AND id != :id AND map_root = :map_root');
         $statement->bindValue('id', $map->id());
