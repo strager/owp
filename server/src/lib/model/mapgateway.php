@@ -76,7 +76,7 @@ class model_MapGateway {
         return $maps;
     }
 
-    function saveOsz($oszFilePath) {
+    function saveOsz($oszFilePath, $upload = null) {
         $zip = new ZipArchive();
         if ($zip->open($oszFilePath) !== true) {
             throw new Exception('Failed to open osz');
@@ -114,7 +114,7 @@ class model_MapGateway {
 
         $zip->close();
 
-        $statement = $this->db->prepare('INSERT INTO owp_maps (song_name, artist_name, difficulty_name, mapper_name, map_root, map_file) VALUES (:song_name, :artist_name, :difficulty_name, :mapper_name, :map_root, :map_file)');
+        $statement = $this->db->prepare('INSERT INTO owp_maps (song_name, artist_name, difficulty_name, mapper_name, map_root, map_file, upload_id) VALUES (:song_name, :artist_name, :difficulty_name, :mapper_name, :map_root, :map_file, :upload_id)');
 
         $mapIDs = array();
         foreach ($osuFiles as $osuFile) {
@@ -152,6 +152,7 @@ class model_MapGateway {
             $statement->bindValue('mapper_name', $mapperName);
             $statement->bindValue('map_root', relativePath($this->mapsRoot, $mapDirectory));
             $statement->bindValue('map_file', $osuFile);
+            $statement->bindValue('upload_id', $upload === null ? null : $upload->id());
             $statement->execute();
             $id = $this->db->lastInsertId();
             $statement->closeCursor();
