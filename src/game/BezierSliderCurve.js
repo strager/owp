@@ -846,12 +846,12 @@ define('game/BezierSliderCurve', [ 'util/util' ], function (util) {
             return addPoints(point, self.offset);
         }
 
-        this.flattenCentrePoints = function () {
+        this.flattenCentrePoints = util.memoize2(function () {
             var points = flattenBezierSetBbox(beziers, TOLERANCE);
             return points.map(offset);
-        };
+        });
 
-        this.flattenContourPoints = util.memoize(function (radius) {
+        this.flattenContourPoints = util.memoize2(function (radius) {
             var points = transportStrokeBeziers(beziers, radius, TOLERANCE, TOLERANCE);
             points = points.map(offset);
 

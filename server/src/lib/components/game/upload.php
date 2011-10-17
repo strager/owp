@@ -3,10 +3,12 @@
 class components_game_upload extends owpcomponent {
     protected $templates;
     protected $mapGateway;
+    protected $uploadGateway;
 
-    function __construct(k_TemplateFactory $templates, model_MapGateway $mapGateway) {
+    function __construct(k_TemplateFactory $templates, model_MapGateway $mapGateway, model_UploadGateway $uploadGateway) {
         $this->templates = $templates;
         $this->mapGateway = $mapGateway;
+        $this->uploadGateway = $uploadGateway;
     }
 
     function renderHTML() {
@@ -26,21 +28,26 @@ class components_game_upload extends owpcomponent {
                 return new k_HttpResponse(500, 'Error code ' . $osz['error']);
             }
 
-            $maps = null;
             $oszFilePath = $osz['tmp_name'];
-            try {
-                $maps = $this->mapGateway->saveOsz($oszFilePath);
-            } catch (Exception $e) {
-                // wtf finally
-                unlink($oszFilePath);
-                throw $e;
+            register_shutdown_function('unlink', $oszFilePath);
+
+            $uploadKey = $this->uploadGateway->getFileUploadKey($oszFilePath);
+            $upload = $this->uploadGateway->findUploadByKey($uploadKey);
+
+            $maps = null;
+            if ($upload) {
+                // File already uploaded and extracted
+                $maps = $this->mapGateway->getMapsFromUpload($upload);
+            } else {
+                // New file; report and extract
+                $upload = $this->uploadGateway->reportUpload('osz', $uploadKey, $osz['name'], $this->remoteAddr());
+                $maps = $this->mapGateway->saveOsz($oszFilePath, $upload);
             }
 
             if (empty($maps)) {
                 return new k_HttpResponse(500);
             }
 
-            // TODO Uploaded maps page
             return new k_SeeOther($this->url(array('game', 'play'), $maps[0]->urlParams()));
         } else {
             return new k_HttpResponse(400, 'Bad request'); // Bad request

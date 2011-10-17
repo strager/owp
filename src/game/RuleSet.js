@@ -239,6 +239,11 @@ define('game/RuleSet', [ 'util/util', 'game/mapObject', 'util/History', 'util/Cu
             return this.getCircleSize() * 2;
         },
 
+        getSliderTrackWidth: function () {
+            var adjustmentScale = 128 / (128 - 10); // Don't ask...
+            return this.getCircleSize() / adjustmentScale / 2;
+        },
+
         getHitRadius: mapObject.matcher({
             HitCircle: function (object) {
                 return this.getCircleSize() / 2;
@@ -667,20 +672,29 @@ define('game/RuleSet', [ 'util/util', 'game/mapObject', 'util/History', 'util/Cu
         },
 
         getObjectBoundingRectangle: mapObject.matcher({
-            Slider: function (slider) {
+            Slider: util.memoize(function (slider) {
                 var radius = this.getCircleSize() / 2;
                 var points = slider.curve.flattenContourPoints(radius);
 
-                var xs = points.map(function (point) { return point[0]; });
-                var ys = points.map(function (point) { return point[1]; });
+                var minX = Infinity, minY = Infinity;
+                var maxX = -Infinity, maxY = -Infinity;
 
-                var x = Math.min.apply(Math, xs);
-                var y = Math.min.apply(Math, ys);
-                var width = Math.max.apply(Math, xs) - x;
-                var height = Math.max.apply(Math, ys) - y;
+                var min = Math.min;
+                var max = Math.max;
 
-                return [ x, y, width, height ];
-            },
+                var i;
+                for (i = 0; i < points.length; ++i) {
+                    var p = points[i];
+
+                    minX = min(minX, p[0]);
+                    minY = min(minY, p[1]);
+
+                    maxX = max(maxX, p[0]);
+                    maxY = max(maxY, p[1]);
+                }
+
+                return [ minX, minY, maxX - minX, maxY - minY ];
+            }),
             HitCircle: function (hitCircle) {
                 // The only thing easier is an AA rectangle...
 

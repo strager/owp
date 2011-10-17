@@ -123,9 +123,25 @@ define('util/util', [ 'util/Cache' ], function (Cache) {
         return function () {
             var args = arguments;
             var self = this;
-            var cargs = [ self ].concat(Array.prototype.slice.call(args));
+            var cargs = [ self ];
+            cargs.push.apply(cargs, args);
 
-            return cache.get(args, function () {
+            return cache.get(cargs, function () {
+                return fn.apply(self, args);
+            });
+        };
+    }
+
+    function memoize2(fn) {
+        // Memoize, but ignore 'this'
+        var cache = new Cache();
+
+        return function () {
+            var args = arguments;
+            var self = this;
+            var cargs = Array.prototype.slice.call(args);
+
+            return cache.get(cargs, function () {
                 return fn.apply(self, args);
             });
         };
@@ -141,6 +157,7 @@ define('util/util', [ 'util/Cache' ], function (Cache) {
         extend: extend,
         clone: clone,
         setCursorImage: setCursorImage,
-        memoize: memoize
+        memoize: memoize,
+        memoize2: memoize2
     };
 });
