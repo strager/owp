@@ -3,10 +3,12 @@
 class components_game_upload extends owpcomponent {
     protected $templates;
     protected $mapGateway;
+    protected $uploadGateway;
 
-    function __construct(k_TemplateFactory $templates, model_MapGateway $mapGateway) {
+    function __construct(k_TemplateFactory $templates, model_MapGateway $mapGateway, model_UploadGateway $uploadGateway) {
         $this->templates = $templates;
         $this->mapGateway = $mapGateway;
+        $this->uploadGateway = $uploadGateway;
     }
 
     function renderHTML() {
@@ -29,9 +31,10 @@ class components_game_upload extends owpcomponent {
             $maps = null;
             $oszFilePath = $osz['tmp_name'];
             try {
-                $maps = $this->mapGateway->saveOsz($oszFilePath);
+                $upload = $this->uploadGateway->reportUpload('osz', $osz['name'], $oszFilePath, $this->remoteAddr());
+                $maps = $this->mapGateway->saveOsz($oszFilePath, $upload);
             } catch (Exception $e) {
-                // wtf finally
+                // wtb finally
                 unlink($oszFilePath);
                 throw $e;
             }
