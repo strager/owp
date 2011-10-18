@@ -1496,6 +1496,11 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/gPubSub',
         var viewport = { };
 
         function resize(width, height) {
+            if (width <= 0 || height <= 0) {
+                // Fuck that!
+                return;
+            }
+
             canvas.width = width;
             canvas.height = height;
 
