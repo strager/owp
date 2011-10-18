@@ -328,6 +328,14 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/gPubSub',
                 gl.bindBuffer(gl.ARRAY_BUFFER, null);
 
                 gl.useProgram(null);
+            },
+
+            viewport: function flushViewport(viewport) {
+                // HACK HACK HACK
+                gl.viewport(
+                viewport.x, viewport.y,
+                viewport.width, viewport.height
+                );
             }
         };
 
@@ -364,6 +372,15 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/gPubSub',
 
         function loading(options) {
             renderBatch.push([ 'loading', options ]);
+        }
+
+        function reset() {
+            renderBatch = [ ];
+        }
+
+        function vp(viewport) {
+            // HACK HACK HACK
+            renderBatch.push([ 'viewport', viewport ]);
         }
 
         function clear(r, g, b, a) {
@@ -844,25 +861,48 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/gPubSub',
 
         // Storyboard rendering {{{
         function renderBackground() {
-            clear(1, 1, 1, 1);
+            reset();
 
             var bg = storyboard.getBackgroundFilename(time);
             if (!bg) {
+                clear(1, 1, 1, 1);
                 return;
             }
 
             var texture = textures.get(bg, storyboardKey);
             var backgroundImage = texture.image;
 
-            var containerW = 640;
-            var containerH = 480;
-            var innerW = backgroundImage.width;
-            var innerH = backgroundImage.height;
+            // Render background twice: once for the widescreen effect, and
+            // once for the actual playfield background.
+            vp({
+                x: 0,
+                y: 0,
+                width: viewport.x * 2 + viewport.width,
+                height: viewport.y * 2 + viewport.height
+            });
+            var scale = util.fitRectangleScale(
+                viewport.width,
+                viewport.height,
+                backgroundImage.width,
+                backgroundImage.height
+            );
+            var brightness = 0.15;
+            sprite({
+                x: 320,
+                y: 240,
+                color: [ brightness * 255, brightness * 255, brightness * 255, 255 ],
+                scale: scale,
+                texture: texture
+            });
 
-            var scale = util.fitOuterRectangleScale(containerW, containerH, innerW, innerH);
-
-            var brightness = 1 - (1 - breakiness) / 6;
-
+            vp(viewport);
+            scale = util.fitOuterRectangleScale(
+                640,
+                480,
+                backgroundImage.width,
+                backgroundImage.height
+            );
+            brightness = 1 - (1 - breakiness) / 6;
             sprite({
                 x: 320,
                 y: 240,
