@@ -649,10 +649,10 @@ define('game/RuleSet', [ 'util/util', 'game/mapObject', 'util/History', 'util/Cu
             var inherited = this.inheritedTimingPointHistory.getDataAtTime(time);
             var uninherited = this.uninheritedTimingPointHistory.getDataAtTime(time) || this.uninheritedTimingPointHistory.getFirst();
 
-            if (!inherited) {
-                return uninherited.getEffectiveBPM(null);
-            } else {
+            if (inherited && inherited.time >= uninherited.time) {
                 return inherited.getEffectiveBPM(uninherited);
+            } else {
+                return uninherited.getEffectiveBPM(null);
             }
         },
 
