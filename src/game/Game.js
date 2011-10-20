@@ -14,10 +14,9 @@ define('game/Game', [ 'q', 'game/MapState', 'AssetManager', 'util/PubSub', 'Soun
         var skin = null;
         var mousePubSub = new PubSub();
 
-        var mapInfo, mapState, audio;
+        var mapInfo, mapState, audio, timeline;
         var storyboard = null;
         var mapAssetManager = null;
-        var timeline = new Timeline();
 
         var boundEvents = [ ];
 
@@ -104,6 +103,7 @@ define('game/Game', [ 'q', 'game/MapState', 'AssetManager', 'util/PubSub', 'Soun
                         })
                         .then(function (r) {
                             audio = new CoolAudio(r[0]);
+                            timeline = new Timeline(audio);
                             mapState = MapState.fromMapInfo(mapInfo, timeline);
                         }),
                     Q.ref(skin)
@@ -263,38 +263,34 @@ define('game/Game', [ 'q', 'game/MapState', 'AssetManager', 'util/PubSub', 'Soun
                     comboHistory.add(time, combo);
                 }));
 
-                boundEvents.push(timeline.subscribe(MapState.HIT_MARKER_CREATION, function (hitMarker) {
+                function playHitMarker(hitMarker) {
                     var hitSounds = mapState.ruleSet.getHitSoundNames(hitMarker);
-
-                    // Note that osu! uses the hit marker time itself,
-                    // where we use the more mapper-friendly hit object
-                    // time.  FIXME Maybe this detail should be moved
-                    // to RuleSet (i.e. pass in a HitMarker)?
                     var volume = mapState.ruleSet.getHitSoundVolume(hitMarker.hitObject.time);
 
                     // Scale volume to how many hit sounds are being
                     // played
                     volume /= Math.sqrt(hitSounds.length);
 
-
                     hitSounds.forEach(function (soundName) {
                         soundboard.playSound(soundName, {
                             volume: volume
                         });
                     });
+                }
+
+                boundEvents.push(timeline.subscribe(MapState.HIT_MARKER_CREATION, function (hitMarker) {
+                    playHitMarker(hitMarker);
                 }));
 
                 boundEvents.push(timeline.subscribe(MAP_END, function () {
                     Q.fail(sm.end_map(), agentInfo.crash);
                 }));
 
-                boundEvents.push(gPubSub.subscribe(function () {
-                    var time = audio.currentTime();
-
-                    mapState.processSlides(time, mouseHistory);
-                    mapState.processMisses(time);
-
-                    timeline.update(time);
+                boundEvents.push(timeline.subscribe(MapState.HIT_SLIDE_CHECK, function (object) {
+                    mapState.processSlide(object, mouseHistory);
+                }));
+                boundEvents.push(timeline.subscribe(MapState.HIT_MISS_CHECK, function (object) {
+                    mapState.processMiss(object);
                 }));
             },
 

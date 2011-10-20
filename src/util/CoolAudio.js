@@ -1,4 +1,4 @@
-define('util/CoolAudio', [ ], function () {
+define('util/CoolAudio', [ 'util/PubSub' ], function (PubSub) {
     // NOTE: HTML5 Audio operates using seconds,
     // whereas our CoolAudio operates using milliseconds.
 
@@ -10,10 +10,23 @@ define('util/CoolAudio', [ ], function () {
 
     // NOTE: This code is super flaky and anything can break it.  Anything.
 
+    // How many milliseconds 'late' a setInterval/setTimeout can occur before
+    // nothing is done.
+    var LOOKBEHIND_THRESHOLD = -8;
+
     function CoolAudio(audioElement) {
         this.audioElement = audioElement;
 
         var self = this;
+
+        this.events = {
+            seek: new PubSub(),
+            start: new PubSub(),
+            stop: new PubSub()
+        };
+
+        this.timeoutClearCallbacks = { };
+        this.timeoutId = 0;
 
         // Use Date.now() to determine the audio's time.  Use audio events
         // to know when the audio element was seeked, paused, etc.
@@ -38,6 +51,8 @@ define('util/CoolAudio', [ ], function () {
             var rtcCurrentTime = Date.now();
             self.rtcStartTime = rtcCurrentTime - currentTime;
             self.isPaused = audioElement.paused;
+
+            self.events.seek.publish(self);
         }
 
         var eventNames = [
@@ -96,6 +111,8 @@ define('util/CoolAudio', [ ], function () {
 
                 this.negativeZoneTime = Date.now() - this.rtcStartTime;
             }
+
+            this.events.stop.publish(this);
         },
 
         play: function () {
@@ -125,6 +142,8 @@ define('util/CoolAudio', [ ], function () {
             } else {
                 this.audioElement.play();
             }
+
+            this.events.start.publish(this);
         },
 
         seek: function (time) {
@@ -148,6 +167,8 @@ define('util/CoolAudio', [ ], function () {
                 var ct = time / 1000;
                 this.audioElement.currentTime = ct;
             }
+
+            this.events.seek.publish(this);
         },
 
         canSeek: function (time) {
@@ -185,6 +206,95 @@ define('util/CoolAudio', [ ], function () {
 
         rawCurrentTime: function () {
             return this.audioElement.currentTime * 1000;
+        },
+
+        setTimeout: function (callback, time, context) {
+            // Fire callback when time is reached, once
+
+            var id = null;
+            var clear = false;
+            id = this.setInterval(function () {
+                if (id === null) {
+                    clear = true;
+                } else {
+                    this.clearTimeout(id);
+                }
+
+                callback.call(context);
+            }, time, this);
+
+            if (clear) {
+                this.clearTimeout(id);
+            }
+
+            return id;
+        },
+
+        setInterval: function (callback, time, context) {
+            // Fire callback when time is reached, every time
+            // **NOT** guaranteed to execute callback in next turn of event
+            // loop!
+
+            var timerId = null;
+            var self = this;
+
+            function start() {
+                stop();
+
+                var dt = time - self.currentTime();
+
+                if (dt > LOOKBEHIND_THRESHOLD) {
+                    if (dt < 1) {
+                        callback.call(context);
+                    } else {
+                        timerId = window.setTimeout(function () {
+                            timerId = null;
+                            callback.call(context);
+                        }, dt);
+                    }
+                }
+            }
+
+            function stop() {
+                if (timerId !== null) {
+                    window.clearTimeout(timerId);
+                    timerId = null;
+                }
+            }
+
+            function seek() {
+                if (!this.isPaused) {
+                    start();
+                }
+            }
+
+            var boundEvents = [ ];
+
+            function clear() {
+                stop();
+
+                var boundEvent;
+                while ((boundEvent = boundEvents.pop())) {
+                    boundEvent.unsubscribe();
+                }
+
+                delete self.timeoutClearCallbacks[id];
+            }
+
+            boundEvents.push(this.events.start.subscribe(start));
+            boundEvents.push(this.events.stop.subscribe(stop));
+            boundEvents.push(this.events.seek.subscribe(seek));
+
+            seek();
+
+            var id = this.timeoutId;
+            ++this.timeoutId;
+            this.timeoutClearCallbacks[id] = clear;
+            return id;
+        },
+
+        clearTimeout: function (id) {
+            this.timeoutClearCallbacks[id]();
         }
     };
 

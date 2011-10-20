@@ -668,6 +668,8 @@ define('game/RuleSet', [ 'util/util', 'game/mapObject', 'util/History', 'util/Cu
         },
 
         getHitSoundVolume: function (time) {
+            // Note that osu! uses the hit marker time itself, where we use
+            // the more mapper-friendly hit object time.
             return this.getLastTimingSection(time).hitSoundVolume;
         },
 

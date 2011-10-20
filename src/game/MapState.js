@@ -18,6 +18,15 @@ define('game/MapState', [ 'game/mapObject', 'util/Timeline', 'util/Map', 'util/P
             this.timeline.add(MapState.HIT_OBJECT_VISIBILITY, object, appearTime, disappearTime);
         }
 
+        function addSlidable(object) {
+            this.timeline.add(MapState.HIT_SLIDE_CHECK, object, object.time + 1);
+        }
+
+        function addMissable(object) {
+            var latestHitTime = this.ruleSet.getObjectLatestHitTime(object);
+            this.timeline.add(MapState.HIT_MISS_CHECK, object, latestHitTime + 1);
+        }
+
         objects.forEach(function (object) {
             mapObject.match(object, {
                 HitCircle: addRenderable,
@@ -27,6 +36,16 @@ define('game/MapState', [ 'game/mapObject', 'util/Timeline', 'util/Map', 'util/P
             mapObject.match(object, {
                 HitCircle: addClickable,
                 Slider: addClickable
+            }, this);
+
+            mapObject.match(object, {
+                SliderEnd: addSlidable,
+                SliderTick: addSlidable
+            }, this);
+
+            mapObject.match(object, {
+                HitCircle: addMissable,
+                SliderEnd: addMissable
             }, this);
         }, this);
 
@@ -41,6 +60,9 @@ define('game/MapState', [ 'game/mapObject', 'util/Timeline', 'util/Map', 'util/P
     MapState.HIT_OBJECT_VISIBILITY = 'hit object visibility';
     MapState.HIT_OBJECT_HITABLE = 'hit object hitable';
 
+    MapState.HIT_SLIDE_CHECK = 'hit slide check';
+    MapState.HIT_MISS_CHECK = 'hit miss check';
+
     MapState.HIT_MARKER_CREATION = 'hitmarker creation';
 
     MapState.fromMapInfo = function (mapInfo, timeline) {
@@ -48,14 +70,6 @@ define('game/MapState', [ 'game/mapObject', 'util/Timeline', 'util/Map', 'util/P
     };
 
     MapState.prototype = {
-        addHitObject: function (object) {
-            object = mapObject.proto(object);
-
-        },
-
-        addHittableObject: function (object) {
-        },
-
         getVisibleObjects: function (time) {
             var hitObjects = this.timeline.getAllAtTime(time, MapState.HIT_OBJECT_VISIBILITY);
             var hitMarkers = this.timeline.getAllInTimeRange(time - 4000, time, MapState.HIT_MARKER_CREATION);
@@ -132,26 +146,13 @@ define('game/MapState', [ 'game/mapObject', 'util/Timeline', 'util/Map', 'util/P
             }
         },
 
-        applyHitMarkerNoRemove: function (hitMarker) {
+        applyHitMarker: function (hitMarker) {
+            hitMarker.hitObject.hitMarker = hitMarker;
+
             // Add hit marker itself to the timeline
             this.timeline.add(MapState.HIT_MARKER_CREATION, hitMarker, hitMarker.time);
 
             this.events.publishSync(hitMarker);
-
-            hitMarker.hitObject.hitMarker = hitMarker;
-        },
-
-        applyHitMarker: function (hitMarker, removeObject) {
-            // Object is now hit; remove it from unhit objects list
-            var index = this.getUnhitObjectIndex(hitMarker.hitObject);
-
-            if (index < 0) {
-                throw new Error('Bad map state; oh dear!');
-            }
-
-            this.unhitObjects.splice(index, 1);
-
-            this.applyHitMarkerNoRemove(hitMarker);
         },
 
         hitSlide: function (object, mouseState) {
@@ -227,66 +228,37 @@ define('game/MapState', [ 'game/mapObject', 'util/Timeline', 'util/Map', 'util/P
             return hitMarker;
         },
 
-        processSlides: function (time, mouseHistory) {
-            var removedUnhitObjects = [ ];
-
-            var i;
-            var unhitObject;
-            var hitMarker;
-
-            for (i = 0; i < this.unhitObjects.length; ++i) {
-                unhitObject = this.unhitObjects[i];
-
-                if (unhitObject[1] >= time) {
-                    break;
-                }
-
-                hitMarker = this.hitSlide(
-                    unhitObject[0],
-                    mouseHistory.getDataAtTime(unhitObject[0].time)
-                );
-
-                if (hitMarker) {
-                    this.applyHitMarkerNoRemove(hitMarker);
-
-                    // We unshift because we need to remove objects in reverse
-                    // order.  Else we need to keep track of index changes while
-                    // removing items, which is ugly and slow.
-                    removedUnhitObjects.push(i);
-                }
+        processSlide: function (object, mouseHistory) {
+            if (object.hitMarker) {
+                return;
             }
 
-            removedUnhitObjects.forEach(function (index) {
-                this.unhitObjects.splice(index, 1);
-            }, this);
+            hitMarker = this.hitSlide(
+                object,
+                mouseHistory.getDataAtTime(object.time)
+            );
+
+            if (!hitMarker) {
+                throw new Error('Bad state');
+            }
+
+            this.applyHitMarker(hitMarker);
         },
 
-        processMisses: function (time) {
-            var i;
-            var unhitObject;
-            var hitMarker;
-
-            for (i = 0; i < this.unhitObjects.length; ++i) {
-                unhitObject = this.unhitObjects[i];
-
-                if (unhitObject[1] >= time) {
-                    break;
-                }
-
-                hitMarker = new mapObject.HitMarker(
-                    unhitObject[0],
-                    unhitObject[1] + 1,
-                    0,
-                    false
-                );
-
-                this.applyHitMarkerNoRemove(hitMarker);
+        processMiss: function (object) {
+            if (object.hitMarker) {
+                return;
             }
 
-            // i has the number of unhit objects which were
-            // processed.  We need to remove them ourselves
-            // (because we called applyHitMarkerNoRemove).
-            this.unhitObjects.splice(0, i);
+            var latestHitTime = this.ruleSet.getObjectLatestHitTime(object);
+            hitMarker = new mapObject.HitMarker(
+                object,
+                latestHitTime,
+                0,
+                false
+            );
+
+            this.applyHitMarker(hitMarker);
         }
     };
 

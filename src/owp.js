@@ -179,9 +179,7 @@ define('owp', [ 'game/Game', 'util/util', 'util/FramerateCounter', 'gfx/WebGLRen
             renderFps.addTick();
         }, playArea.animationElement);
 
-        infLoop(function () {
-            gPubSub.publish('tick');
-
+        gPubSub.subscribe(function() {
             gameUpdateFps.addTick();
         });
     }
