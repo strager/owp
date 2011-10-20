@@ -1,4 +1,4 @@
-define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/gPubSub', 'util/Cache', 'util/util', 'loading', 'gfx/View', 'game/storyboardObject', 'game/Storyboard' ], function (MapState, mapObject, gPubSub, Cache, util, loadingImageSrc, View, storyboardObject, Storyboard) {
+define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/Cache', 'util/util', 'loading', 'gfx/View', 'game/storyboardObject', 'game/Storyboard' ], function (MapState, mapObject, Cache, util, loadingImageSrc, View, storyboardObject, Storyboard) {
     function makeTexture(gl, image) {
         var texture = gl.createTexture();
         texture.image = image;
@@ -757,14 +757,10 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/gPubSub',
 
                 sortedObjects.forEach(function (object) {
                     renderObject(object);
-
-                    gPubSub.publish('tick');
                 });
 
                 sortedObjects.forEach(function (object) {
                     renderObjectApproachProgress(object);
-
-                    gPubSub.publish('tick');
                 });
             });
         }

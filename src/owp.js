@@ -1,11 +1,10 @@
-define('owp', [ 'game/Game', 'util/util', 'util/FramerateCounter', 'gfx/WebGLRenderer', 'gfx/CanvasRenderer', 'agentInfo', 'util/gPubSub', 'Input' ], function (Game, util, FramerateCounter, WebGLRenderer, CanvasRenderer, agentInfo, gPubSub, Input) {
+define('owp', [ 'game/Game', 'util/util', 'util/FramerateCounter', 'gfx/WebGLRenderer', 'gfx/CanvasRenderer', 'agentInfo', 'Input' ], function (Game, util, FramerateCounter, WebGLRenderer, CanvasRenderer, agentInfo, Input) {
     var PLAYAREA_WIDTH = 640;
     var PLAYAREA_HEIGHT = 480;
 
     var game = new Game();
 
     var renderFps = new FramerateCounter();
-    var gameUpdateFps = new FramerateCounter();
 
     // shim layer with setTimeout fallback
     var requestAnimFrame = (function () {
@@ -178,17 +177,12 @@ define('owp', [ 'game/Game', 'util/util', 'util/FramerateCounter', 'gfx/WebGLRen
 
             renderFps.addTick();
         }, playArea.animationElement);
-
-        gPubSub.subscribe(function() {
-            gameUpdateFps.addTick();
-        });
     }
 
     function debugInfo() {
         var gameDebugInfo = game.debugInfo();
 
         return util.clone(gameDebugInfo, {
-            'game update fps': gameUpdateFps.framerate,
             'render fps': renderFps.framerate
         });
     }

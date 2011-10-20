@@ -1,4 +1,4 @@
-define('gfx/CanvasRenderer', [ 'game/mapObject', 'util/Cache', 'gfx/canvasShaders', 'game/MapState', 'util/gPubSub', 'util/util', 'gfx/View', 'loading' ], function (mapObject, Cache, shaders, MapState, gPubSub, util, View, loadingImageSrc) {
+define('gfx/CanvasRenderer', [ 'game/mapObject', 'util/Cache', 'gfx/canvasShaders', 'game/MapState', 'util/util', 'gfx/View', 'loading' ], function (mapObject, Cache, shaders, MapState, util, View, loadingImageSrc) {
     var transformOriginStyleProperty, transformStyleProperty;
     var transformTranslatePrefix, transformTranslateSuffix;
     var transformScalePrefix, transformScaleSuffix;
@@ -699,14 +699,10 @@ define('gfx/CanvasRenderer', [ 'game/mapObject', 'util/Cache', 'gfx/canvasShader
 
                 sortedObjects.forEach(function (object) {
                     renderObject(object);
-
-                    gPubSub.publish('tick');
                 });
 
                 sortedObjects.forEach(function (object) {
                     renderObjectApproachProgress(object);
-
-                    gPubSub.publish('tick');
                 });
             });
         }

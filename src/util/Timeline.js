@@ -40,41 +40,18 @@ define('util/Timeline', [ 'util/PubSub', 'util/CueList', 'util/Map' ], function 
             return this.events[key];
         },
 
-        subscribe: function (key, callback) {
-            return this.getEvents(key).subscribe(callback);
-        },
+        getTimeouts: function (key) {
+            validateKey(key);
 
-        update: function (time) {
-            // This is a bit of a hack ...  =\
-            var lastUpdateTime = (this.lastUpdateTime || 0);
-
-            if (lastUpdateTime === time || this.isUpdating) {
-                return;
+            if (!Object.prototype.hasOwnProperty.call(this.timeouts, key)) {
+                this.timeouts[key] = new Map();
             }
 
-            var updatedObjects = [ ];
-            var lastUpdatedObjects = this.lastUpdatedObjects;
+            return this.timeouts[key];
+        },
 
-            Object.keys(this.events).forEach(function (key) {
-                // FIXME This is pretty broken and doesn't really work as it
-                // should (but it works 'good enough' for the game to
-                // work...)
-                var x = this.getAllInTimeRange(lastUpdateTime, time, key);
-                var events = this.getEvents(key);
-
-                x.forEach(function (item) {
-                    if (lastUpdatedObjects.indexOf(item) >= 0) {
-                        // Item already updated; don't update again
-                        return;
-                    }
-
-                    events.publishSync(item);
-                    updatedObjects.push(item);
-                });
-            }, this);
-
-            this.lastUpdatedObjects = updatedObjects;
-            this.lastUpdateTime = time;
+        subscribe: function (key, callback) {
+            return this.getEvents(key).subscribe(callback);
         },
 
         add: function (key, value, startTime, endTime) {
