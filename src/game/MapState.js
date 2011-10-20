@@ -4,8 +4,6 @@ define('game/MapState', [ 'game/mapObject', 'util/Timeline', 'util/Map', 'util/P
         this.timeline = timeline;
         this.events = new PubSub();
 
-        this.unhitObjects = [ ];
-
         function addClickable(object) {
             var earliestHitTime = this.ruleSet.getObjectEarliestHitTime(object);
             var latestHitTime = this.ruleSet.getObjectLatestHitTime(object);
@@ -48,13 +46,6 @@ define('game/MapState', [ 'game/mapObject', 'util/Timeline', 'util/Map', 'util/P
                 SliderEnd: addMissable
             }, this);
         }, this);
-
-        // TODO History object?
-        this.unhitObjects = objects.map(function (object) {
-            return [ object, this.ruleSet.getObjectLatestHitTime(object) ];
-        }, this).sort(function (a, b) {
-            return a[1] < b[1] ? -1 : 1;
-        });
     }
 
     MapState.HIT_OBJECT_VISIBILITY = 'hit object visibility';
@@ -83,21 +74,8 @@ define('game/MapState', [ 'game/mapObject', 'util/Timeline', 'util/Map', 'util/P
             return rawHittables.filter(this.isObjectHittable, this);
         },
 
-        getUnhitObjectIndex: function (object) {
-            var i;
-
-            for (i = 0; i < this.unhitObjects.length; ++i) {
-                if (this.unhitObjects[i][0] === object) {
-                    return i;
-                }
-            }
-
-            return -1;
-        },
-
         isObjectHittable: function (object) {
-            // If the object is unhit, it's hittable
-            return this.getUnhitObjectIndex(object) >= 0;
+            return !object.hitMarker;
         },
 
         getAccuracy: function (time) {
