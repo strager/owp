@@ -276,28 +276,51 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/Cache', '
             },
 
             curve: function flushCurve(curve) {
-                gl.useProgram(programs.curve);
+                // Outer curve
+                gl.useProgram(programs.curveOuter);
 
                 // Buffers
                 // Vertex and UV are interleaved
                 var stride = 2 * 4 * 2;
 
                 gl.bindBuffer(gl.ARRAY_BUFFER, buffers.curves[curve.id]);
-                gl.vertexAttribPointer(programs.curve.attr.vertexCoord, 2, gl.FLOAT, false, stride, 0);
-                gl.vertexAttribPointer(programs.curve.attr.textureCoord, 2, gl.FLOAT, false, stride, 2 * 4);
-                gl.enableVertexAttribArray(programs.curve.attr.vertexCoord);
-                gl.enableVertexAttribArray(programs.curve.attr.textureCoord);
+                gl.vertexAttribPointer(programs.curveOuter.attr.vertexCoord, 2, gl.FLOAT, false, stride, 0);
+                gl.enableVertexAttribArray(programs.curveOuter.attr.vertexCoord);
 
                 // Uniforms
-                gl.uniform2fv(programs.curve.uni.view, curve.view.mat);
-                gl.uniform4fv(programs.curve.uni.color, curve.color.map(adjustColour));
+                gl.uniform2fv(programs.curveOuter.uni.view, curve.view.mat);
+                gl.uniform4fv(programs.curveOuter.uni.color, [ 1, 1, 1, 1 ]);
 
                 // Draw
                 gl.drawArrays(gl.TRIANGLE_STRIP, 0, curve.vertexCount);
 
                 // Cleanup
-                gl.disableVertexAttribArray(programs.curve.attr.textureCoord);
-                gl.disableVertexAttribArray(programs.curve.attr.vertexCoord);
+                gl.disableVertexAttribArray(programs.curveOuter.attr.textureCoord);
+                gl.bindBuffer(gl.ARRAY_BUFFER, null);
+
+                // Inner curve
+                gl.useProgram(programs.curveInner);
+
+                // Buffers
+                // Vertex and UV are interleaved
+                var stride = 2 * 4 * 2;
+
+                gl.bindBuffer(gl.ARRAY_BUFFER, buffers.curves[curve.id]);
+                gl.vertexAttribPointer(programs.curveInner.attr.vertexCoord, 2, gl.FLOAT, false, stride, 0);
+                gl.vertexAttribPointer(programs.curveInner.attr.textureCoord, 2, gl.FLOAT, false, stride, 2 * 4);
+                gl.enableVertexAttribArray(programs.curveInner.attr.vertexCoord);
+                gl.enableVertexAttribArray(programs.curveInner.attr.textureCoord);
+
+                // Uniforms
+                gl.uniform2fv(programs.curveInner.uni.view, curve.view.mat);
+                gl.uniform4fv(programs.curveInner.uni.color, curve.color.map(adjustColour));
+
+                // Draw
+                gl.drawArrays(gl.TRIANGLE_STRIP, 0, curve.vertexCount);
+
+                // Cleanup
+                gl.disableVertexAttribArray(programs.curveInner.attr.textureCoord);
+                gl.disableVertexAttribArray(programs.curveInner.attr.vertexCoord);
                 gl.bindBuffer(gl.ARRAY_BUFFER, null);
 
                 gl.useProgram(null);
@@ -1069,7 +1092,8 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/Cache', '
     // Shaders {{{
     var spriteVertexShader, spriteFragmentShader;
     var objectTargetVertexShader, objectTargetFragmentShader;
-    var curveVertexShader, curveFragmentShader;
+    var curveInnerVertexShader, curveInnerFragmentShader;
+    var curveOuterVertexShader, curveOuterFragmentShader;
     var solidSpriteVertexShader, solidSpriteFragmentShader;
     var loadingVertexShader, loadingFragmentShader;
 
@@ -1183,7 +1207,7 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/Cache', '
             '}'
         ].join('\n');
 
-        curveVertexShader = [
+        curveInnerVertexShader = [
             'attribute vec2 aVertexCoord;',
             'attribute vec2 aTextureCoord;',
 
@@ -1204,20 +1228,45 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/Cache', '
             '}'
         ].join('\n');
 
-        curveFragmentShader = [
+        curveInnerFragmentShader = [
             'uniform vec4 uColor;',
 
             'varying vec2 vTextureCoord;',
 
             'vec4 getSliderColor(float t, vec4 baseColor) {',
-                'vec3 u = abs(vec3(t));',
-                'bvec4 z = bvec4(greaterThan(u, vec3(0.85)), 0);',
-                'vec4 grad = vec4((u + 1.5) / (1.0 + 1.5), 1.0) * baseColor;',
-                'return mix(grad, vec4(1), vec4(z));',
+                'vec4 u = abs(vec4(t));',
+                'bvec4 z = greaterThan(u, vec4(0.85));',
+                'vec4 grad = vec4((u.xyz + 1.5) / (1.0 + 1.5), 1.0) * baseColor;',
+                'return mix(grad, vec4(0.0), vec4(z));',
             '}',
 
             'void main(void) {',
                 'gl_FragColor = getSliderColor(vTextureCoord.x, uColor);',
+            '}'
+        ].join('\n');
+
+        curveOuterVertexShader = [
+            'attribute vec2 aVertexCoord;',
+
+            'uniform vec2 uView;',
+
+            'mat4 projection = mat4(',
+                '2.0 / 640.0, 0.0, 0.0, -1.0,',
+                '0.0, -2.0 / 480.0, 0.0, 1.0,',
+                '0.0, 0.0,-2.0,-0.0,',
+                '0.0, 0.0, 0.0, 1.0',
+            ');',
+
+            'void main(void) {',
+                'gl_Position = (vec4(aVertexCoord, 0.0, 1.0) + vec4(uView, 0.0, 0.0)) * projection;',
+            '}'
+        ].join('\n');
+
+        curveOuterFragmentShader = [
+            'uniform vec4 uColor;',
+
+            'void main(void) {',
+                'gl_FragColor = uColor;',
             '}'
         ].join('\n');
 
@@ -1363,14 +1412,23 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/Cache', '
                 alpha: gl.getUniformLocation(programs.objectTarget, 'uAlpha')
             };
 
-            programs.curve = createProgram(gl, curveVertexShader, curveFragmentShader);
-            programs.curve.attr = {
-                vertexCoord: gl.getAttribLocation(programs.curve, 'aVertexCoord'),
-                textureCoord: gl.getAttribLocation(programs.curve, 'aTextureCoord')
+            programs.curveInner = createProgram(gl, curveInnerVertexShader, curveInnerFragmentShader);
+            programs.curveInner.attr = {
+                vertexCoord: gl.getAttribLocation(programs.curveInner, 'aVertexCoord'),
+                textureCoord: gl.getAttribLocation(programs.curveInner, 'aTextureCoord')
             };
-            programs.curve.uni = {
-                view: gl.getUniformLocation(programs.curve, 'uView'),
-                color: gl.getUniformLocation(programs.curve, 'uColor')
+            programs.curveInner.uni = {
+                view: gl.getUniformLocation(programs.curveInner, 'uView'),
+                color: gl.getUniformLocation(programs.curveInner, 'uColor')
+            };
+
+            programs.curveOuter = createProgram(gl, curveOuterVertexShader, curveOuterFragmentShader);
+            programs.curveOuter.attr = {
+                vertexCoord: gl.getAttribLocation(programs.curveOuter, 'aVertexCoord')
+            };
+            programs.curveOuter.uni = {
+                view: gl.getUniformLocation(programs.curveOuter, 'uView'),
+                color: gl.getUniformLocation(programs.curveOuter, 'uColor')
             };
 
             programs.loading = createProgram(gl, loadingVertexShader, loadingFragmentShader);
