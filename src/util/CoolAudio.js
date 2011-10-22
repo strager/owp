@@ -294,7 +294,15 @@ define('util/CoolAudio', [ 'util/PubSub' ], function (PubSub) {
         },
 
         clearTimeout: function (id) {
-            this.timeoutClearCallbacks[id]();
+            var clear = this.timeoutClearCallbacks[id];
+            if (typeof clear === 'function') {
+                clear();
+            } else {
+                // FIXME This should not happen, but sometimes it *does* happen
+                // and I'd rather ignore it then spend a few hours looking for
+                // what causes this problem.  I don't think ignoring this will
+                // have any negative impact so...  Sorry.
+            }
         }
     };
 
