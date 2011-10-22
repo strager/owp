@@ -533,7 +533,7 @@ define('gfx/CanvasRenderer', [ 'game/mapObject', 'util/Cache', 'gfx/canvasShader
                 c.closePath();
             }
 
-            var lineWidth = ruleSet.getSliderTrackWidth();
+            var lineWidth = ruleSet.getSliderTrackWidth() * 2;
 
             c.save();
 
