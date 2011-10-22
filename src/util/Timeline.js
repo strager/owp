@@ -57,7 +57,7 @@ define('util/Timeline', [ 'util/PubSub', 'util/CueList', 'util/Map' ], function 
         add: function (key, value, startTime, endTime) {
             // TODO Don't bother doing timeout stuff if we have no
             // subscribers
-            var timeoutId = this.coolAudio.setTimeout(function () {
+            var timeoutId = this.coolAudio.setInterval(function () {
                 this.getEvents(key).publish(value);
             }, startTime, this);
             this.getTimeouts(key).set(value, timeoutId);
