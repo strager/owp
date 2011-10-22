@@ -7,13 +7,14 @@ define('util/Cache', [ 'util/Map' ], function (Map) {
 
     Cache.prototype = {
         get: function (key, creator) {
-            var data;
+            var index = this.map.getIndexFromKey(key);
 
-            if (this.map.contains(key)) {
-                data = this.map.get(key);
+            var data;
+            if (index >= 0) {
+                data = this.map.values[index];
             } else {
                 data = creator(key);
-                this.map.set(key, data);
+                this.map.add(key, data);
             }
 
             return data;

@@ -293,7 +293,10 @@ define('AssetManager', [ 'game/MapInfo', 'game/mapFile', 'assetConfig', 'util/Ma
 
     function AssetManager(root) {
         this.root = root;
-        this.cache = new Cache();
+
+        // Custom cache is used for performance reasons.  Simply a nested
+        // object: type => name => value
+        this.cache = { };
     }
 
     AssetManager.prototype = {
@@ -315,11 +318,21 @@ define('AssetManager', [ 'game/MapInfo', 'game/mapFile', 'assetConfig', 'util/Ma
         },
 
         load: function (name, type) {
-            var assetManager = this;
+            var t;
+            if (type in this.cache) {
+                t = this.cache[type];
+            } else {
+                t = { };
+                this.cache[type] = t;
+            }
 
-            return this.cache.get([ name, type ], function () {
-                return assetManager.loadUncached(name, type);
-            });
+            if (name in t) {
+                return t[name];
+            } else {
+                var asset = this.loadUncached(name, type);
+                t[name] = asset;
+                return asset;
+            }
         },
 
         get: function (name, type) {
