@@ -109,10 +109,8 @@ define('AssetManager', [ 'game/MapInfo', 'game/mapFile', 'assetConfig', 'util/Ma
 
                         var assetName = imageDefinition.file;
 
-                        // Le hack to inject a loaded asset into an AssetManager
-                        assetManager.cache.get([ assetName, 'image' ], function () {
-                            return image;
-                        });
+                        // Inject a loaded asset into an AssetManager
+                        assetManager.loaded(assetName, 'image', image);
                     });
 
                     return sheetDefinition.images.map(function (imageDefinition) {
@@ -315,6 +313,19 @@ define('AssetManager', [ 'game/MapInfo', 'game/mapFile', 'assetConfig', 'util/Ma
             }
 
             return assetLoaders[type](this, name);
+        },
+
+        loaded: function (name, type, value) {
+            // INTERNAL HACK
+            var t;
+            if (type in this.cache) {
+                t = this.cache[type];
+            } else {
+                t = { };
+                this.cache[type] = t;
+            }
+
+            t[name] = value;
         },
 
         load: function (name, type) {
