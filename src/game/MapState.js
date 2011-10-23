@@ -45,7 +45,8 @@ define('game/MapState', [ 'game/mapObject', 'util/Timeline', 'util/Map', 'util/P
             }, this);
 
             mapObject.match(object, {
-                HitCircle: addMissable
+                HitCircle: addMissable,
+                Slider: addMissable
             }, this);
         }, this);
     }
@@ -116,7 +117,8 @@ define('game/MapState', [ 'game/mapObject', 'util/Timeline', 'util/Map', 'util/P
                         object,
                         time,
                         this.ruleSet.getHitScore(object, time),
-                        true
+                        true,
+                        false
                     );
 
                     this.applyHitMarker(hitMarker);
@@ -149,6 +151,8 @@ define('game/MapState', [ 'game/mapObject', 'util/Timeline', 'util/Map', 'util/P
                     object.time
                 );
 
+            var isMiss = !isHit;
+
             // This should be in RuleSet, but =[
             var score = mapObject.match(object, {
                 SliderTick: isHit ? 10 : 0,
@@ -156,6 +160,9 @@ define('game/MapState', [ 'game/mapObject', 'util/Timeline', 'util/Map', 'util/P
                     if (!object.isFinal) {
                         return isHit ? 30 : 0;
                     }
+
+                    // Don't break combo when missing the last slider end
+                    isMiss = false;
 
                     var hittables = [ object.slider ].concat(object.slider.ends).concat(object.slider.ticks);
 
@@ -202,7 +209,8 @@ define('game/MapState', [ 'game/mapObject', 'util/Timeline', 'util/Map', 'util/P
                 object,
                 object.time,
                 score,
-                isHit
+                isHit,
+                isMiss
             );
 
             return hitMarker;
@@ -235,7 +243,8 @@ define('game/MapState', [ 'game/mapObject', 'util/Timeline', 'util/Map', 'util/P
                 object,
                 latestHitTime,
                 0,
-                false
+                false,
+                true
             );
 
             this.applyHitMarker(hitMarker);

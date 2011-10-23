@@ -42,6 +42,8 @@ define('game/RuleSet', [ 'util/util', 'game/mapObject', 'util/History', 'util/Cu
             ruleSet.breakTimeline.add(breakRange, breakRange.startTime, breakRange.endTime);
         });
 
+        ruleSet.audioLeadIn = +ruleSet.audioLeadIn;
+
         return ruleSet;
     };
 
@@ -425,15 +427,13 @@ define('game/RuleSet', [ 'util/util', 'game/mapObject', 'util/History', 'util/Cu
             var currentScore = 0;
 
             hitMarkers.forEach(function (hitMarker) {
-                if (!hitMarker.isHit) {
+                if (hitMarker.isMiss) {
                     currentCombo = 0;
-
                     return;
                 }
 
                 if (!this.doesObjectAffectAccuracy(hitMarker.hitObject)) {
                     currentScore += hitMarker.score;
-
                     return;
                 }
 
@@ -443,7 +443,9 @@ define('game/RuleSet', [ 'util/util', 'game/mapObject', 'util/History', 'util/Cu
                     modMultiplier
                 ) / 25);
 
-                ++currentCombo;
+                if (hitMarker.isHit) {
+                    ++currentCombo;
+                }
             }, this);
 
             return currentScore;
@@ -522,8 +524,10 @@ define('game/RuleSet', [ 'util/util', 'game/mapObject', 'util/History', 'util/Cu
             return hitMarkers.reduce(function (a, hitMarker) {
                 if (hitMarker.isHit) {
                     return a + 1;
-                } else {
+                } else if (hitMarker.isMiss) {
                     return 0;
+                } else {
+                    return a;
                 }
             }, 0);
         },
@@ -740,6 +744,15 @@ define('game/RuleSet', [ 'util/util', 'game/mapObject', 'util/History', 'util/Cu
             }
         }),
 
+        isComboNumberVisible: function (object, time) {
+            return mapObject.match(object, {
+                Slider: function () {
+                    return time <= object.time;
+                },
+                _: true
+            });
+        },
+
         getObjectStartPosition: function (object) {
             return {
                 x: object.x,
@@ -900,7 +913,7 @@ define('game/RuleSet', [ 'util/util', 'game/mapObject', 'util/History', 'util/Cu
             var endTime = this.getMapEndTime(map);
 
             if (time < startTime) {
-                return -(time / startTime);
+                return -(time + this.audioLeadIn) / (startTime + this.audioLeadIn);
             } else {
                 return (time - startTime) / (endTime - startTime);
             }
