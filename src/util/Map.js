@@ -39,18 +39,23 @@ define('util/Map', [ ], function () {
             if (index >= 0) {
                 this.values[index] = value;
             } else {
-                this.keys.push(key);
-                this.values.push(value);
+                this.add(key, value);
+            }
+        },
 
-                if (isArray(key)) {
-                    keyString = getKeyString(key);
-                    index = this.keys.length - 1;
+        add: function (key, value) {
+            // Fast path if you know key doesn't exist in the map already
+            this.keys.push(key);
+            this.values.push(value);
 
-                    if (Object.prototype.hasOwnProperty.call(this.arrayKeyStrings, keyString)) {
-                        this.arrayKeyStrings[keyString].push(index);
-                    } else {
-                        this.arrayKeyStrings[keyString] = [ index ];
-                    }
+            if (isArray(key)) {
+                keyString = getKeyString(key);
+                index = this.keys.length - 1;
+
+                if (Object.prototype.hasOwnProperty.call(this.arrayKeyStrings, keyString)) {
+                    this.arrayKeyStrings[keyString].push(index);
+                } else {
+                    this.arrayKeyStrings[keyString] = [ index ];
                 }
             }
         },

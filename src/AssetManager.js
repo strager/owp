@@ -109,10 +109,8 @@ define('AssetManager', [ 'game/MapInfo', 'game/mapFile', 'assetConfig', 'util/Ma
 
                         var assetName = imageDefinition.file;
 
-                        // Le hack to inject a loaded asset into an AssetManager
-                        assetManager.cache.get([ assetName, 'image' ], function () {
-                            return image;
-                        });
+                        // Inject a loaded asset into an AssetManager
+                        assetManager.loaded(assetName, 'image', image);
                     });
 
                     return sheetDefinition.images.map(function (imageDefinition) {
@@ -293,7 +291,10 @@ define('AssetManager', [ 'game/MapInfo', 'game/mapFile', 'assetConfig', 'util/Ma
 
     function AssetManager(root) {
         this.root = root;
-        this.cache = new Cache();
+
+        // Custom cache is used for performance reasons.  Simply a nested
+        // object: type => name => value
+        this.cache = { };
     }
 
     AssetManager.prototype = {
@@ -314,12 +315,35 @@ define('AssetManager', [ 'game/MapInfo', 'game/mapFile', 'assetConfig', 'util/Ma
             return assetLoaders[type](this, name);
         },
 
-        load: function (name, type) {
-            var assetManager = this;
+        loaded: function (name, type, value) {
+            // INTERNAL HACK
+            var t;
+            if (type in this.cache) {
+                t = this.cache[type];
+            } else {
+                t = { };
+                this.cache[type] = t;
+            }
 
-            return this.cache.get([ name, type ], function () {
-                return assetManager.loadUncached(name, type);
-            });
+            t[name] = value;
+        },
+
+        load: function (name, type) {
+            var t;
+            if (type in this.cache) {
+                t = this.cache[type];
+            } else {
+                t = { };
+                this.cache[type] = t;
+            }
+
+            if (name in t) {
+                return t[name];
+            } else {
+                var asset = this.loadUncached(name, type);
+                t[name] = asset;
+                return asset;
+            }
         },
 
         get: function (name, type) {

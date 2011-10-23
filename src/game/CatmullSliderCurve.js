@@ -1,4 +1,4 @@
-define('game/CatmullSliderCurve', [ 'util/util' ], function (util) {
+define('game/CatmullSliderCurve', [ 'util/util', 'game/BezierSliderCurve' ], function (util, BezierSliderCurve) {
     function render(rawPoints, stepCount, maxLength) {
         // Estimates a Catmull-Rom curve
         // TODO Adaptive rendering
@@ -95,6 +95,13 @@ define('game/CatmullSliderCurve', [ 'util/util' ], function (util) {
     }
 
     function CatmullSliderCurve(rawPoints, sliderLength) {
+        if (rawPoints.length === 2) {
+            // Bezier curve implementation is more optimal and Catmulls are
+            // bugged with two points anyway, so just reuse the Bezier
+            // implementation.
+            return new BezierSliderCurve(rawPoints, sliderLength);
+        }
+
         this.length = sliderLength;
 
         var points = render(rawPoints, 50, this.length);

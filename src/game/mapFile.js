@@ -223,13 +223,13 @@ define('game/mapFile', [ 'game/RuleSet', 'game/Map', 'game/Combo', 'game/MapInfo
         for (i = 0; i < assetConfig.HitObjects.lists.length; ++i) {
             curObject = readHitObject(assetConfig.HitObjects.lists[i]);
 
-            if (!curObject) {
-                continue;
-            }
-
-            if (curObject.newCombo) {
+            if (!curObject || curObject.newCombo) {
                 curComboIndex = (curComboIndex + 1) % combos.length;
                 curObjectIndex = 0;
+            }
+
+            if (!curObject) {
+                continue;
             }
 
             curObject.combo = combos[curComboIndex];

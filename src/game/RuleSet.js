@@ -259,6 +259,10 @@ define('game/RuleSet', [ 'util/util', 'game/mapObject', 'util/History', 'util/Cu
             }
         }),
 
+        getSliderTickThresholdRadius: function () {
+            return this.getCircleSize();
+        },
+
         getHitMarkerImageName: function (hitMarker) {
             // Should this be here?
 
@@ -570,7 +574,30 @@ define('game/RuleSet', [ 'util/util', 'game/mapObject', 'util/History', 'util/Cu
             var tickLength = this.getTickLength(startTime);
             var tickDuration = this.getTickDuration(startTime);
 
+            var radius = this.getSliderTickThresholdRadius();
+            var radius2 = radius * radius;
+
+            var startPosition = slider.curve.getStartPoint();
+            var endPosition = slider.curve.getEndPoint();
+
             var rawTickPositions = slider.getTickPositions(tickLength);
+            rawTickPositions = rawTickPositions.filter(function (point) {
+                var dx, dy;
+
+                dx = point[0] - startPosition[0];
+                dy = point[1] - startPosition[1];
+                if (dx * dx + dy * dy <= radius2) {
+                    return false;
+                }
+
+                dx = point[0] - endPosition[0];
+                dy = point[1] - endPosition[1];
+                if (dx * dx + dy * dy <= radius2) {
+                    return false;
+                }
+
+                return true;
+            }, this);
 
             var ticks = [ ];
 
@@ -649,10 +676,10 @@ define('game/RuleSet', [ 'util/util', 'game/mapObject', 'util/History', 'util/Cu
             var inherited = this.inheritedTimingPointHistory.getDataAtTime(time);
             var uninherited = this.uninheritedTimingPointHistory.getDataAtTime(time) || this.uninheritedTimingPointHistory.getFirst();
 
-            if (!inherited) {
-                return uninherited.getEffectiveBPM(null);
-            } else {
+            if (inherited && inherited.time >= uninherited.time) {
                 return inherited.getEffectiveBPM(uninherited);
+            } else {
+                return uninherited.getEffectiveBPM(null);
             }
         },
 
@@ -668,6 +695,8 @@ define('game/RuleSet', [ 'util/util', 'game/mapObject', 'util/History', 'util/Cu
         },
 
         getHitSoundVolume: function (time) {
+            // Note that osu! uses the hit marker time itself, where we use
+            // the more mapper-friendly hit object time.
             return this.getLastTimingSection(time).hitSoundVolume;
         },
 
