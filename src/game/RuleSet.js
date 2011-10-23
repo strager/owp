@@ -740,6 +740,15 @@ define('game/RuleSet', [ 'util/util', 'game/mapObject', 'util/History', 'util/Cu
             }
         }),
 
+        isComboNumberVisible: function (object, time) {
+            return mapObject.match(object, {
+                Slider: function () {
+                    return time <= object.time;
+                },
+                _: true
+            });
+        },
+
         getObjectStartPosition: function (object) {
             return {
                 x: object.x,
