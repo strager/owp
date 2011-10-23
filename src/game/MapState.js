@@ -2,7 +2,10 @@ define('game/MapState', [ 'game/mapObject', 'util/Timeline', 'util/Map', 'util/P
     function MapState(ruleSet, objects, timeline) {
         this.ruleSet = ruleSet;
         this.timeline = timeline;
-        this.events = new PubSub();
+
+        this.events = {
+            hitMarker: new PubSub()
+        };
 
         function addClickable(object) {
             var earliestHitTime = this.ruleSet.getObjectEarliestHitTime(object);
@@ -129,7 +132,7 @@ define('game/MapState', [ 'game/mapObject', 'util/Timeline', 'util/Map', 'util/P
             // Add hit marker itself to the timeline
             this.timeline.add(MapState.HIT_MARKER_CREATION, hitMarker, hitMarker.time);
 
-            this.events.publishSync(hitMarker);
+            this.events.hitMarker.publishSync(hitMarker);
         },
 
         hitSlide: function (object, mouseState) {

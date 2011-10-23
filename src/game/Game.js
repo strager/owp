@@ -250,19 +250,6 @@ define('game/Game', [ 'q', 'game/MapState', 'AssetManager', 'util/PubSub', 'Soun
                     isRightDown = e.right;
                 }));
 
-                boundEvents.push(mapState.events.subscribe(function (hitMarker) {
-                    var time = hitMarker.time;
-
-                    var accuracy = mapState.getAccuracy(time);
-                    var score = mapState.getScore(time);
-
-                    var combo = mapState.getActiveCombo(time);
-
-                    accuracyHistory.add(time, accuracy);
-                    scoreHistory.add(time, score);
-                    comboHistory.add(time, combo);
-                }));
-
                 function playHitMarker(hitMarker) {
                     var hitSounds = mapState.ruleSet.getHitSoundNames(hitMarker);
                     var volume = mapState.ruleSet.getHitSoundVolume(hitMarker.hitObject.time);
@@ -278,8 +265,19 @@ define('game/Game', [ 'q', 'game/MapState', 'AssetManager', 'util/PubSub', 'Soun
                     });
                 }
 
-                boundEvents.push(timeline.subscribe(MapState.HIT_MARKER_CREATION, function (hitMarker) {
+                boundEvents.push(mapState.events.hitMarker.subscribe(function (hitMarker) {
                     playHitMarker(hitMarker);
+
+                    var time = hitMarker.time;
+
+                    var accuracy = mapState.getAccuracy(time);
+                    var score = mapState.getScore(time);
+
+                    var combo = mapState.getActiveCombo(time);
+
+                    accuracyHistory.add(time, accuracy);
+                    scoreHistory.add(time, score);
+                    comboHistory.add(time, combo);
                 }));
 
                 boundEvents.push(timeline.subscribe(MAP_END, function () {
