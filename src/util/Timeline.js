@@ -19,6 +19,14 @@ define('util/Timeline', [ 'util/PubSub', 'util/CueList', 'util/Map' ], function 
         }
     }
 
+    function addTimeout(coolAudio, timeouts, events, value, time) {
+        var timeoutId = coolAudio.setInterval(function () {
+            if (value.type === 'SliderEnd') debugger;
+            events.publish(value);
+        }, time);
+        timeouts.set(value, timeoutId);
+    }
+
     Timeline.prototype = {
         getCueList: function (key) {
             validateKey(key);
@@ -34,7 +42,19 @@ define('util/Timeline', [ 'util/PubSub', 'util/CueList', 'util/Map' ], function 
             validateKey(key);
 
             if (!Object.prototype.hasOwnProperty.call(this.events, key)) {
-                this.events[key] = new PubSub();
+                // We need to add timeouts for existing cues.  They don't
+                // have timeouts at this point due to a lack of a pubsub; see
+                // Timeline#add.
+                var events = new PubSub();
+                var timeouts = this.getTimeouts(key);
+                var cues = this.getCueList(key);
+
+                var i;
+                for (i = 0; i < cues.cueValues.length; ++i) {
+                    addTimeout(this.coolAudio, timeouts, events, cues.cueValues[i], cues.cueStarts[i]);
+                }
+
+                this.events[key] = events;
             }
 
             return this.events[key];
@@ -55,33 +75,36 @@ define('util/Timeline', [ 'util/PubSub', 'util/CueList', 'util/Map' ], function 
         },
 
         add: function (key, value, startTime, endTime) {
-            // TODO Don't bother doing timeout stuff if we have no
-            // subscribers
-            var timeoutId = this.coolAudio.setInterval(function () {
-                this.getEvents(key).publish(value);
-            }, startTime, this);
-            this.getTimeouts(key).set(value, timeoutId);
+            if (Object.prototype.hasOwnProperty.call(this.events, key)) {
+                // Only bother doing timeout stuff if we potentially have
+                // subscribers
+                addTimeout(this.coolAudio, this.getTimeouts(key), this.events[key], value, startTime);
+            }
 
             return this.getCueList(key).add(value, startTime, endTime);
         },
 
         remove: function (key, value) {
-            var timeoutId = this.getTimeouts(key).get(value, null);
-            if (timeoutId !== null) {
-                this.coolAudio.clearTimeout(timeoutId);
+            if (Object.prototype.hasOwnProperty.call(this.timeouts, key)) {
+                var timeoutId = this.timeouts[key].get(value, null);
+                if (timeoutId !== null) {
+                    this.coolAudio.clearTimeout(timeoutId);
+                }
             }
 
             return this.getCueList(key).remove(value);
         },
 
         removeMany: function (key, values) {
-            var timeouts = this.getTimeouts(key);
-            values.forEach(function (value) {
-                var timeoutId = timeouts.get(value, null);
-                if (timeoutId !== null) {
-                    this.coolAudio.clearTimeout(timeoutId);
-                }
-            }, this);
+            if (Object.prototype.hasOwnProperty.call(this.timeouts, key)) {
+                var timeouts = this.getTimeouts(key);
+                values.forEach(function (value) {
+                    var timeoutId = timeouts.get(value, null);
+                    if (timeoutId !== null) {
+                        this.coolAudio.clearTimeout(timeoutId);
+                    }
+                }, this);
+            }
 
             return this.getCueList(key).removeMany(values);
         },

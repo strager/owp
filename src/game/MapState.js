@@ -42,8 +42,7 @@ define('game/MapState', [ 'game/mapObject', 'util/Timeline', 'util/Map', 'util/P
             }, this);
 
             mapObject.match(object, {
-                HitCircle: addMissable,
-                SliderEnd: addMissable
+                HitCircle: addMissable
             }, this);
         }, this);
     }
