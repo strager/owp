@@ -42,6 +42,8 @@ define('game/RuleSet', [ 'util/util', 'game/mapObject', 'util/History', 'util/Cu
             ruleSet.breakTimeline.add(breakRange, breakRange.startTime, breakRange.endTime);
         });
 
+        ruleSet.audioLeadIn = +ruleSet.audioLeadIn;
+
         return ruleSet;
     };
 
@@ -911,7 +913,7 @@ define('game/RuleSet', [ 'util/util', 'game/mapObject', 'util/History', 'util/Cu
             var endTime = this.getMapEndTime(map);
 
             if (time < startTime) {
-                return -(time / startTime);
+                return -(time + this.audioLeadIn) / (startTime + this.audioLeadIn);
             } else {
                 return (time - startTime) / (endTime - startTime);
             }

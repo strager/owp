@@ -865,6 +865,13 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/Cache', '
         function renderHud() {
             var MAP_PROGRESS_HEIGHT = 6;
 
+            var width;
+            if (mapProgress >= 0) {
+                width = 640 * mapProgress;
+            } else {
+                width = 640 * (1 + mapProgress);
+            }
+
             view(View.hud, function () {
                 renderScore();
                 renderCombo();
@@ -873,7 +880,7 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/Cache', '
                 solidSprite({
                     x: 0,
                     y: 480 - MAP_PROGRESS_HEIGHT,
-                    width: 640 * mapProgress,
+                    width: width,
                     height: MAP_PROGRESS_HEIGHT,
                     color: mapProgressColour(mapProgress)
                 });
