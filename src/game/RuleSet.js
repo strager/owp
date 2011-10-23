@@ -425,15 +425,13 @@ define('game/RuleSet', [ 'util/util', 'game/mapObject', 'util/History', 'util/Cu
             var currentScore = 0;
 
             hitMarkers.forEach(function (hitMarker) {
-                if (!hitMarker.isHit) {
+                if (hitMarker.isMiss) {
                     currentCombo = 0;
-
                     return;
                 }
 
                 if (!this.doesObjectAffectAccuracy(hitMarker.hitObject)) {
                     currentScore += hitMarker.score;
-
                     return;
                 }
 
@@ -443,7 +441,9 @@ define('game/RuleSet', [ 'util/util', 'game/mapObject', 'util/History', 'util/Cu
                     modMultiplier
                 ) / 25);
 
-                ++currentCombo;
+                if (hitMarker.isHit) {
+                    ++currentCombo;
+                }
             }, this);
 
             return currentScore;
@@ -522,8 +522,10 @@ define('game/RuleSet', [ 'util/util', 'game/mapObject', 'util/History', 'util/Cu
             return hitMarkers.reduce(function (a, hitMarker) {
                 if (hitMarker.isHit) {
                     return a + 1;
-                } else {
+                } else if (hitMarker.isMiss) {
                     return 0;
+                } else {
+                    return a;
                 }
             }, 0);
         },

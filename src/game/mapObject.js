@@ -94,11 +94,13 @@ define('game/mapObject', [ 'util/util' ], function (util) {
 
     SliderEnd.prototype.type = 'SliderEnd';
 
-    function HitMarker(object, time, score, isHit) {
+    function HitMarker(object, time, score, isHit, isMiss) {
         this.hitObject = object; // TODO Rename to object
         this.time = time;
         this.score = score;
-        this.isHit = isHit;
+
+        this.isHit = isHit; // True => contributes to combo
+        this.isMiss = isMiss; // True => resets combo
     }
 
     HitMarker.prototype.type = 'HitMarker';
