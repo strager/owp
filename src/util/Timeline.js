@@ -21,7 +21,6 @@ define('util/Timeline', [ 'util/PubSub', 'util/CueList', 'util/Map' ], function 
 
     function addTimeout(coolAudio, timeouts, events, value, time) {
         var timeoutId = coolAudio.setInterval(function () {
-            if (value.type === 'SliderEnd') debugger;
             events.publish(value);
         }, time);
         timeouts.set(value, timeoutId);
