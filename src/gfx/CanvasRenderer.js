@@ -870,10 +870,17 @@ define('gfx/CanvasRenderer', [ 'game/mapObject', 'util/Cache', 'gfx/canvasShader
                 return el;
             });
 
+            var width;
+            if (mapProgress >= 0) {
+                width = 640 * mapProgress;
+            } else {
+                width = 640 * (1 + mapProgress);
+            }
+
             el.style.backgroundColor = getColorStyle(mapProgressColour(progress));
             el.style.marginLeft = '0px';
             el.style.marginTop = (480 - MAP_PROGRESS_HEIGHT) + 'px';
-            el.style.width = (640 * progress) + 'px';
+            el.style.width = width + 'px';
             el.style.height = MAP_PROGRESS_HEIGHT + 'px';
 
             setZ(el);
