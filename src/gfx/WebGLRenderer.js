@@ -1742,7 +1742,7 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/Cache', '
 
             renderCursor: function (skin, mouseHistory, time) {
                 r.vars({
-                    skin: skin,
+                    skinKey: skin.assetManager,
                     mouseHistory: mouseHistory,
                     time: time
                 });
