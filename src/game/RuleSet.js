@@ -265,6 +265,16 @@ define('game/RuleSet', [ 'util/util', 'game/mapObject', 'util/History', 'util/Cu
             return this.getCircleSize() * 0.75;
         },
 
+        getCursorScale: function (mouseHistory, time) {
+            // Kinda crude; needs transition effects
+            var state = mouseHistory.getDataAtTime(time);
+            if (state && (state.left || state.right)) {
+                return 1.3;
+            } else {
+                return 1;
+            }
+        },
+
         getHitMarkerImageName: function (hitMarker) {
             // Should this be here?
 

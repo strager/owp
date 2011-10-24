@@ -793,7 +793,8 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/Cache', '
         // Map rendering }}}
 
         // Cursor rendering {{{
-        function renderCursorHead(state) {
+        function renderCursorHead(time) {
+            var state = mouseHistory.getDataAtTime(time);
             if (!state) {
                 return;
             }
@@ -802,14 +803,14 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/Cache', '
                 x: state.x,
                 y: state.y,
                 color: [ 255, 255, 255, 255 ],
-                scale: 1,
+                scale: ruleSet.getCursorScale(mouseHistory, time),
                 texture: textures.get('cursor.png', skinKey)
             });
         }
 
         function renderCursor() {
             view(View.map, function () {
-                renderCursorHead(mouseHistory.getDataAtTime(time));
+                renderCursorHead(time);
             });
         }
         // Cursor rendering }}}
@@ -1740,10 +1741,11 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/Cache', '
                 r.renderReadyToPlay();
             },
 
-            renderCursor: function (skin, mouseHistory, time) {
+            renderCursor: function (state, time) {
                 r.vars({
-                    skinKey: skin.assetManager,
-                    mouseHistory: mouseHistory,
+                    ruleSet: state.ruleSet,
+                    skinKey: state.skin.assetManager,
+                    mouseHistory: state.mouseHistory,
                     time: time
                 });
 

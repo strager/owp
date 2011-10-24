@@ -219,7 +219,11 @@ define('game/Game', [ 'q', 'game/MapState', 'AssetManager', 'util/PubSub', 'Soun
                     }
 
                     if (isReplaying) {
-                        renderer.renderCursor(skin.valueOf(), mouseHistory, time);
+                        renderer.renderCursor({
+                            skin: skin.valueOf(),
+                            mouseHistory: mouseHistory,
+                            ruleSet: mapState.ruleSet
+                        }, time);
                     }
                 };
 
