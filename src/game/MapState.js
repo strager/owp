@@ -251,27 +251,39 @@ define('game/MapState', [ 'game/mapObject', 'util/Timeline', 'util/Map', 'util/P
         },
 
         processMouseHistory: function (mouseHistory) {
+            var mapState = this;
+
             var lastTime = -Infinity;
             var isLeftDown = false, isRightDown = false;
-            mouseHistory.map.forEach(function (time, e) {
-                var missables = this.timeline.getAllInTimeRange(lastTime + 1, time, MapState.HIT_MISS_CHECK);
+
+            function processPassive(time) {
+                var missables = mapState.timeline.getAllInTimeRange(lastTime + 1, time, MapState.HIT_MISS_CHECK);
                 missables.forEach(function (object) {
-                    this.processMiss(object);
-                }, this);
+                    mapState.processMiss(object);
+                }, mapState);
 
-                var slidables = this.timeline.getAllInTimeRange(lastTime + 1, time, MapState.HIT_SLIDE_CHECK);
+                var slidables = mapState.timeline.getAllInTimeRange(lastTime + 1, time, MapState.HIT_SLIDE_CHECK);
                 slidables.forEach(function (object) {
-                    this.processSlide(object, mouseHistory);
-                }, this);
+                    mapState.processSlide(object, mouseHistory);
+                }, mapState);
+            }
 
+            function processActive(time, e) {
                 if (e.left && !isLeftDown || e.right && !isRightDown) {
-                    this.clickAt(e.x, e.y, time);
+                    mapState.clickAt(e.x, e.y, time);
                 }
+            }
+
+            mouseHistory.map.forEach(function (time, e) {
+                processActive(time, e);
+                processPassive(time);
 
                 lastTime = time;
                 isLeftDown = e.left;
                 isRightDown = e.right;
-            }, this);
+            });
+
+            processPassive(Infinity);
         }
     };
 
