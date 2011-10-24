@@ -585,29 +585,25 @@ define('game/RuleSet', [ 'util/util', 'game/mapObject', 'util/History', 'util/Cu
             var endPosition = slider.curve.getEndPoint();
 
             var rawTickPositions = slider.getTickPositions(tickLength);
-            rawTickPositions = rawTickPositions.filter(function (point) {
-                var dx, dy;
-
-                dx = point[0] - startPosition[0];
-                dy = point[1] - startPosition[1];
-                if (dx * dx + dy * dy <= radius2) {
-                    return false;
-                }
-
-                dx = point[0] - endPosition[0];
-                dy = point[1] - endPosition[1];
-                if (dx * dx + dy * dy <= radius2) {
-                    return false;
-                }
-
-                return true;
-            }, this);
-
             var ticks = [ ];
 
             var repeatIndex;
 
             function makeTick(tickPosition, tickIndex) {
+                var dx, dy;
+
+                dx = tickPosition[0] - startPosition[0];
+                dy = tickPosition[1] - startPosition[1];
+                if (dx * dx + dy * dy <= radius2) {
+                    return null;
+                }
+
+                dx = tickPosition[0] - endPosition[0];
+                dy = tickPosition[1] - endPosition[1];
+                if (dx * dx + dy * dy <= radius2) {
+                    return null;
+                }
+
                 return new mapObject.SliderTick(
                     startTime + (tickIndex + 1) * tickDuration + repeatIndex * repeatDuration,
                     tickPosition[0],
@@ -618,9 +614,12 @@ define('game/RuleSet', [ 'util/util', 'game/mapObject', 'util/History', 'util/Cu
             }
 
             for (repeatIndex = 0; repeatIndex < slider.repeats; ++repeatIndex) {
-                ticks = ticks.concat(rawTickPositions.map(makeTick));
+                var newTicks = rawTickPositions.map(makeTick);
+                ticks = ticks.concat(newTicks.filter(function (tick) {
+                    return tick !== null;
+                }));
 
-                rawTickPositions = rawTickPositions.reverse();
+                rawTickPositions.reverse();
             }
 
             return ticks;
