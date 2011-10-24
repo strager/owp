@@ -262,7 +262,7 @@ define('game/RuleSet', [ 'util/util', 'game/mapObject', 'util/History', 'util/Cu
         }),
 
         getSliderTickThresholdRadius: function () {
-            return this.getCircleSize();
+            return this.getCircleSize() * 0.75;
         },
 
         getHitMarkerImageName: function (hitMarker) {
