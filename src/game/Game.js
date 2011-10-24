@@ -296,12 +296,14 @@ define('game/Game', [ 'q', 'game/MapState', 'AssetManager', 'util/PubSub', 'Soun
                     }));
                 }
 
-                boundEvents.push(timeline.subscribe(MapState.HIT_SLIDE_CHECK, function (object) {
-                    mapState.processSlide(object, mouseHistory);
-                }));
-                boundEvents.push(timeline.subscribe(MapState.HIT_MISS_CHECK, function (object) {
-                    mapState.processMiss(object);
-                }));
+                if (!isReplaying) {
+                    boundEvents.push(timeline.subscribe(MapState.HIT_SLIDE_CHECK, function (object) {
+                        mapState.processSlide(object, mouseHistory);
+                    }));
+                    boundEvents.push(timeline.subscribe(MapState.HIT_MISS_CHECK, function (object) {
+                        mapState.processMiss(object);
+                    }));
+                }
             },
 
             exit_playing: function () {
@@ -517,8 +519,14 @@ define('game/Game', [ 'q', 'game/MapState', 'AssetManager', 'util/PubSub', 'Soun
 
             on_watch_replay: function () {
                 isReplaying = true;
+
                 timeline = new Timeline(audio);
+                var exitTime = mapState.ruleSet.getMapExitTime(mapInfo.map);
+                timeline.add(MAP_END, true, exitTime);
+
                 mapState = MapState.fromMapInfo(mapInfo, timeline);
+                mapState.processMouseHistory(mouseHistory);
+
                 audio.seek(-mapState.ruleSet.audioLeadIn);
             }
         });

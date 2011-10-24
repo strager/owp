@@ -248,6 +248,30 @@ define('game/MapState', [ 'game/mapObject', 'util/Timeline', 'util/Map', 'util/P
             );
 
             this.applyHitMarker(hitMarker);
+        },
+
+        processMouseHistory: function (mouseHistory) {
+            var lastTime = -Infinity;
+            var isLeftDown = false, isRightDown = false;
+            mouseHistory.map.forEach(function (time, e) {
+                var missables = this.timeline.getAllInTimeRange(lastTime + 1, time, MapState.HIT_MISS_CHECK);
+                missables.forEach(function (object) {
+                    this.processMiss(object);
+                }, this);
+
+                var slidables = this.timeline.getAllInTimeRange(lastTime + 1, time, MapState.HIT_SLIDE_CHECK);
+                slidables.forEach(function (object) {
+                    this.processSlide(object, mouseHistory);
+                }, this);
+
+                if (e.left && !isLeftDown || e.right && !isRightDown) {
+                    this.clickAt(e.x, e.y, time);
+                }
+
+                lastTime = time;
+                isLeftDown = e.left;
+                isRightDown = e.right;
+            }, this);
         }
     };
 
