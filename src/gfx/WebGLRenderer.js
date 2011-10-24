@@ -557,7 +557,7 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/Cache', '
         }
 
         function renderSliderTick(tick) {
-            if (tick.hitMarker) {
+            if (!ruleSet.isHitObjectVisible(tick, time)) {
                 return;
             }
 
@@ -664,7 +664,7 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/Cache', '
 
                 // Next end (repeat arrow)
                 var repeatArrow = object.ends.filter(function (end) {
-                    return !end.hitMarker && !end.isFinal;
+                    return ruleSet.isHitObjectVisible(end, time) && !end.isFinal;
                 })[0];
 
                 if (repeatArrow) {

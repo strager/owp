@@ -753,6 +753,24 @@ define('game/RuleSet', [ 'util/util', 'game/mapObject', 'util/History', 'util/Cu
             });
         },
 
+        isHitObjectVisible: function (object, time) {
+            function byHitMarker() {
+                if (object.hitMarker && object.hitMarker.time <= time) {
+                    return false;
+                }
+
+                return true;
+            }
+
+            return mapObject.match(object, {
+                SliderTick: byHitMarker,
+                SliderEnd: byHitMarker,
+                HitCircle: byHitMarker,
+                Slider: true,
+                _: true
+            });
+        },
+
         getObjectStartPosition: function (object) {
             return {
                 x: object.x,
