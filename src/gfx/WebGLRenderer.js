@@ -1548,9 +1548,6 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/Cache', '
                 textureCache.get('score-' + i + '.png', skinKey);
             }
 
-            var cursorImage = skin.assetManager.get('cursor.png', 'image');
-            util.setCursorImage(canvas, cursorImage.src, cursorImage.width / 2, cursorImage.height / 2);
-
             skinInitd = true;
         }
 
@@ -1645,6 +1642,8 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/Cache', '
                 viewport: viewport
             });
         }
+
+        var oldCursorScale = null;
 
         init();
 
@@ -1750,6 +1749,26 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/Cache', '
                 });
 
                 r.renderCursor();
+            },
+
+            renderCurrentCursor: function (state, time) {
+                var currentCursorScale = state.ruleSet.getCursorScale(state.mouseHistory, time);
+                if (currentCursorScale !== oldCursorScale) {
+                    var cursorImage = state.skin.assetManager.get('cursor.png', 'image');
+
+                    var c = document.createElement('canvas');
+                    c.width = cursorImage.width * currentCursorScale;
+                    c.height = cursorImage.height * currentCursorScale;
+
+                    var context = c.getContext('2d');
+                    context.globalCompositeOperation = 'copy';
+                    context.scale(currentCursorScale, currentCursorScale);
+                    context.drawImage(cursorImage, 0, 0);
+
+                    util.setCursorImage(canvas, c.toDataURL(), c.width / 2, c.height / 2);
+
+                    oldCursorScale = currentCursorScale;
+                }
             },
 
             renderColourOverlay: function (colour) {

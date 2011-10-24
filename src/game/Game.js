@@ -224,6 +224,12 @@ define('game/Game', [ 'q', 'game/MapState', 'AssetManager', 'util/PubSub', 'Soun
                             mouseHistory: mouseHistory,
                             ruleSet: mapState.ruleSet
                         }, time);
+                    } else {
+                        renderer.renderCurrentCursor({
+                            skin: skin.valueOf(),
+                            mouseHistory: mouseHistory,
+                            ruleSet: mapState.ruleSet
+                        }, time);
                     }
                 };
 
