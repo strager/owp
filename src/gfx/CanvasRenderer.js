@@ -544,7 +544,7 @@ define('gfx/CanvasRenderer', [ 'game/mapObject', 'util/Cache', 'gfx/canvasShader
 
             draw();
 
-            c.lineWidth = lineWidth * 0.9;
+            c.lineWidth = lineWidth * ruleSet.getSliderTrackInnerRatio();
             c.strokeStyle = getColorStyle(color);
 
             draw();

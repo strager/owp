@@ -314,6 +314,7 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/Cache', '
                 // Uniforms
                 gl.uniform2fv(programs.curveInner.uni.view, curve.view.mat);
                 gl.uniform4fv(programs.curveInner.uni.color, curve.color.map(adjustColour));
+                gl.uniform1f(programs.curveInner.uni.width, curve.innerWidth);
 
                 // Draw
                 gl.drawArrays(gl.TRIANGLE_STRIP, 0, curve.vertexCount);
@@ -623,7 +624,8 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/Cache', '
                 curve({
                     id: c.id,
                     color: color.concat([ 255 ]),
-                    vertexCount: Math.round(c.vertexCount * growPercentage)
+                    vertexCount: Math.round(c.vertexCount * growPercentage),
+                    innerWidth: ruleSet.getSliderTrackInnerRatio()
                 });
 
                 object.ticks.forEach(renderSliderTick);
@@ -1243,12 +1245,13 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/Cache', '
 
         curveInnerFragmentShader = [
             'uniform vec4 uColor;',
+            'uniform float uWidth;',
 
             'varying vec2 vTextureCoord;',
 
             'vec4 getSliderColor(float t, vec4 baseColor) {',
                 'vec4 u = abs(vec4(t));',
-                'bvec4 z = greaterThan(u, vec4(0.85));',
+                'bvec4 z = greaterThan(u, vec4(uWidth));',
                 'vec4 grad = vec4((u.xyz + 1.5) / (1.0 + 1.5), 1.0) * baseColor;',
                 'return mix(grad, vec4(0.0), vec4(z));',
             '}',
@@ -1432,7 +1435,8 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/Cache', '
             };
             programs.curveInner.uni = {
                 view: gl.getUniformLocation(programs.curveInner, 'uView'),
-                color: gl.getUniformLocation(programs.curveInner, 'uColor')
+                color: gl.getUniformLocation(programs.curveInner, 'uColor'),
+                width: gl.getUniformLocation(programs.curveInner, 'uWidth')
             };
 
             programs.curveOuter = createProgram(gl, curveOuterVertexShader, curveOuterFragmentShader);
