@@ -246,6 +246,10 @@ define('game/RuleSet', [ 'util/util', 'game/mapObject', 'util/History', 'util/Cu
             return this.getCircleSize() / adjustmentScale / 2;
         },
 
+        getSliderTrackInnerRatio: function () {
+            return 0.85;
+        },
+
         getHitRadius: mapObject.matcher({
             HitCircle: function (object) {
                 return this.getCircleSize() / 2;
