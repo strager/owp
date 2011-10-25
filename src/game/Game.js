@@ -506,7 +506,7 @@ define('game/Game', [ 'q', 'game/MapState', 'AssetManager', 'util/PubSub', 'Soun
                     Q.fail(sm.watch_replay(), agentInfo.crash);
                 });
 
-                var hist = mapState.ruleSet.getHitMarkerHistogram(mapState.getAllHitMarkers())
+                var hist = mapState.ruleSet.getHitMarkerHistogram(mapState.getAllHitMarkers());
                 ui.vars.hit300 = hist.hit300;
                 ui.vars.hit100 = hist.hit100;
                 ui.vars.hit50 = hist.hit50;
