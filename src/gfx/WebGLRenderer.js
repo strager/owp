@@ -1048,7 +1048,7 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/Cache', '
         }
 
         // User interface {{{
-        function renderUiControl(control) {
+        function renderUiControl(ui, control) {
             if (control.image) {
                 var texture = textures.get(control.image());
 
@@ -1073,14 +1073,16 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/Cache', '
                     scale: control.characterScale(),
                     alignX: control.alignX(),
                     alignY: control.alignY(),
-                    spacing: skin.scoreFontSpacing
+                    spacing: ui.skin.scoreFontSpacing
                 });
             }
         }
 
         function renderUi(ui) {
             view(View.global, function () {
-                ui.controls.forEach(renderUiControl);
+                ui.controls.forEach(function (control) {
+                    renderUiControl(ui, control);
+                });
             });
         }
         // User interface }}}

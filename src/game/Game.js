@@ -185,7 +185,7 @@ define('game/Game', [ 'q', 'game/MapState', 'AssetManager', 'util/PubSub', 'Soun
                     return time < latestSkipTime && audio.canSeek(skipToTime);
                 }
 
-                ui = new UI(skin.valueOf().assetManager);
+                ui = new UI(skin.valueOf());
                 boundEvents.push(mousePubSub.subscribe(function (e) {
                     if (canSkip()) {
                         ui.mouse.publish(e);
@@ -323,7 +323,7 @@ define('game/Game', [ 'q', 'game/MapState', 'AssetManager', 'util/PubSub', 'Soun
             enter_paused: function () {
                 audio.pause();
 
-                ui = new UI(skin.valueOf().assetManager);
+                ui = new UI(skin.valueOf());
                 boundEvents.push(mousePubSub.pipeTo(ui.mouse));
 
                 ui.build([
@@ -375,7 +375,7 @@ define('game/Game', [ 'q', 'game/MapState', 'AssetManager', 'util/PubSub', 'Soun
             },
 
             enter_score_screen: function () {
-                ui = new UI(skin.valueOf().assetManager);
+                ui = new UI(skin.valueOf());
                 boundEvents.push(mousePubSub.pipeTo(ui.mouse));
 
                 ui.build([

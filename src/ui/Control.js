@@ -58,7 +58,7 @@ define('ui/Control', [ 'util/util', 'ui/helpers', 'util/PubSub' ], function (uti
             uiHelpers.bindValue(this, 'image', this.events, function (eventType) {
                 var imageTemplate = getValue(spec, 'image', eventType);
                 var imageName = uiHelpers.templateReplace(imageTemplate, ui.vars);
-                return ui.assetManager.get(imageName, 'image');
+                return ui.skin.assetManager.get(imageName, 'image');
             });
 
             uiHelpers.bindEasable(this, 'width', this.events, function (eventType) {

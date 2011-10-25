@@ -1015,7 +1015,7 @@ define('gfx/CanvasRenderer', [ 'game/mapObject', 'util/Cache', 'gfx/canvasShader
         }
 
         // User interface {{{
-        function renderUiControl(control) {
+        function renderUiControl(ui, control) {
             if (control.image) {
                 var image = control.image();
 
@@ -1057,7 +1057,7 @@ define('gfx/CanvasRenderer', [ 'game/mapObject', 'util/Cache', 'gfx/canvasShader
                 var dataString = JSON.stringify(data);
 
                 if (canvas.getAttribute('data-displayed') !== dataString) {
-                    var images = getStringImages('score-', skin.assetManager, text);
+                    var images = getStringImages('score-', ui.skin.assetManager, text);
                     makeCharactersCanvas(images, canvas, {
                         scale: characterScale
                     });
@@ -1076,7 +1076,9 @@ define('gfx/CanvasRenderer', [ 'game/mapObject', 'util/Cache', 'gfx/canvasShader
 
         function renderUi(ui) {
             view(View.global, function () {
-                ui.controls.forEach(renderUiControl);
+                ui.controls.forEach(function (control) {
+                    renderUiControl(ui, control);
+                });
             });
         }
         // User interface }}}
