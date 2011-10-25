@@ -375,7 +375,7 @@ define('game/Game', [ 'q', 'game/MapState', 'AssetManager', 'util/PubSub', 'Soun
             },
 
             enter_score_screen: function () {
-                ui = new UI(skin.valueOf().assetManager);
+                ui = new UI(skin.valueOf());
                 boundEvents.push(mousePubSub.pipeTo(ui.mouse));
 
                 ui.build([
