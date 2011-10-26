@@ -42,7 +42,8 @@ define('ui/Control', [ 'util/util', 'ui/helpers', 'util/PubSub' ], function (uti
             button: false,
             alignX: 0.5,
             alignY: 0.5,
-            action: null
+            action: null,
+            bounds: [ Infinity, Infinity, -Infinity, -Infinity ]
         }, spec);
 
         this.events = { };
@@ -113,6 +114,10 @@ define('ui/Control', [ 'util/util', 'ui/helpers', 'util/PubSub' ], function (uti
                 return getValue(spec, prop, eventType);
             });
         }, this);
+
+        uiHelpers.bindValue(this, 'bounds', this.events, function (eventType) {
+            return getValue(spec, 'bounds', eventType);
+        });
 
         var eventActions = uiHelpers.buildEventValues(eventStatePriorities, 'action', spec);
         Object.keys(eventActions).forEach(function (eventType) {
@@ -188,24 +193,6 @@ define('ui/Control', [ 'util/util', 'ui/helpers', 'util/PubSub' ], function (uti
                 wasDown = down;
                 wasInside = inside;
             });
-        },
-
-        bounds: function () {
-            if (!this.width || !this.height) {
-                return [ Infinity, Infinity, -Infinity, -Infinity ];
-            }
-
-            var w = this.width();
-            var h = this.height();
-            var cx = this.centerX();
-            var cy = this.centerY();
-
-            return [
-                cx - w / 2,
-                cy - h / 2,
-                cx + w / 2,
-                cy + h / 2
-            ];
         },
 
         hitTest: function (x, y) {

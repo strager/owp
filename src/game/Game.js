@@ -200,6 +200,7 @@ define('game/Game', [ 'q', 'game/MapState', 'AssetManager', 'util/PubSub', 'Soun
                         alignX: 1,
                         alignY: 1,
                         scale: 0.5,
+                        bounds: [ 640 - 120, 480 - 50, 640, 480 ],
 
                         click: { action: 'skip' }
                     }
@@ -334,6 +335,7 @@ define('game/Game', [ 'q', 'game/MapState', 'AssetManager', 'util/PubSub', 'Soun
                         alignX: 0.5,
                         alignY: 0.5,
                         scale: 1.0,
+                        bounds: [ 138, 181, 502, 218 ],
 
                         hover: { scale: 1.1 },
                         click: { action: 'play' }
@@ -344,6 +346,7 @@ define('game/Game', [ 'q', 'game/MapState', 'AssetManager', 'util/PubSub', 'Soun
                         alignX: 0.5,
                         alignY: 0.5,
                         scale: 1.0,
+                        bounds: [ 138, 311, 502, 349 ],
 
                         hover: { scale: 1.1 },
                         click: { action: 'menu' }
@@ -449,6 +452,7 @@ define('game/Game', [ 'q', 'game/MapState', 'AssetManager', 'util/PubSub', 'Soun
                         alignX: 0,
                         alignY: 0.5,
                         width: 244,
+                        bounds: [ 396, 363, 640, 391 ],
 
                         hover: { width: 268 },
                         click: { action: 'replay' },
@@ -461,6 +465,7 @@ define('game/Game', [ 'q', 'game/MapState', 'AssetManager', 'util/PubSub', 'Soun
                         alignX: 0,
                         alignY: 0.5,
                         width: 244,
+                        bounds: [ 396, 423, 640, 451 ],
 
                         hover: { width: 268 },
                         click: { action: 'menu' },
