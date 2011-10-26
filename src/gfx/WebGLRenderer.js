@@ -1760,7 +1760,11 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/Cache', '
             renderCurrentCursor: function (state, time) {
                 var MAX_CURSOR_IMAGE_SIZE = 128; // OS X can't handle more...
 
-                var currentCursorScale = state.ruleSet.getCursorScale(state.mouseHistory, time);
+                // FIXME Resetting the cursor on click causes visual artifacts
+                // which are just unacceptable.
+                //var currentCursorScale = state.ruleSet.getCursorScale(state.mouseHistory, time);
+                var currentCursorScale = 1;
+
                 currentCursorScale *= viewport.width / 640;
                 if (currentCursorScale !== oldCursorScale) {
                     var cursorImage = state.skin.assetManager.get('cursor.png', 'image');
