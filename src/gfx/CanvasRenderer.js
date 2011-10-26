@@ -159,8 +159,6 @@ define('gfx/CanvasRenderer', [ 'game/mapObject', 'util/Cache', 'gfx/canvasShader
         var currentView;
 
         function view(v, callback) {
-            z = 0; // Each view/layer has its own z space
-
             var oldView = currentView;
             currentView = v;
 
@@ -709,7 +707,8 @@ define('gfx/CanvasRenderer', [ 'game/mapObject', 'util/Cache', 'gfx/canvasShader
         // Map rendering }}}
 
         // Cursor rendering {{{
-        function renderCursorHead(state) {
+        function renderCursorHead(time) {
+            var state = mouseHistory.getDataAtTime(time);
             if (!state) {
                 return;
             }
@@ -719,19 +718,20 @@ define('gfx/CanvasRenderer', [ 'game/mapObject', 'util/Cache', 'gfx/canvasShader
                 return cloneAbsolute(cursor);
             });
 
-            // TODO use style()
-            var x = state.x - cursor.width / 2;
-            var y = state.y - cursor.height / 2;
-
-            el.style.left = x + 'px';
-            el.style.top = y + 'px';
+            style(el, {
+                x: state.x,
+                y: state.y,
+                owidth: cursor.width,
+                oheight: cursor.height,
+                scale: ruleSet.getCursorScale(mouseHistory, time)
+            });
 
             setZ(el);
         }
 
         function renderCursor() {
             view(View.map, function () {
-                renderCursorHead(mouseHistory.getDataAtTime(time));
+                renderCursorHead(time);
             });
         }
         // Cursor rendering }}}
@@ -1082,6 +1082,11 @@ define('gfx/CanvasRenderer', [ 'game/mapObject', 'util/Cache', 'gfx/canvasShader
             });
         }
         // User interface }}}
+
+        function flush() {
+            z = 0;
+        }
+
         return {
             vars: vars,
             consts: consts,
@@ -1092,7 +1097,8 @@ define('gfx/CanvasRenderer', [ 'game/mapObject', 'util/Cache', 'gfx/canvasShader
             renderReadyToPlay: renderReadyToPlay,
             renderCursor: renderCursor,
             renderColourOverlay: renderColourOverlay,
-            renderUi: renderUi
+            renderUi: renderUi,
+            flush: flush
         };
     }
 
@@ -1184,6 +1190,8 @@ define('gfx/CanvasRenderer', [ 'game/mapObject', 'util/Cache', 'gfx/canvasShader
             viewport: viewport
         });
 
+        var oldCursorScale = null;
+
         return {
             element: container,
             animationElement: container,
@@ -1202,6 +1210,7 @@ define('gfx/CanvasRenderer', [ 'game/mapObject', 'util/Cache', 'gfx/canvasShader
             },
 
             endRender: function () {
+                r.flush();
                 frontDom.end();
             },
 
@@ -1263,14 +1272,41 @@ define('gfx/CanvasRenderer', [ 'game/mapObject', 'util/Cache', 'gfx/canvasShader
                 r.renderReadyToPlay();
             },
 
-            renderCursor: function (skin, mouseHistory, time) {
+            renderCursor: function (state, time) {
                 r.vars({
-                    skin: skin,
-                    mouseHistory: mouseHistory,
+                    ruleSet: state.ruleSet,
+                    skin: state.skin,
+                    mouseHistory: state.mouseHistory,
                     time: time
                 });
 
                 r.renderCursor();
+            },
+
+            renderCurrentCursor: function (state, time) {
+                var MAX_CURSOR_IMAGE_SIZE = 128; // OS X can't handle more...
+
+                // FIXME Resetting the cursor on click causes visual artifacts
+                // which are just unacceptable.
+                //var currentCursorScale = state.ruleSet.getCursorScale(state.mouseHistory, time);
+                var currentCursorScale = 1;
+
+                currentCursorScale *= viewport.width / 640;
+                if (currentCursorScale !== oldCursorScale) {
+                    var cursorImage = state.skin.assetManager.get('cursor.png', 'image');
+
+                    var c = document.createElement('canvas');
+                    c.width = Math.min(MAX_CURSOR_IMAGE_SIZE, cursorImage.width * currentCursorScale);
+                    c.height = Math.min(MAX_CURSOR_IMAGE_SIZE, cursorImage.height * currentCursorScale);
+
+                    var context = c.getContext('2d');
+                    context.globalCompositeOperation = 'copy';
+                    context.drawImage(cursorImage, 0, 0, c.width, c.height);
+
+                    util.setCursorImage(container, c.toDataURL(), c.width / 2, c.height / 2);
+
+                    oldCursorScale = currentCursorScale;
+                }
             },
 
             renderColourOverlay: function (colour) {
