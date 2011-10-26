@@ -1771,8 +1771,7 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/Cache', '
 
                     var context = c.getContext('2d');
                     context.globalCompositeOperation = 'copy';
-                    context.scale(currentCursorScale, currentCursorScale);
-                    context.drawImage(cursorImage, 0, 0);
+                    context.drawImage(cursorImage, 0, 0, c.width, c.height);
 
                     util.setCursorImage(canvas, c.toDataURL(), c.width / 2, c.height / 2);
 
