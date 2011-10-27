@@ -1,4 +1,4 @@
-define('gfx/renderCanvasText', [ ], function () {
+define('gfx/renderCanvasText', [ 'util/util' ], function (util) {
     function forceCss(element) {
         element.style.margin = '0';
         element.style.padding = '0';
@@ -10,13 +10,23 @@ define('gfx/renderCanvasText', [ ], function () {
         element.style.visibility = 'visibile';
     }
 
-    function renderCanvasText(text, options) {
-        var width = options.width || null;
-        var textHeight = options.textHeight || 16;
-        var lineHeight = options.lineHeight || (textHeight * 1.3);
-        var fontFace = options.fontFace || 'sans-serif';
-        var align = options.align || 'left';
-        var color = options.color || 'black';
+    function renderCanvasText(text /* options... */) {
+        var options = util.extend.apply(util, [ {
+            width: null,
+            textHeight: 16,
+            lineHeight: 1.3,
+            fontFace: 'sans-serif',
+            align: 'left',
+            color: 'black',
+            scale: 1
+        } ].concat(Array.prototype.slice.call(arguments, 1)));
+
+        var width = options.width * options.scale;
+        var textHeight = options.textHeight * options.scale;
+        var lineHeight = options.lineHeight;
+        var fontFace = options.fontFace;
+        var align = options.align;
+        var color = options.color;
 
         var lines = text.split('\n');
 
@@ -26,7 +36,7 @@ define('gfx/renderCanvasText', [ ], function () {
         htmlContainer.style.width = width > 0 ? (width + 'px') : 'auto';
         htmlContainer.style.fontFace = fontFace;
         htmlContainer.style.fontSize = textHeight + 'px';
-        htmlContainer.style.lineHeight = lineHeight + 'px';
+        htmlContainer.style.lineHeight = lineHeight;
         htmlContainer.style.textAlign = align;
         htmlContainer.style.color = color; // Won't do anything, but why not?
 

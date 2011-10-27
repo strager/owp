@@ -396,6 +396,7 @@ define('game/Game', [ 'q', 'game/MapState', 'AssetManager', 'util/PubSub', 'Soun
                         scale: 0.3
                     }, {
                         text: '${hit300}x',
+                        textOptions: { fontFace: 'score' },
                         x: 70,
                         y: 180,
                         characterScale: 0.6,
@@ -407,6 +408,7 @@ define('game/Game', [ 'q', 'game/MapState', 'AssetManager', 'util/PubSub', 'Soun
                         scale: 0.3
                     }, {
                         text: '${hit100}x',
+                        textOptions: { fontFace: 'score' },
                         x: 70,
                         y: 230,
                         characterScale: 0.6,
@@ -418,6 +420,7 @@ define('game/Game', [ 'q', 'game/MapState', 'AssetManager', 'util/PubSub', 'Soun
                         scale: 0.3
                     }, {
                         text: '${hit50}x',
+                        textOptions: { fontFace: 'score' },
                         x: 70,
                         y: 280,
                         characterScale: 0.6,
@@ -429,6 +432,7 @@ define('game/Game', [ 'q', 'game/MapState', 'AssetManager', 'util/PubSub', 'Soun
                         scale: 0.3
                     }, {
                         text: '${hit0}x',
+                        textOptions: { fontFace: 'score' },
                         x: 250,
                         y: 280,
                         characterScale: 0.6,
@@ -478,6 +482,7 @@ define('game/Game', [ 'q', 'game/MapState', 'AssetManager', 'util/PubSub', 'Soun
                         scale: 0.7
                     }, {
                         text: '${score}',
+                        textOptions: { fontFace: 'score' },
                         characterScale: 0.7,
                         x: 276,
                         y: 107,
@@ -485,6 +490,7 @@ define('game/Game', [ 'q', 'game/MapState', 'AssetManager', 'util/PubSub', 'Soun
                         alignY: 1
                     }, {
                         text: '${accuracy}%',
+                        textOptions: { fontFace: 'score' },
                         characterScale: 0.7,
                         x: 194,
                         y: 346,
@@ -492,6 +498,7 @@ define('game/Game', [ 'q', 'game/MapState', 'AssetManager', 'util/PubSub', 'Soun
                         alignY: 0.5
                     }, {
                         text: '${maxCombo}x',
+                        textOptions: { fontFace: 'score' },
                         characterScale: 0.7,
                         x: 18,
                         y: 346,

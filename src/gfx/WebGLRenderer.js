@@ -1,4 +1,4 @@
-define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/Cache', 'util/util', 'loading', 'gfx/View', 'game/storyboardObject', 'game/Storyboard' ], function (MapState, mapObject, Cache, util, loadingImageSrc, View, storyboardObject, Storyboard) {
+define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/Cache', 'util/util', 'loading', 'gfx/View', 'game/storyboardObject', 'game/Storyboard', 'util/ShortCache', 'gfx/renderCanvasText' ], function (MapState, mapObject, Cache, util, loadingImageSrc, View, storyboardObject, Storyboard, ShortCache, renderCanvasText) {
     function makeTexture(gl, image) {
         var texture = gl.createTexture();
         texture.image = image;
@@ -135,6 +135,9 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/Cache', '
             skinKey = v.skinKey;
             breakiness = v.breakiness;
         }
+
+        // Text crap
+        var textFieldCache = new ShortCache();
 
         // Views {{{
         var currentView;
@@ -357,8 +360,8 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/Cache', '
             viewport: function flushViewport(viewport) {
                 // HACK HACK HACK
                 gl.viewport(
-                viewport.x, viewport.y,
-                viewport.width, viewport.height
+                    viewport.x, viewport.y,
+                    viewport.width, viewport.height
                 );
             }
         };
@@ -1050,6 +1053,41 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/Cache', '
         }
 
         // User interface {{{
+        function renderTextControl(ui, control) {
+            var text = control.text();
+            var textOptions = control.textOptions();
+
+            if (textOptions.fontFace === 'score') {
+                renderCharacters(getStringTextures('score-', text), {
+                    x: control.x(),
+                    y: control.y(),
+                    scale: control.characterScale(),
+                    alignX: control.alignX(),
+                    alignY: control.alignY(),
+                    spacing: ui.skin.scoreFontSpacing
+                });
+            } else {
+                // Native font
+                var scale = viewport.width / 640;
+                var texture = textFieldCache.get([ text, textOptions, scale ], function () {
+                    var canvas = renderCanvasText(
+                        text,
+                        textOptions,
+                        { scale: scale }
+                    );
+                    return makeTexture(gl, canvas);
+                });
+
+                sprite({
+                    x: control.centerX(texture.image.width),
+                    y: control.centerY(texture.image.height),
+                    color: [ 255, 255, 255, 255 ],
+                    scale: 1 / scale,
+                    texture: texture
+                });
+            }
+        }
+
         function renderUiControl(ui, control) {
             if (control.image) {
                 var texture = textures.get(control.image());
@@ -1067,16 +1105,10 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/Cache', '
             }
 
             if (control.text) {
+                renderTextControl(ui, control);
+                return;
                 var text = control.text();
 
-                renderCharacters(getStringTextures('score-', text), {
-                    x: control.x(),
-                    y: control.y(),
-                    scale: control.characterScale(),
-                    alignX: control.alignX(),
-                    alignY: control.alignY(),
-                    spacing: ui.skin.scoreFontSpacing
-                });
             }
         }
 
