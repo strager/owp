@@ -6,7 +6,16 @@ define('game/Game', [ 'q', 'game/MapState', 'AssetManager', 'util/PubSub', 'Soun
         { name: 'pause',        from: 'playing',       to: 'paused'        },
         { name: 'unpause',      from: 'paused',        to: 'playing'       },
         { name: 'end_map',      from: 'playing',       to: 'score_screen'  },
-        { name: 'watch_replay', from: 'score_screen',  to: 'playing'       }
+        { name: 'watch_replay', from: 'score_screen',  to: 'playing'       },
+
+        { name: 'tutorial', from: 'none', to: 'tutorial' }
+    ]);
+
+    var TutorialStateMachine = StateMachine.create([
+        { name: 'start', from: 'none',    to: 'intro_1' },
+
+        // Intro
+        { name: 'next',  from: 'intro_1', to: 'intro_2' }
     ]);
 
     var MAP_END = 'mapEnd';
@@ -20,7 +29,6 @@ define('game/Game', [ 'q', 'game/MapState', 'AssetManager', 'util/PubSub', 'Soun
         var mapAssetManager = null;
 
         var boundEvents = [ ];
-
         function clearBoundEvents() {
             boundEvents.forEach(function (be) {
                 be.unsubscribe();
@@ -550,6 +558,71 @@ define('game/Game', [ 'q', 'game/MapState', 'AssetManager', 'util/PubSub', 'Soun
                 mapState.processMouseHistory(mouseHistory);
 
                 audio.seek(-mapState.ruleSet.audioLeadIn);
+            },
+
+            enter_tutorial: function () {
+                var uis = [ ];
+
+                var subBoundEvents = [ ];
+                function clearSubBoundEvents() {
+                    subBoundEvents.forEach(function (be) {
+                        be.unsubscribe();
+                    });
+                    subBoundEvents = [ ];
+                }
+
+                var nextUi = new UI(skin.valueOf());
+                subBoundEvents.push(mousePubSub.pipeTo(nextUi.mouse));
+                nextUi.build([
+                    {
+                        bounds: [ 0, 0, 640, 480 ],
+                        click: { action: 'next' }
+                    }
+                ]);
+                nextUi.events.next = new PubSub();
+
+                var tutorialSm = new TutorialStateMachine('none', {
+                    enter_intro_1: function () {
+                        var ui = new UI(skin.valueOf());
+                        ui.build([
+                            {
+                                text: 'Hello and welcome to owp!',
+                                textOptions: { color: 'red' },
+                                x: 320,
+                                y: 240
+                            }
+                        ]);
+
+                        uis = [ nextUi, ui ];
+                    },
+                    exit_intro_1: clearSubBoundEvents,
+
+                    enter_intro_2: function () {
+                        var ui = new UI(skin.valueOf());
+                        ui.build([
+                            {
+                                text: 'This is an awesome tutorial',
+                                textOptions: { color: 'red' },
+                                x: 320,
+                                y: 240
+                            }
+                        ]);
+
+                        uis = [ nextUi, ui ];
+                    },
+
+                    exit_intro_2: clearSubBoundEvents,
+                });
+
+                nextUi.events.next.subscribe(function () {
+                    tutorialSm.next();
+                });
+
+                renderCallback = function (renderer) {
+                    uis.forEach(renderer.renderUi, renderer);
+                };
+
+                return tutorialSm.start();
             }
         });
 

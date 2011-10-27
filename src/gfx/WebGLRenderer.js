@@ -1106,9 +1106,6 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/Cache', '
 
             if (control.text) {
                 renderTextControl(ui, control);
-                return;
-                var text = control.text();
-
             }
         }
 
