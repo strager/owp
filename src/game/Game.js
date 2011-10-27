@@ -563,16 +563,8 @@ define('game/Game', [ 'q', 'game/MapState', 'AssetManager', 'util/PubSub', 'Soun
             enter_tutorial: function () {
                 var uis = [ ];
 
-                var subBoundEvents = [ ];
-                function clearSubBoundEvents() {
-                    subBoundEvents.forEach(function (be) {
-                        be.unsubscribe();
-                    });
-                    subBoundEvents = [ ];
-                }
-
                 var nextUi = new UI(skin.valueOf());
-                subBoundEvents.push(mousePubSub.pipeTo(nextUi.mouse));
+                boundEvents.push(mousePubSub.pipeTo(nextUi.mouse));
                 nextUi.build([
                     {
                         bounds: [ 0, 0, 640, 480 ],
@@ -595,7 +587,6 @@ define('game/Game', [ 'q', 'game/MapState', 'AssetManager', 'util/PubSub', 'Soun
 
                         uis = [ nextUi, ui ];
                     },
-                    exit_intro_1: clearSubBoundEvents,
 
                     enter_intro_2: function () {
                         var ui = new UI(skin.valueOf());
@@ -609,9 +600,7 @@ define('game/Game', [ 'q', 'game/MapState', 'AssetManager', 'util/PubSub', 'Soun
                         ]);
 
                         uis = [ nextUi, ui ];
-                    },
-
-                    exit_intro_2: clearSubBoundEvents,
+                    }
                 });
 
                 nextUi.events.next.subscribe(function () {
