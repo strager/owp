@@ -744,8 +744,12 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/Cache', '
                 return;
             }
 
-            var scale = ruleSet.getHitMarkerScale(object, time);
             var alpha = ruleSet.getObjectOpacity(object, time);
+            if (!alpha) {
+                return;
+            }
+
+            var scale = ruleSet.getHitMarkerScale(object, time);
 
             sprite({
                 x: object.hitObject.x,
