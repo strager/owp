@@ -78,26 +78,27 @@ define('gfx/renderCanvasText', [ 'util/util' ], function (util) {
         var domHeight = htmlContainer.offsetHeight;
 
         // Build lines based on what is shown on screen
-        var domCharacterYs = spans.map(function (span) {
-            return span.offsetTop;
-        });
         var domText = lines.join('');
         var domLines = [ ];
+        var domLineXs = [ ];
         var domLineYs = [ ];
         var i;
         for (i = 0; i < domText.length; ++i) {
             var character = domText.substr(i, 1);
-            var y = domCharacterYs[i];
+            var x = spans[i].offsetLeft;
+            var y = spans[i].offsetTop;
 
             if (i === 0) {
                 domLines.push('');
+                domLineXs.push(x);
                 domLineYs.push(y);
             }
 
             if (domLineYs[domLineYs.length - 1] !== y) {
                 // New line
                 domLines.push(character);
-                domLineYs.push(domCharacterYs[i]);
+                domLineXs.push(x);
+                domLineYs.push(y);
             } else {
                 // Old line
                 domLines[domLines.length - 1] += character;
@@ -111,14 +112,15 @@ define('gfx/renderCanvasText', [ 'util/util' ], function (util) {
         canvas.height = domHeight;
 
         var context = canvas.getContext('2d');
-        context.font = textHeight + 'px ' + fontFace;
-        context.textAlign = align;
+        context.font = textHeight + 'pt ' + fontFace;
+        context.textAlign = 'start';
         context.textBaseline = 'top';
         context.fillStyle = color;
 
         domLines.forEach(function (lineText, i) {
+            var x = domLineXs[i];
             var y = domLineYs[i];
-            context.fillText(lineText, 0, y);
+            context.fillText(lineText, x, y);
         });
 
         return canvas;
