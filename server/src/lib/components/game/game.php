@@ -15,6 +15,8 @@ class components_game_game extends owpcomponent {
             return 'components_game_play';
         case 'upload':
             return 'components_game_upload';
+        case 'tutorial':
+            return 'components_game_tutorial';
         }
     }
 

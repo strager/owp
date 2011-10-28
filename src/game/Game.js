@@ -578,8 +578,8 @@ define('game/Game', [ 'q', 'game/MapState', 'AssetManager', 'util/PubSub', 'Soun
                         var ui = new UI(skin.valueOf());
                         ui.build([
                             {
-                                text: 'Hello and welcome to owp!',
-                                textOptions: { color: 'red' },
+                                text: 'Hello and welcome to owp! This tutorial will introduce you to owp. Click to continue.',
+                                textOptions: { color: 'red', width: 640 * 0.75, align: 'center' },
                                 x: 320,
                                 y: 240
                             }
@@ -592,7 +592,7 @@ define('game/Game', [ 'q', 'game/MapState', 'AssetManager', 'util/PubSub', 'Soun
                         var ui = new UI(skin.valueOf());
                         ui.build([
                             {
-                                text: 'This is an awesome tutorial',
+                                text: 'owp is a music-based rhythm game.',
                                 textOptions: { color: 'red' },
                                 x: 320,
                                 y: 240
@@ -661,6 +661,13 @@ define('game/Game', [ 'q', 'game/MapState', 'AssetManager', 'util/PubSub', 'Soun
 
                 return p;
             },
+
+            startTutorial: function () {
+                var p = sm.tutorial();
+                Q.fail(p, agentInfo.crash);
+                return p;
+            },
+
             togglePause: function () {
                 if (sm.canMakeTransition('pause')) {
                     sm.pause();
@@ -670,11 +677,15 @@ define('game/Game', [ 'q', 'game/MapState', 'AssetManager', 'util/PubSub', 'Soun
                     // Do nothing
                 }
             },
+
             render: render,
+
             loadSkin: loadSkin,
+
             mouse: function (e) {
                 mousePubSub.publishSync(e);
             },
+
             debugInfo: debugInfo
         };
     }
