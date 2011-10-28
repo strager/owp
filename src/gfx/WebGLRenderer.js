@@ -797,31 +797,27 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/Cache', '
             });
         }
 
-        function renderObject(object) {
-            mapObject.match(object, {
-                HitCircle:  renderHitCircleObject,
-                HitMarker:  renderHitMarkerObject,
-                Slider:     renderSliderObject,
-                _: function () {
-                    throw new TypeError('Unknown object type');
-                }
-            });
-        }
+        var renderObject = mapObject.matcher({
+            HitCircle:  renderHitCircleObject,
+            HitMarker:  renderHitMarkerObject,
+            Slider:     renderSliderObject,
+            _: function () {
+                throw new TypeError('Unknown object type');
+            }
+        });
 
-        function renderObjectApproachProgress(object) {
-            mapObject.match(object, {
-                Slider: function () {
-                    var visibility = ruleSet.getObjectVisibilityAtTime(object, time);
+        var renderObjectApproachProgress = mapObject.matcher({
+            Slider: function () {
+                var visibility = ruleSet.getObjectVisibilityAtTime(object, time);
 
-                    if (visibility === 'appearing') {
-                        renderApproachProgress(object);
-                    }
-                },
-                HitCircle: function () {
+                if (visibility === 'appearing') {
                     renderApproachProgress(object);
                 }
-            });
-        }
+            },
+            HitCircle: function () {
+                renderApproachProgress(object);
+            }
+        });
 
         function renderMap() {
             view(View.map, function () {
