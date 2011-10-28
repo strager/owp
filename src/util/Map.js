@@ -146,7 +146,7 @@ define('util/Map', [ ], function () {
             var i;
 
             for (i = 0; i < this.keys.length; ++i) {
-                callback.call(context, this.keys[i], this.values[i]);
+                callback.call(context, this.keys[i], this.values[i], i);
             }
         }
     };

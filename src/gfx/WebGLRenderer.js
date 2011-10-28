@@ -1,4 +1,4 @@
-define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/Cache', 'util/util', 'loading', 'gfx/View', 'game/storyboardObject', 'game/Storyboard' ], function (MapState, mapObject, Cache, util, loadingImageSrc, View, storyboardObject, Storyboard) {
+define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/Cache', 'util/util', 'loading', 'gfx/View', 'game/storyboardObject', 'game/Storyboard', 'util/ShortCache', 'gfx/renderCanvasText' ], function (MapState, mapObject, Cache, util, loadingImageSrc, View, storyboardObject, Storyboard, ShortCache, renderCanvasText) {
     function makeTexture(gl, image) {
         var texture = gl.createTexture();
         texture.image = image;
@@ -136,6 +136,9 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/Cache', '
             breakiness = v.breakiness;
         }
 
+        // Text crap
+        var textFieldCache = new ShortCache();
+
         // Views {{{
         var currentView;
 
@@ -173,7 +176,7 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/Cache', '
                 // Uniforms
                 gl.uniform2fv(programs.sprite.uni.view, sprite.view.mat);
                 gl.uniform2f(programs.sprite.uni.position, sprite.x, sprite.y);
-                gl.uniform4fv(programs.sprite.uni.color, sprite.color.map(adjustColour));
+                gl.uniform4f(programs.sprite.uni.color, sprite.r / 255, sprite.g / 255, sprite.b / 255, sprite.a / 255);
                 gl.uniform1f(programs.sprite.uni.scale, sprite.scale);
                 gl.uniform1f(programs.sprite.uni.rotation, sprite.rotation || 0);
 
@@ -205,7 +208,7 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/Cache', '
                 // Uniforms
                 gl.uniform2fv(programs.solidSprite.uni.view, solidSprite.view.mat);
                 gl.uniform2f(programs.solidSprite.uni.position, solidSprite.x + solidSprite.width / 2, solidSprite.y + solidSprite.height / 2);
-                gl.uniform4fv(programs.solidSprite.uni.color, solidSprite.color.map(adjustColour));
+                gl.uniform4f(programs.solidSprite.uni.color, solidSprite.r / 255, solidSprite.g / 255, solidSprite.b / 255, solidSprite.a / 255);
                 gl.uniform2f(programs.solidSprite.uni.size, solidSprite.width, solidSprite.height);
 
                 // Draw
@@ -313,7 +316,7 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/Cache', '
 
                 // Uniforms
                 gl.uniform2fv(programs.curveInner.uni.view, curve.view.mat);
-                gl.uniform4fv(programs.curveInner.uni.color, curve.color.map(adjustColour));
+                gl.uniform4f(programs.curveInner.uni.color, curve.r / 255, curve.g / 255, curve.b / 255, curve.a / 255);
                 gl.uniform1f(programs.curveInner.uni.width, curve.innerWidth);
 
                 // Draw
@@ -357,8 +360,8 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/Cache', '
             viewport: function flushViewport(viewport) {
                 // HACK HACK HACK
                 gl.viewport(
-                viewport.x, viewport.y,
-                viewport.width, viewport.height
+                    viewport.x, viewport.y,
+                    viewport.width, viewport.height
                 );
             }
         };
@@ -474,7 +477,10 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/Cache', '
                 sprite({
                     x: x + ox,
                     y: y + yOffset,
-                    color: [ 255, 255, 255, 255 ],
+                    r: 255,
+                    g: 255,
+                    b: 255,
+                    a: 255,
                     scale: scale,
                     texture: texture
                 });
@@ -504,7 +510,7 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/Cache', '
 
         function renderApproachProgress(object) {
             var alpha = ruleSet.getApproachCircleOpacity(object, time);
-            var color = object.combo.color.concat([ alpha * 255 ]);
+            var color = object.combo.color;
 
             var progress = ruleSet.getObjectApproachProgress(object, time);
             var radius;
@@ -514,16 +520,23 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/Cache', '
                 radius = 1;
             }
 
-            renderApproachCircle(radius, object.x, object.y, color);
+            renderApproachCircle(
+                radius,
+                object.x, object.y,
+                color[0], color[1], color[2], alpha * 255
+            );
         }
 
-        function renderApproachCircle(radius, x, y, color) {
+        function renderApproachCircle(radius, x, y, r, g, b, a) {
             var scale = radius * ruleSet.getCircleSize() / 128;
 
             sprite({
                 x: x,
                 y: y,
-                color: color,
+                r: r,
+                g: g,
+                b: b,
+                a: a,
                 scale: scale,
                 texture: textures.get('approachcircle.png', skinKey)
             });
@@ -551,7 +564,10 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/Cache', '
             sprite({
                 x: sliderBallPosition[0],
                 y: sliderBallPosition[1],
-                color: [ 255, 255, 255, 255 ],
+                r: 255,
+                g: 255,
+                b: 255,
+                a: 255,
                 scale: scale,
                 texture: textures.get('sliderb0.png', skinKey)
             });
@@ -567,7 +583,10 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/Cache', '
             sprite({
                 x: tick.x,
                 y: tick.y,
-                color: [ 255, 255, 255, 255 ],
+                r: 255,
+                g: 255,
+                b: 255,
+                a: 255,
                 scale: scale,
                 texture: textures.get('sliderscorepoint.png', skinKey)
             });
@@ -623,7 +642,10 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/Cache', '
 
                 curve({
                     id: c.id,
-                    color: color.concat([ 255 ]),
+                    r: color[0],
+                    g: color[1],
+                    b: color[2],
+                    a: 255,
                     vertexCount: Math.round(c.vertexCount * growPercentage),
                     innerWidth: ruleSet.getSliderTrackInnerRatio()
                 });
@@ -641,7 +663,10 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/Cache', '
                     sprite({
                         x: lastPoint[0],
                         y: lastPoint[1],
-                        color: color.concat([ 255 ]),
+                        r: color[0],
+                        g: color[1],
+                        b: color[2],
+                        a: 255,
                         scale: scale,
                         texture: textures.get('hitcircle.png', skinKey)
                     });
@@ -649,7 +674,10 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/Cache', '
                     sprite({
                         x: lastPoint[0],
                         y: lastPoint[1],
-                        color: [ 255, 255, 255, 255 ],
+                        r: 255,
+                        g: 255,
+                        b: 255,
+                        a: 255,
                         scale: scale,
                         texture: textures.get('hitcircleoverlay.png', skinKey)
                     });
@@ -684,7 +712,10 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/Cache', '
                     sprite({
                         x: repeatArrowX,
                         y: repeatArrowY,
-                        color: [ 255, 255, 255, 255 ],
+                        r: 255,
+                        g: 255,
+                        b: 255,
+                        a: 255,
                         scale: scale * ruleSet.getRepeatArrowScale(repeatArrow, time),
                         texture: textures.get('reversearrow.png', skinKey)
                     });
@@ -702,7 +733,10 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/Cache', '
             sprite({
                 x: x,
                 y: y,
-                color: color.concat([ 255 ]),
+                r: color[0],
+                g: color[1],
+                b: color[2],
+                a: 255,
                 scale: scale,
                 texture: textures.get('hitcircle.png', skinKey)
             });
@@ -714,7 +748,10 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/Cache', '
             sprite({
                 x: x,
                 y: y,
-                color: [ 255, 255, 255, 255 ],
+                r: 255,
+                g: 255,
+                b: 255,
+                a: 255,
                 scale: scale,
                 texture: textures.get('hitcircleoverlay.png', skinKey)
             });
@@ -741,43 +778,46 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/Cache', '
                 return;
             }
 
-            var scale = ruleSet.getHitMarkerScale(object, time);
             var alpha = ruleSet.getObjectOpacity(object, time);
+            if (!alpha) {
+                return;
+            }
+
+            var scale = ruleSet.getHitMarkerScale(object, time);
 
             sprite({
                 x: object.hitObject.x,
                 y: object.hitObject.y,
-                color: [ 255, 255, 255, alpha * 255 ],
+                r: 255,
+                g: 255,
+                b: 255,
+                a: alpha * 255,
                 scale: scale,
                 texture: textures.get(image, skinKey)
             });
         }
 
-        function renderObject(object) {
-            mapObject.match(object, {
-                HitCircle:  renderHitCircleObject,
-                HitMarker:  renderHitMarkerObject,
-                Slider:     renderSliderObject,
-                _: function () {
-                    throw new TypeError('Unknown object type');
-                }
-            });
-        }
+        var renderObject = mapObject.matcher({
+            HitCircle:  renderHitCircleObject,
+            HitMarker:  renderHitMarkerObject,
+            Slider:     renderSliderObject,
+            _: function () {
+                throw new TypeError('Unknown object type');
+            }
+        });
 
-        function renderObjectApproachProgress(object) {
-            mapObject.match(object, {
-                Slider: function () {
-                    var visibility = ruleSet.getObjectVisibilityAtTime(object, time);
+        var renderObjectApproachProgress = mapObject.matcher({
+            Slider: function (object) {
+                var visibility = ruleSet.getObjectVisibilityAtTime(object, time);
 
-                    if (visibility === 'appearing') {
-                        renderApproachProgress(object);
-                    }
-                },
-                HitCircle: function () {
+                if (visibility === 'appearing') {
                     renderApproachProgress(object);
                 }
-            });
-        }
+            },
+            HitCircle: function (object) {
+                renderApproachProgress(object);
+            }
+        });
 
         function renderMap() {
             view(View.map, function () {
@@ -804,7 +844,10 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/Cache', '
             sprite({
                 x: state.x,
                 y: state.y,
-                color: [ 255, 255, 255, 255 ],
+                r: 255,
+                g: 255,
+                b: 255,
+                a: 255,
                 scale: ruleSet.getCursorScale(mouseHistory, time),
                 texture: textures.get('cursor.png', skinKey)
             });
@@ -860,11 +903,6 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/Cache', '
             });
         }
 
-        function mapProgressColour(progress) {
-            var c = (progress * 32 + 192);
-            return [ c, c, c, 255 ];
-        }
-
         function renderHud() {
             var MAP_PROGRESS_HEIGHT = 6;
 
@@ -880,12 +918,16 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/Cache', '
                 renderCombo();
                 renderAccuracy();
 
+                var c = (mapProgress * 32 + 192);
                 solidSprite({
                     x: 0,
                     y: 480 - MAP_PROGRESS_HEIGHT,
                     width: width,
                     height: MAP_PROGRESS_HEIGHT,
-                    color: mapProgressColour(mapProgress)
+                    r: c,
+                    g: c,
+                    b: c,
+                    a: 255
                 });
             });
         }
@@ -922,7 +964,10 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/Cache', '
             sprite({
                 x: 320,
                 y: 240,
-                color: [ brightness * 255, brightness * 255, brightness * 255, 255 ],
+                r: brightness * 255,
+                g: brightness * 255,
+                b: brightness * 255,
+                a: 255,
                 scale: scale,
                 texture: texture
             });
@@ -938,7 +983,10 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/Cache', '
             sprite({
                 x: 320,
                 y: 240,
-                color: [ brightness * 255, brightness * 255, brightness * 255, 255 ],
+                r: brightness * 255,
+                g: brightness * 255,
+                b: brightness * 255,
+                a: 255,
                 scale: scale,
                 texture: texture
             });
@@ -952,7 +1000,10 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/Cache', '
             sprite({
                 x: object.x,
                 y: object.y,
-                color: [ object.color[0], object.color[1], object.color[2], object.color[3] * object.alpha ],
+                r: color[0],
+                g: color[1],
+                b: color[2],
+                a: color[3] * object.alpha,
                 scale: object.scale,
                 rotation: object.rotation,
                 texture: texture
@@ -1029,7 +1080,10 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/Cache', '
                 sprite({
                     x: 320,
                     y: 240,
-                    color: [ 255, 255, 255, 255 ],
+                    r: 255,
+                    g: 255,
+                    b: 255,
+                    a: 255,
                     scale: 1,
                     texture: texture
                 });
@@ -1044,12 +1098,53 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/Cache', '
                     y: 0,
                     width: 640,
                     height: 480,
-                    color: colour
+                    r: colour[0],
+                    g: colour[1],
+                    b: colour[2],
+                    a: colour[3]
                 });
             });
         }
 
         // User interface {{{
+        function renderTextControl(ui, control) {
+            var text = control.text();
+            var textOptions = control.textOptions();
+
+            if (textOptions.fontFace === 'score') {
+                renderCharacters(getStringTextures('score-', text), {
+                    x: control.x(),
+                    y: control.y(),
+                    scale: control.characterScale(),
+                    alignX: control.alignX(),
+                    alignY: control.alignY(),
+                    spacing: ui.skin.scoreFontSpacing
+                });
+            } else {
+                // Native font
+                var scale = viewport.width / 640;
+                var texture = textFieldCache.get([ text, textOptions, scale ], function () {
+                    var canvas = renderCanvasText(
+                        text,
+                        textOptions,
+                        { scale: scale }
+                    );
+                    return makeTexture(gl, canvas);
+                });
+
+                sprite({
+                    x: control.centerX(texture.image.width),
+                    y: control.centerY(texture.image.height),
+                    r: 255,
+                    g: 255,
+                    b: 255,
+                    a: 255,
+                    scale: 1 / scale,
+                    texture: texture
+                });
+            }
+        }
+
         function renderUiControl(ui, control) {
             if (control.image) {
                 var texture = textures.get(control.image());
@@ -1060,23 +1155,17 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/Cache', '
                 sprite({
                     x: control.centerX(),
                     y: control.centerY(),
-                    color: [ 255, 255, 255, 255 ],
+                    r: 255,
+                    g: 255,
+                    b: 255,
+                    a: 255,
                     scale: scale,
                     texture: texture
                 });
             }
 
             if (control.text) {
-                var text = control.text();
-
-                renderCharacters(getStringTextures('score-', text), {
-                    x: control.x(),
-                    y: control.y(),
-                    scale: control.characterScale(),
-                    alignX: control.alignX(),
-                    alignY: control.alignY(),
-                    spacing: ui.skin.scoreFontSpacing
-                });
+                renderTextControl(ui, control);
             }
         }
 

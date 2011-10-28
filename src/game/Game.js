@@ -6,7 +6,16 @@ define('game/Game', [ 'q', 'game/MapState', 'AssetManager', 'util/PubSub', 'Soun
         { name: 'pause',        from: 'playing',       to: 'paused'        },
         { name: 'unpause',      from: 'paused',        to: 'playing'       },
         { name: 'end_map',      from: 'playing',       to: 'score_screen'  },
-        { name: 'watch_replay', from: 'score_screen',  to: 'playing'       }
+        { name: 'watch_replay', from: 'score_screen',  to: 'playing'       },
+
+        { name: 'tutorial', from: 'none', to: 'tutorial' }
+    ]);
+
+    var TutorialStateMachine = StateMachine.create([
+        { name: 'start', from: 'none',    to: 'intro_1' },
+
+        // Intro
+        { name: 'next',  from: 'intro_1', to: 'intro_2' }
     ]);
 
     var MAP_END = 'mapEnd';
@@ -20,7 +29,6 @@ define('game/Game', [ 'q', 'game/MapState', 'AssetManager', 'util/PubSub', 'Soun
         var mapAssetManager = null;
 
         var boundEvents = [ ];
-
         function clearBoundEvents() {
             boundEvents.forEach(function (be) {
                 be.unsubscribe();
@@ -396,6 +404,7 @@ define('game/Game', [ 'q', 'game/MapState', 'AssetManager', 'util/PubSub', 'Soun
                         scale: 0.3
                     }, {
                         text: '${hit300}x',
+                        textOptions: { fontFace: 'score' },
                         x: 70,
                         y: 180,
                         characterScale: 0.6,
@@ -407,6 +416,7 @@ define('game/Game', [ 'q', 'game/MapState', 'AssetManager', 'util/PubSub', 'Soun
                         scale: 0.3
                     }, {
                         text: '${hit100}x',
+                        textOptions: { fontFace: 'score' },
                         x: 70,
                         y: 230,
                         characterScale: 0.6,
@@ -418,6 +428,7 @@ define('game/Game', [ 'q', 'game/MapState', 'AssetManager', 'util/PubSub', 'Soun
                         scale: 0.3
                     }, {
                         text: '${hit50}x',
+                        textOptions: { fontFace: 'score' },
                         x: 70,
                         y: 280,
                         characterScale: 0.6,
@@ -429,6 +440,7 @@ define('game/Game', [ 'q', 'game/MapState', 'AssetManager', 'util/PubSub', 'Soun
                         scale: 0.3
                     }, {
                         text: '${hit0}x',
+                        textOptions: { fontFace: 'score' },
                         x: 250,
                         y: 280,
                         characterScale: 0.6,
@@ -478,6 +490,7 @@ define('game/Game', [ 'q', 'game/MapState', 'AssetManager', 'util/PubSub', 'Soun
                         scale: 0.7
                     }, {
                         text: '${score}',
+                        textOptions: { fontFace: 'score' },
                         characterScale: 0.7,
                         x: 276,
                         y: 107,
@@ -485,6 +498,7 @@ define('game/Game', [ 'q', 'game/MapState', 'AssetManager', 'util/PubSub', 'Soun
                         alignY: 1
                     }, {
                         text: '${accuracy}%',
+                        textOptions: { fontFace: 'score' },
                         characterScale: 0.7,
                         x: 194,
                         y: 346,
@@ -492,6 +506,7 @@ define('game/Game', [ 'q', 'game/MapState', 'AssetManager', 'util/PubSub', 'Soun
                         alignY: 0.5
                     }, {
                         text: '${maxCombo}x',
+                        textOptions: { fontFace: 'score' },
                         characterScale: 0.7,
                         x: 18,
                         y: 346,
@@ -543,6 +558,60 @@ define('game/Game', [ 'q', 'game/MapState', 'AssetManager', 'util/PubSub', 'Soun
                 mapState.processMouseHistory(mouseHistory);
 
                 audio.seek(-mapState.ruleSet.audioLeadIn);
+            },
+
+            enter_tutorial: function () {
+                var uis = [ ];
+
+                var nextUi = new UI(skin.valueOf());
+                boundEvents.push(mousePubSub.pipeTo(nextUi.mouse));
+                nextUi.build([
+                    {
+                        bounds: [ 0, 0, 640, 480 ],
+                        click: { action: 'next' }
+                    }
+                ]);
+                nextUi.events.next = new PubSub();
+
+                var tutorialSm = new TutorialStateMachine('none', {
+                    enter_intro_1: function () {
+                        var ui = new UI(skin.valueOf());
+                        ui.build([
+                            {
+                                text: 'Hello and welcome to owp!',
+                                textOptions: { color: 'red' },
+                                x: 320,
+                                y: 240
+                            }
+                        ]);
+
+                        uis = [ nextUi, ui ];
+                    },
+
+                    enter_intro_2: function () {
+                        var ui = new UI(skin.valueOf());
+                        ui.build([
+                            {
+                                text: 'This is an awesome tutorial',
+                                textOptions: { color: 'red' },
+                                x: 320,
+                                y: 240
+                            }
+                        ]);
+
+                        uis = [ nextUi, ui ];
+                    }
+                });
+
+                nextUi.events.next.subscribe(function () {
+                    tutorialSm.next();
+                });
+
+                renderCallback = function (renderer) {
+                    uis.forEach(renderer.renderUi, renderer);
+                };
+
+                return tutorialSm.start();
             }
         });
 
