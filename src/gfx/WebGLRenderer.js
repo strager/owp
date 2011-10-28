@@ -807,14 +807,14 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/Cache', '
         });
 
         var renderObjectApproachProgress = mapObject.matcher({
-            Slider: function () {
+            Slider: function (object) {
                 var visibility = ruleSet.getObjectVisibilityAtTime(object, time);
 
                 if (visibility === 'appearing') {
                     renderApproachProgress(object);
                 }
             },
-            HitCircle: function () {
+            HitCircle: function (object) {
                 renderApproachProgress(object);
             }
         });
