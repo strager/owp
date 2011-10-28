@@ -105,32 +105,18 @@ define('game/mapObject', [ 'util/util' ], function (util) {
 
     HitMarker.prototype.type = 'HitMarker';
 
-    var classes = {
-        HitCircle: HitCircle,
-        Slider: Slider,
-        HitMarker: HitMarker,
-        SliderTick: SliderTick,
-        SliderEnd: SliderEnd
-    };
-
-    var classNames = 'HitCircle,Slider,HitMarker,SliderTick,SliderEnd'.split(',');
-
-    var hasOwnProperty = Object.prototype.hasOwnProperty;
-
     function match(object, callbacks, context) {
         var type = object ? object.type : '_';
-
-        if (!hasOwnProperty.call(callbacks, type)) {
+        if (typeof callbacks[type] === 'undefined') {
             type = '_';
         }
 
         var value = callbacks[type];
-
         if (typeof value === 'function') {
-            value = value.call(context, object);
+            return value.call(context, object);
+        } else {
+            return value;
         }
-
-        return value;
     }
 
     function matcher(callbacks) {
@@ -139,9 +125,15 @@ define('game/mapObject', [ 'util/util' ], function (util) {
         };
     }
 
-    return util.extend({ }, classes, {
+    return {
+        HitCircle: HitCircle,
+        Slider: Slider,
+        HitMarker: HitMarker,
+        SliderTick: SliderTick,
+        SliderEnd: SliderEnd,
+
         match: match,
         matcher: matcher,
         proto: proto
-    });
+    };
 });
