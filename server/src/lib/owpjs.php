@@ -30,6 +30,12 @@ class owpjs {
         return $this;
     }
 
+    function startTutorial() {
+        $this->actions[] = array('startTutorial');
+
+        return $this;
+    }
+
     function render($context, $document) {
         if (empty($this->actions)) {
             return;
@@ -53,6 +59,10 @@ class owpjs {
                 $mapRootJson = json_encode($context->url($map->rootWebPath()));
                 $mapNameJson = json_encode(preg_replace('/\\.osu$/', '', $map->mapFile()));
                 $js .= "owp.game.startMap(${mapRootJson}, ${mapNameJson});";
+                break;
+
+            case 'startTutorial':
+                $js .= "owp.game.startTutorial();";
                 break;
 
             default:

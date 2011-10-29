@@ -31,6 +31,13 @@ define('ui/Control', [ 'util/util', 'ui/helpers', 'util/PubSub' ], function (uti
     }
 
     function Control(ui, spec) {
+        // Bit of a hack
+        spec = util.clone(spec);
+        spec.textOptions = util.extend({
+            fontFace: 'sans-serif',
+            color: 'red'
+        }, spec.textOptions);
+
         spec = util.extend({
             x: 0,
             y: 0,
@@ -42,7 +49,8 @@ define('ui/Control', [ 'util/util', 'ui/helpers', 'util/PubSub' ], function (uti
             button: false,
             alignX: 0.5,
             alignY: 0.5,
-            action: null
+            action: null,
+            bounds: [ Infinity, Infinity, -Infinity, -Infinity ]
         }, spec);
 
         this.events = { };
@@ -58,7 +66,7 @@ define('ui/Control', [ 'util/util', 'ui/helpers', 'util/PubSub' ], function (uti
             uiHelpers.bindValue(this, 'image', this.events, function (eventType) {
                 var imageTemplate = getValue(spec, 'image', eventType);
                 var imageName = uiHelpers.templateReplace(imageTemplate, ui.vars);
-                return ui.assetManager.get(imageName, 'image');
+                return ui.skin.assetManager.get(imageName, 'image');
             });
 
             uiHelpers.bindEasable(this, 'width', this.events, function (eventType) {
@@ -114,6 +122,14 @@ define('ui/Control', [ 'util/util', 'ui/helpers', 'util/PubSub' ], function (uti
             });
         }, this);
 
+        uiHelpers.bindValue(this, 'bounds', this.events, function (eventType) {
+            return getValue(spec, 'bounds', eventType);
+        });
+
+        uiHelpers.bindValue(this, 'textOptions', this.events, function (eventType) {
+            return getValue(spec, 'textOptions', eventType);
+        });
+
         var eventActions = uiHelpers.buildEventValues(eventStatePriorities, 'action', spec);
         Object.keys(eventActions).forEach(function (eventType) {
             var action = eventActions[eventType];
@@ -139,12 +155,20 @@ define('ui/Control', [ 'util/util', 'ui/helpers', 'util/PubSub' ], function (uti
     }
 
     Control.prototype = {
-        centerX: function () {
-            return center(this.x(), this.alignX(), this.width());
+        centerX: function (width) {
+            if (typeof width === 'undefined') {
+                width = this.width();
+            }
+
+            return center(this.x(), this.alignX(), width);
         },
 
-        centerY: function () {
-            return center(this.y(), this.alignY(), this.height());
+        centerY: function (height) {
+            if (typeof height === 'undefined') {
+                height = this.height();
+            }
+
+            return center(this.y(), this.alignY(), height);
         },
 
         bindMouse: function (mousePubSub) {
@@ -188,24 +212,6 @@ define('ui/Control', [ 'util/util', 'ui/helpers', 'util/PubSub' ], function (uti
                 wasDown = down;
                 wasInside = inside;
             });
-        },
-
-        bounds: function () {
-            if (!this.width || !this.height) {
-                return [ Infinity, Infinity, -Infinity, -Infinity ];
-            }
-
-            var w = this.width();
-            var h = this.height();
-            var cx = this.centerX();
-            var cy = this.centerY();
-
-            return [
-                cx - w / 2,
-                cy - h / 2,
-                cx + w / 2,
-                cy + h / 2
-            ];
         },
 
         hitTest: function (x, y) {

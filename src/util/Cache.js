@@ -35,8 +35,8 @@ define('util/Cache', [ 'util/Map' ], function (Map) {
         collect: function (callback, context) {
             var keysToRemove = [ ];
 
-            this.map.forEach(function (key, value) {
-                if (callback.call(context, key, value) === false) {
+            this.map.forEach(function (key, value, i) {
+                if (callback.call(context, key, value, i) === false) {
                     keysToRemove.push(key);
                 }
             });

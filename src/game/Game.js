@@ -1,11 +1,21 @@
 define('game/Game', [ 'q', 'game/MapState', 'AssetManager', 'util/PubSub', 'Soundboard', 'util/Timeline', 'util/History', 'agentInfo', 'game/RuleSet', 'game/mapObject', 'game/Combo', 'game/TimingPoint', 'game/BezierSliderCurve', 'util/StateMachine', 'ui/UI', 'util/util', 'gfx/View', 'util/CoolAudio', 'game/CompoundStoryboard' ], function (Q, MapState, AssetManager, PubSub, Soundboard, Timeline, History, agentInfo, RuleSet, mapObject, Combo, TimingPoint, BezierSliderCurve, StateMachine, UI, util, View, CoolAudio, CompoundStoryboard) {
     var GameStateMachine = StateMachine.create([
-        { name: 'load_play',   from: 'none',          to: 'loading'       },
-        { name: 'loaded_play', from: 'loading',       to: 'ready_to_play' },
-        { name: 'play',        from: 'ready_to_play', to: 'playing'       },
-        { name: 'pause',       from: 'playing',       to: 'paused'        },
-        { name: 'unpause',     from: 'paused',        to: 'playing'       },
-        { name: 'end_map',     from: 'playing',       to: 'score_screen'  }
+        { name: 'load_play',    from: 'none',          to: 'loading'       },
+        { name: 'loaded_play',  from: 'loading',       to: 'ready_to_play' },
+        { name: 'play',         from: 'ready_to_play', to: 'playing'       },
+        { name: 'pause',        from: 'playing',       to: 'paused'        },
+        { name: 'unpause',      from: 'paused',        to: 'playing'       },
+        { name: 'end_map',      from: 'playing',       to: 'score_screen'  },
+        { name: 'watch_replay', from: 'score_screen',  to: 'playing'       },
+
+        { name: 'tutorial', from: 'none', to: 'tutorial' }
+    ]);
+
+    var TutorialStateMachine = StateMachine.create([
+        { name: 'start', from: 'none',    to: 'intro_1' },
+
+        // Intro
+        { name: 'next',  from: 'intro_1', to: 'intro_2' }
     ]);
 
     var MAP_END = 'mapEnd';
@@ -19,7 +29,6 @@ define('game/Game', [ 'q', 'game/MapState', 'AssetManager', 'util/PubSub', 'Soun
         var mapAssetManager = null;
 
         var boundEvents = [ ];
-
         function clearBoundEvents() {
             boundEvents.forEach(function (be) {
                 be.unsubscribe();
@@ -34,7 +43,8 @@ define('game/Game', [ 'q', 'game/MapState', 'AssetManager', 'util/PubSub', 'Soun
         var mouseHistory = new History();
         var isLeftDown = false;
         var isRightDown = false;
-        var trackMouse = true;
+
+        var isReplaying = false;
 
         var scoreHistory = new History();
         var accuracyHistory = new History();
@@ -183,7 +193,7 @@ define('game/Game', [ 'q', 'game/MapState', 'AssetManager', 'util/PubSub', 'Soun
                     return time < latestSkipTime && audio.canSeek(skipToTime);
                 }
 
-                ui = new UI(skin.valueOf().assetManager);
+                ui = new UI(skin.valueOf());
                 boundEvents.push(mousePubSub.subscribe(function (e) {
                     if (canSkip()) {
                         ui.mouse.publish(e);
@@ -198,6 +208,7 @@ define('game/Game', [ 'q', 'game/MapState', 'AssetManager', 'util/PubSub', 'Soun
                         alignX: 1,
                         alignY: 1,
                         scale: 0.5,
+                        bounds: [ 640 - 120, 480 - 50, 640, 480 ],
 
                         click: { action: 'skip' }
                     }
@@ -215,6 +226,20 @@ define('game/Game', [ 'q', 'game/MapState', 'AssetManager', 'util/PubSub', 'Soun
                     if (canSkip()) {
                         renderer.renderUi(ui);
                     }
+
+                    if (isReplaying) {
+                        renderer.renderCursor({
+                            skin: skin.valueOf(),
+                            mouseHistory: mouseHistory,
+                            ruleSet: mapState.ruleSet
+                        }, time);
+                    } else {
+                        renderer.renderCurrentCursor({
+                            skin: skin.valueOf(),
+                            mouseHistory: mouseHistory,
+                            ruleSet: mapState.ruleSet
+                        }, time);
+                    }
                 };
 
                 debugInfoCallback = function () {
@@ -230,25 +255,25 @@ define('game/Game', [ 'q', 'game/MapState', 'AssetManager', 'util/PubSub', 'Soun
 
                 audio.play();
 
-                boundEvents.push(mousePubSub.subscribe(function (e) {
-                    var time = audio.currentTime();
+                if (!isReplaying) {
+                    boundEvents.push(mousePubSub.subscribe(function (e) {
+                        var time = audio.currentTime();
 
-                    e = util.clone(e);
-                    var pos = View.map.playfieldToView(e.x, e.y);
-                    e.x = pos[0];
-                    e.y = pos[1];
+                        e = util.clone(e);
+                        var pos = View.map.playfieldToView(e.x, e.y);
+                        e.x = pos[0];
+                        e.y = pos[1];
 
-                    if (trackMouse) {
                         mouseHistory.add(time, e);
-                    }
 
-                    if (e.left && !isLeftDown || e.right && !isRightDown) {
-                        mapState.clickAt(e.x, e.y, time);
-                    }
+                        if (e.left && !isLeftDown || e.right && !isRightDown) {
+                            mapState.clickAt(e.x, e.y, time);
+                        }
 
-                    isLeftDown = e.left;
-                    isRightDown = e.right;
-                }));
+                        isLeftDown = e.left;
+                        isRightDown = e.right;
+                    }));
+                }
 
                 function playHitMarker(hitMarker) {
                     var hitSounds = mapState.ruleSet.getHitSoundNames(hitMarker);
@@ -284,12 +309,20 @@ define('game/Game', [ 'q', 'game/MapState', 'AssetManager', 'util/PubSub', 'Soun
                     Q.fail(sm.end_map(), agentInfo.crash);
                 }));
 
-                boundEvents.push(timeline.subscribe(MapState.HIT_SLIDE_CHECK, function (object) {
-                    mapState.processSlide(object, mouseHistory);
-                }));
-                boundEvents.push(timeline.subscribe(MapState.HIT_MISS_CHECK, function (object) {
-                    mapState.processMiss(object);
-                }));
+                if (isReplaying) {
+                    boundEvents.push(timeline.subscribe(MapState.HIT_MARKER_CREATION, function (hitMarker) {
+                        playHitMarker(hitMarker);
+                    }));
+                }
+
+                if (!isReplaying) {
+                    boundEvents.push(timeline.subscribe(MapState.HIT_SLIDE_CHECK, function (object) {
+                        mapState.processSlide(object, mouseHistory);
+                    }));
+                    boundEvents.push(timeline.subscribe(MapState.HIT_MISS_CHECK, function (object) {
+                        mapState.processMiss(object);
+                    }));
+                }
             },
 
             exit_playing: function () {
@@ -299,7 +332,7 @@ define('game/Game', [ 'q', 'game/MapState', 'AssetManager', 'util/PubSub', 'Soun
             enter_paused: function () {
                 audio.pause();
 
-                ui = new UI(skin.valueOf().assetManager);
+                ui = new UI(skin.valueOf());
                 boundEvents.push(mousePubSub.pipeTo(ui.mouse));
 
                 ui.build([
@@ -310,6 +343,7 @@ define('game/Game', [ 'q', 'game/MapState', 'AssetManager', 'util/PubSub', 'Soun
                         alignX: 0.5,
                         alignY: 0.5,
                         scale: 1.0,
+                        bounds: [ 138, 181, 502, 218 ],
 
                         hover: { scale: 1.1 },
                         click: { action: 'play' }
@@ -320,6 +354,7 @@ define('game/Game', [ 'q', 'game/MapState', 'AssetManager', 'util/PubSub', 'Soun
                         alignX: 0.5,
                         alignY: 0.5,
                         scale: 1.0,
+                        bounds: [ 138, 311, 502, 349 ],
 
                         hover: { scale: 1.1 },
                         click: { action: 'menu' }
@@ -351,7 +386,7 @@ define('game/Game', [ 'q', 'game/MapState', 'AssetManager', 'util/PubSub', 'Soun
             },
 
             enter_score_screen: function () {
-                ui = new UI(skin.valueOf().assetManager);
+                ui = new UI(skin.valueOf());
                 boundEvents.push(mousePubSub.pipeTo(ui.mouse));
 
                 ui.build([
@@ -369,6 +404,7 @@ define('game/Game', [ 'q', 'game/MapState', 'AssetManager', 'util/PubSub', 'Soun
                         scale: 0.3
                     }, {
                         text: '${hit300}x',
+                        textOptions: { fontFace: 'score' },
                         x: 70,
                         y: 180,
                         characterScale: 0.6,
@@ -380,6 +416,7 @@ define('game/Game', [ 'q', 'game/MapState', 'AssetManager', 'util/PubSub', 'Soun
                         scale: 0.3
                     }, {
                         text: '${hit100}x',
+                        textOptions: { fontFace: 'score' },
                         x: 70,
                         y: 230,
                         characterScale: 0.6,
@@ -391,6 +428,7 @@ define('game/Game', [ 'q', 'game/MapState', 'AssetManager', 'util/PubSub', 'Soun
                         scale: 0.3
                     }, {
                         text: '${hit50}x',
+                        textOptions: { fontFace: 'score' },
                         x: 70,
                         y: 280,
                         characterScale: 0.6,
@@ -402,6 +440,7 @@ define('game/Game', [ 'q', 'game/MapState', 'AssetManager', 'util/PubSub', 'Soun
                         scale: 0.3
                     }, {
                         text: '${hit0}x',
+                        textOptions: { fontFace: 'score' },
                         x: 250,
                         y: 280,
                         characterScale: 0.6,
@@ -417,17 +456,20 @@ define('game/Game', [ 'q', 'game/MapState', 'AssetManager', 'util/PubSub', 'Soun
 
                     //    hover: { width: 268 },
                     //    ease: { width: [ 'smoothstep', 200 ] }
-                    //}, {
-                    //    name: 'replay button',
-                    //    image: 'ranking-replay.png',
-                    //    x: 396,
-                    //    y: 379,
-                    //    alignX: 0,
-                    //    alignY: 0.5,
-                    //    width: 244,
+                    }, {
+                        name: 'replay button',
+                        image: 'ranking-replay.png',
+                        x: 396,
+                        y: 379,
+                        alignX: 0,
+                        alignY: 0.5,
+                        width: 244,
+                        bounds: [ 396, 363, 640, 391 ],
 
-                    //    hover: { width: 268 },
-                    //    ease: { width: [ 'smoothstep', 200 ] }
+                        hover: { width: 268 },
+                        click: { action: 'replay' },
+
+                        ease: { width: [ 'smoothstep', 200 ] }
                     }, {
                         image: 'ranking-back.png',
                         x: 396,
@@ -435,6 +477,7 @@ define('game/Game', [ 'q', 'game/MapState', 'AssetManager', 'util/PubSub', 'Soun
                         alignX: 0,
                         alignY: 0.5,
                         width: 244,
+                        bounds: [ 396, 423, 640, 451 ],
 
                         hover: { width: 268 },
                         click: { action: 'menu' },
@@ -447,6 +490,7 @@ define('game/Game', [ 'q', 'game/MapState', 'AssetManager', 'util/PubSub', 'Soun
                         scale: 0.7
                     }, {
                         text: '${score}',
+                        textOptions: { fontFace: 'score' },
                         characterScale: 0.7,
                         x: 276,
                         y: 107,
@@ -454,6 +498,7 @@ define('game/Game', [ 'q', 'game/MapState', 'AssetManager', 'util/PubSub', 'Soun
                         alignY: 1
                     }, {
                         text: '${accuracy}%',
+                        textOptions: { fontFace: 'score' },
                         characterScale: 0.7,
                         x: 194,
                         y: 346,
@@ -461,6 +506,7 @@ define('game/Game', [ 'q', 'game/MapState', 'AssetManager', 'util/PubSub', 'Soun
                         alignY: 0.5
                     }, {
                         text: '${maxCombo}x',
+                        textOptions: { fontFace: 'score' },
                         characterScale: 0.7,
                         x: 18,
                         y: 346,
@@ -475,7 +521,12 @@ define('game/Game', [ 'q', 'game/MapState', 'AssetManager', 'util/PubSub', 'Soun
                     window.location = '.';
                 });
 
-                var hist = mapState.ruleSet.getHitMarkerHistogram(mapState.getAllHitMarkers())
+                ui.events.replay = new PubSub();
+                ui.events.replay.subscribe(function () {
+                    Q.fail(sm.watch_replay(), agentInfo.crash);
+                });
+
+                var hist = mapState.ruleSet.getHitMarkerHistogram(mapState.getAllHitMarkers());
                 ui.vars.hit300 = hist.hit300;
                 ui.vars.hit100 = hist.hit100;
                 ui.vars.hit50 = hist.hit50;
@@ -494,6 +545,73 @@ define('game/Game', [ 'q', 'game/MapState', 'AssetManager', 'util/PubSub', 'Soun
                     renderer.renderColourOverlay([ 0, 0, 0, 255 ]);
                     renderer.renderUi(ui);
                 };
+            },
+
+            on_watch_replay: function () {
+                isReplaying = true;
+
+                timeline = new Timeline(audio);
+                var exitTime = mapState.ruleSet.getMapExitTime(mapInfo.map);
+                timeline.add(MAP_END, true, exitTime);
+
+                mapState = MapState.fromMapInfo(mapInfo, timeline);
+                mapState.processMouseHistory(mouseHistory);
+
+                audio.seek(-mapState.ruleSet.audioLeadIn);
+            },
+
+            enter_tutorial: function () {
+                var uis = [ ];
+
+                var nextUi = new UI(skin.valueOf());
+                boundEvents.push(mousePubSub.pipeTo(nextUi.mouse));
+                nextUi.build([
+                    {
+                        bounds: [ 0, 0, 640, 480 ],
+                        click: { action: 'next' }
+                    }
+                ]);
+                nextUi.events.next = new PubSub();
+
+                var tutorialSm = new TutorialStateMachine('none', {
+                    enter_intro_1: function () {
+                        var ui = new UI(skin.valueOf());
+                        ui.build([
+                            {
+                                text: 'Hello and welcome to owp! This tutorial will introduce you to owp. Click to continue.',
+                                textOptions: { color: 'red', width: 640 * 0.75, align: 'center' },
+                                x: 320,
+                                y: 240
+                            }
+                        ]);
+
+                        uis = [ nextUi, ui ];
+                    },
+
+                    enter_intro_2: function () {
+                        var ui = new UI(skin.valueOf());
+                        ui.build([
+                            {
+                                text: 'owp is a music-based rhythm game.',
+                                textOptions: { color: 'red' },
+                                x: 320,
+                                y: 240
+                            }
+                        ]);
+
+                        uis = [ nextUi, ui ];
+                    }
+                });
+
+                nextUi.events.next.subscribe(function () {
+                    tutorialSm.next();
+                });
+
+                renderCallback = function (renderer) {
+                    uis.forEach(renderer.renderUi, renderer);
+                };
+
+                return tutorialSm.start();
             }
         });
 
@@ -543,6 +661,13 @@ define('game/Game', [ 'q', 'game/MapState', 'AssetManager', 'util/PubSub', 'Soun
 
                 return p;
             },
+
+            startTutorial: function () {
+                var p = sm.tutorial();
+                Q.fail(p, agentInfo.crash);
+                return p;
+            },
+
             togglePause: function () {
                 if (sm.canMakeTransition('pause')) {
                     sm.pause();
@@ -552,11 +677,15 @@ define('game/Game', [ 'q', 'game/MapState', 'AssetManager', 'util/PubSub', 'Soun
                     // Do nothing
                 }
             },
+
             render: render,
+
             loadSkin: loadSkin,
+
             mouse: function (e) {
                 mousePubSub.publishSync(e);
             },
+
             debugInfo: debugInfo
         };
     }

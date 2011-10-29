@@ -156,25 +156,32 @@ define('game/RuleSet', [ 'util/util', 'game/mapObject', 'util/History', 'util/Cu
         },
 
         getObjectOpacity: function (object, time) {
-            var startAppearTime    = this.getObjectStartAppearTime(object);
-            var endAppearTime      = this.getObjectEndAppearTime(object);
-            var startTime          = this.getObjectStartTime(object);
-            var startDisappearTime = this.getObjectStartDisappearTime(object);
-            var endDisappearTime   = this.getObjectEndDisappearTime(object);
-
+            var startAppearTime = this.getObjectStartAppearTime(object);
             if (time < startAppearTime) {
                 return 0;
-            } else if (time < endAppearTime) {
-                return (time - startAppearTime) / (endAppearTime - startAppearTime);
-            } else if (time < startTime) {
-                return 1;
-            } else if (time < startDisappearTime) {
-                return 1;
-            } else if (time < endDisappearTime) {
-                return 1 - (time - startDisappearTime) / (endDisappearTime - startDisappearTime);
-            } else {
-                return 0;
             }
+
+            var endAppearTime = this.getObjectEndAppearTime(object);
+            if (time < endAppearTime) {
+                return (time - startAppearTime) / (endAppearTime - startAppearTime);
+            }
+
+            var startTime = this.getObjectStartTime(object);
+            if (time < startTime) {
+                return 1;
+            }
+
+            var startDisappearTime = this.getObjectStartDisappearTime(object);
+            if (time < startDisappearTime) {
+                return 1;
+            }
+
+            var endDisappearTime = this.getObjectEndDisappearTime(object);
+            if (time < endDisappearTime) {
+                return 1 - (time - startDisappearTime) / (endDisappearTime - startDisappearTime);
+            }
+
+            return 0;
         },
 
         getSliderGrowPercentage: function (object, time) {
@@ -246,6 +253,10 @@ define('game/RuleSet', [ 'util/util', 'game/mapObject', 'util/History', 'util/Cu
             return this.getCircleSize() / adjustmentScale / 2;
         },
 
+        getSliderTrackInnerRatio: function () {
+            return 0.85;
+        },
+
         getHitRadius: mapObject.matcher({
             HitCircle: function (object) {
                 return this.getCircleSize() / 2;
@@ -262,12 +273,20 @@ define('game/RuleSet', [ 'util/util', 'game/mapObject', 'util/History', 'util/Cu
         }),
 
         getSliderTickThresholdRadius: function () {
-            return this.getCircleSize();
+            return this.getCircleSize() * 0.75;
         },
 
-        getHitMarkerImageName: function (hitMarker) {
-            // Should this be here?
+        getCursorScale: function (mouseHistory, time) {
+            // Kinda crude; needs transition effects
+            var state = mouseHistory.getDataAtTime(time);
+            if (state && (state.left || state.right)) {
+                return 1.3;
+            } else {
+                return 1;
+            }
+        },
 
+        getHitMarkerImageName: (function () {
             var imageNames = {
                 300: 'hit300.png',
                 100: 'hit100.png',
@@ -277,28 +296,26 @@ define('game/RuleSet', [ 'util/util', 'game/mapObject', 'util/History', 'util/Cu
                 0: 'hit0.png'
             };
 
-            var ignore = mapObject.match(hitMarker.hitObject, {
-                SliderTick: function () {
-                    return hitMarker.score === 0;
+            var canIgnore = mapObject.matcher({
+                SliderTick: function (object) {
+                    return object.hitMarker.score === 0;
                 },
                 SliderEnd: function (object) {
-                    return !object.isFinal && hitMarker.score === 0;
+                    return !object.isFinal && object.hitMarker.score === 0;
                 },
-                Slider: function () {
-                    return hitMarker.score === 0;
+                Slider: function (object) {
+                    return object.hitMarker.score === 0;
                 }
             });
 
-            if (ignore) {
-                return null;
-            }
+            return function (hitMarker) {
+                if (canIgnore(hitMarker.hitObject)) {
+                    return null;
+                }
 
-            if (!imageNames.hasOwnProperty(hitMarker.score)) {
-                throw new Error('Invalid hit marker with score ' + hitMarker.score);
-            }
-
-            return imageNames[hitMarker.score];
-        },
+                return imageNames[hitMarker.score];
+            };
+        }()),
 
         getHitWindow: function (score) {
             var windows = {
@@ -585,29 +602,25 @@ define('game/RuleSet', [ 'util/util', 'game/mapObject', 'util/History', 'util/Cu
             var endPosition = slider.curve.getEndPoint();
 
             var rawTickPositions = slider.getTickPositions(tickLength);
-            rawTickPositions = rawTickPositions.filter(function (point) {
-                var dx, dy;
-
-                dx = point[0] - startPosition[0];
-                dy = point[1] - startPosition[1];
-                if (dx * dx + dy * dy <= radius2) {
-                    return false;
-                }
-
-                dx = point[0] - endPosition[0];
-                dy = point[1] - endPosition[1];
-                if (dx * dx + dy * dy <= radius2) {
-                    return false;
-                }
-
-                return true;
-            }, this);
-
             var ticks = [ ];
 
             var repeatIndex;
 
             function makeTick(tickPosition, tickIndex) {
+                var dx, dy;
+
+                dx = tickPosition[0] - startPosition[0];
+                dy = tickPosition[1] - startPosition[1];
+                if (dx * dx + dy * dy <= radius2) {
+                    return null;
+                }
+
+                dx = tickPosition[0] - endPosition[0];
+                dy = tickPosition[1] - endPosition[1];
+                if (dx * dx + dy * dy <= radius2) {
+                    return null;
+                }
+
                 return new mapObject.SliderTick(
                     startTime + (tickIndex + 1) * tickDuration + repeatIndex * repeatDuration,
                     tickPosition[0],
@@ -618,9 +631,12 @@ define('game/RuleSet', [ 'util/util', 'game/mapObject', 'util/History', 'util/Cu
             }
 
             for (repeatIndex = 0; repeatIndex < slider.repeats; ++repeatIndex) {
-                ticks = ticks.concat(rawTickPositions.map(makeTick));
+                var newTicks = rawTickPositions.map(makeTick);
+                ticks = ticks.concat(newTicks.filter(function (tick) {
+                    return tick !== null;
+                }));
 
-                rawTickPositions = rawTickPositions.reverse();
+                rawTickPositions.reverse();
             }
 
             return ticks;
@@ -749,6 +765,24 @@ define('game/RuleSet', [ 'util/util', 'game/mapObject', 'util/History', 'util/Cu
                 Slider: function () {
                     return time <= object.time;
                 },
+                _: true
+            });
+        },
+
+        isHitObjectVisible: function (object, time) {
+            function byHitMarker() {
+                if (object.hitMarker && object.hitMarker.time <= time) {
+                    return false;
+                }
+
+                return true;
+            }
+
+            return mapObject.match(object, {
+                SliderTick: byHitMarker,
+                SliderEnd: byHitMarker,
+                HitCircle: byHitMarker,
+                Slider: true,
                 _: true
             });
         },

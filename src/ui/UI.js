@@ -1,6 +1,6 @@
 define('ui/UI', [ 'ui/Control', 'util/PubSub' ], function (Control, PubSub) {
-    function UI(assetManager) {
-        this.assetManager = assetManager;
+    function UI(skin) {
+        this.skin = skin;
 
         this.controls = [ ];
         this.vars = { };
