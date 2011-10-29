@@ -35,7 +35,7 @@ define('ui/Control', [ 'util/util', 'ui/helpers', 'util/PubSub' ], function (uti
         spec = util.clone(spec);
         spec.textOptions = util.extend({
             fontFace: 'sans-serif',
-            color: 'red',
+            color: 'red'
         }, spec.textOptions);
 
         spec = util.extend({

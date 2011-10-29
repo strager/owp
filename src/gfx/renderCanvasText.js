@@ -3,11 +3,13 @@ define('gfx/renderCanvasText', [ 'util/util' ], function (util) {
         element.style.margin = '0';
         element.style.padding = '0';
         element.style.position = 'static';
-        element.style.float = 'none';
         element.style.clear = 'none';
         element.style.width = 'auto';
         element.style.height = 'auto';
         element.style.visibility = 'visibile';
+
+        // float's a keyword; Closure hates me; yay!!!
+        element.style['float'] = 'none';
     }
 
     function renderCanvasText(text /* options... */) {
