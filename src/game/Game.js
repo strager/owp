@@ -1,4 +1,4 @@
-define('game/Game', [ 'q', 'game/MapState', 'AssetManager', 'util/PubSub', 'Soundboard', 'util/Timeline', 'util/History', 'agentInfo', 'game/RuleSet', 'game/mapObject', 'game/Combo', 'game/TimingPoint', 'game/BezierSliderCurve', 'util/StateMachine', 'ui/UI', 'util/util', 'gfx/View', 'util/CoolAudio', 'game/CompoundStoryboard' ], function (Q, MapState, AssetManager, PubSub, Soundboard, Timeline, History, agentInfo, RuleSet, mapObject, Combo, TimingPoint, BezierSliderCurve, StateMachine, UI, util, View, CoolAudio, CompoundStoryboard) {
+define('game/Game', [ 'q', 'game/MapState', 'AssetManager', 'util/PubSub', 'Soundboard', 'util/Timeline', 'util/History', 'agentInfo', 'game/RuleSet', 'game/mapObject', 'game/Combo', 'game/TimingPoint', 'game/BezierSliderCurve', 'util/StateMachine', 'ui/UI', 'util/util', 'gfx/View', 'util/CoolAudio', 'game/CompoundStoryboard', 'tutorial/Tutorial' ], function (Q, MapState, AssetManager, PubSub, Soundboard, Timeline, History, agentInfo, RuleSet, mapObject, Combo, TimingPoint, BezierSliderCurve, StateMachine, UI, util, View, CoolAudio, CompoundStoryboard, Tutorial) {
     var GameStateMachine = StateMachine.create([
         { name: 'load_play',    from: 'none',          to: 'loading'       },
         { name: 'loaded_play',  from: 'loading',       to: 'ready_to_play' },
@@ -9,13 +9,6 @@ define('game/Game', [ 'q', 'game/MapState', 'AssetManager', 'util/PubSub', 'Soun
         { name: 'watch_replay', from: 'score_screen',  to: 'playing'       },
 
         { name: 'tutorial', from: 'none', to: 'tutorial' }
-    ]);
-
-    var TutorialStateMachine = StateMachine.create([
-        { name: 'start', from: 'none',    to: 'intro_1' },
-
-        // Intro
-        { name: 'next',  from: 'intro_1', to: 'intro_2' }
     ]);
 
     var MAP_END = 'mapEnd';
@@ -561,57 +554,14 @@ define('game/Game', [ 'q', 'game/MapState', 'AssetManager', 'util/PubSub', 'Soun
             },
 
             enter_tutorial: function () {
-                var uis = [ ];
-
-                var nextUi = new UI(skin.valueOf());
-                boundEvents.push(mousePubSub.pipeTo(nextUi.mouse));
-                nextUi.build([
-                    {
-                        bounds: [ 0, 0, 640, 480 ],
-                        click: { action: 'next' }
-                    }
-                ]);
-                nextUi.events.next = new PubSub();
-
-                var tutorialSm = new TutorialStateMachine('none', {
-                    enter_intro_1: function () {
-                        var ui = new UI(skin.valueOf());
-                        ui.build([
-                            {
-                                text: 'Hello and welcome to owp! This tutorial will introduce you to owp. Click to continue.',
-                                textOptions: { color: 'red', width: 640 * 0.75, align: 'center' },
-                                x: 320,
-                                y: 240
-                            }
-                        ]);
-
-                        uis = [ nextUi, ui ];
-                    },
-
-                    enter_intro_2: function () {
-                        var ui = new UI(skin.valueOf());
-                        ui.build([
-                            {
-                                text: 'owp is a music-based rhythm game.',
-                                textOptions: { color: 'red' },
-                                x: 320,
-                                y: 240
-                            }
-                        ]);
-
-                        uis = [ nextUi, ui ];
-                    }
+                return Q.when(skin, function (skin) {
+                    var tutorial = new Tutorial(skin);
+                    mousePubSub.pipeTo(tutorial.events.mouse);
+                    renderCallback = function (renderer) {
+                        tutorial.render(renderer);
+                    };
+                    return tutorial.start();
                 });
-
-                nextUi.events.next.subscribe(function () {
-                    tutorialSm.next();
-                });
-
-                renderCallback = function (renderer) {
-                    uis.forEach(renderer.renderUi, renderer);
-                };
-
-                return tutorialSm.start();
             }
         });
 
