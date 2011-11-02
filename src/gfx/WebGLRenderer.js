@@ -1339,10 +1339,12 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/Cache', '
             'varying vec2 vTextureCoord;',
 
             'vec4 getSliderColor(float t, vec4 baseColor) {',
-                'vec4 u = abs(vec4(t));',
-                'bvec4 z = greaterThan(u, vec4(uWidth));',
-                'vec4 grad = vec4((u.xyz + 1.5) / (1.0 + 1.5), 1.0) * baseColor;',
-                'return mix(grad, vec4(0.0), vec4(z));',
+                'float u = abs(t);',
+                'if (u > uWidth) {',
+                    'return vec4(0.0);',
+                '} else {',
+                    'return vec4(vec3((u + 1.5) / (1.0 + 1.5)), 1.0) * baseColor;',
+                '}',
             '}',
 
             'void main(void) {',
@@ -1912,7 +1914,7 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/Cache', '
             var program = gl.createProgram();
 
             var vs = createShader( gl, vertex, gl.VERTEX_SHADER );
-            var fs = createShader( gl, '#ifdef GL_ES\nprecision highp float;\n#endif\n\n' + fragment, gl.FRAGMENT_SHADER );
+            var fs = createShader( gl, '#version 100\n#ifdef GL_ES\nprecision highp float;\n#endif\n\n' + fragment, gl.FRAGMENT_SHADER );
 
             if ( vs == null || fs == null ) return null;
 
