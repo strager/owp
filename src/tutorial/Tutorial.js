@@ -130,7 +130,7 @@ define('tutorial/Tutorial', [ 'q', 'Soundboard', 'game/RuleSet', 'game/MapState'
                 boundEvents.push(timeline.subscribe(MapState.HIT_MARKER_CREATION, function (hitMarker) {
                     playHitMarker(hitMarker);
                 }));
-            },
+            }
         });
 
         return {
