@@ -50,7 +50,6 @@ define('tutorial/Tutorial', [ 'q', 'Soundboard', 'game/RuleSet', 'game/Map', 'ut
             },
 
             enter_part_1: function () {
-                debugger;
                 var combo = new Combo();
 
                 map = new Map();
