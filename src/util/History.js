@@ -1,6 +1,7 @@
-define('util/History', [ 'util/SortedMap' ], function (SortedMap) {
+define('util/History', [ 'util/SortedMap', 'util/ease' ], function (SortedMap, ease) {
     function History() {
         this.map = new SortedMap();
+        this.easing = null;
     }
 
     History.prototype = {
@@ -18,6 +19,19 @@ define('util/History', [ 'util/SortedMap' ], function (SortedMap) {
 
             if (index < 0) {
                 return null;
+            }
+
+            // Optionally interpolate using some easing function
+            if (this.map.keys[index] !== time && this.easing && index + 1 < this.map.values.length) {
+                return this.easing(
+                    this.map.values[index + 0], // Early time data
+                    this.map.values[index + 1], // Late time data
+                    ease.lerp(
+                        this.map.keys[index + 0], // Early time
+                        this.map.keys[index + 1], // Late time
+                        time
+                    )
+                );
             }
 
             return this.map.values[index];

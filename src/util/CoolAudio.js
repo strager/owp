@@ -15,6 +15,8 @@ define('util/CoolAudio', [ 'util/PubSub' ], function (PubSub) {
     var LOOKBEHIND_THRESHOLD = -8;
 
     function CoolAudio(audioElement) {
+        // audioElement is optional because I am too lazy to split out the
+        // setTimeout logic from this class.  x_x  Sorry.
         this.audioElement = audioElement;
 
         var self = this;
@@ -36,11 +38,15 @@ define('util/CoolAudio', [ 'util/PubSub' ], function (PubSub) {
         // The time of the audio's 0:00:00 time, in RTC milliseconds.
         this.rtcStartTime = 0;
 
-        this.isPaused = false;
+        this.isPaused = true;
 
         this.negativeZone = false;
         this.negativeZoneTimer = null;
         this.negativeZoneTime = 0;
+
+        if (!this.audioElement) {
+            return;
+        }
 
         function update() {
             if (self.negativeZone) {
@@ -101,7 +107,9 @@ define('util/CoolAudio', [ 'util/PubSub' ], function (PubSub) {
             }
 
             this.isPaused = true;
-            this.audioElement.pause();
+            if (this.audioElement) {
+                this.audioElement.pause();
+            }
 
             if (this.negativeZone) {
                 if (this.negativeZoneTimer !== null) {
@@ -122,56 +130,66 @@ define('util/CoolAudio', [ 'util/PubSub' ], function (PubSub) {
 
             this.isPaused = false;
 
-            if (this.negativeZone) {
-                var self = this;
+            if (this.audioElement) {
+                if (this.negativeZone) {
+                    var self = this;
 
-                if (self.negativeZoneTimer !== null) {
-                    window.clearTimeout(self.negativeZoneTimer);
-                    self.negativeZoneTimer = null;
+                    if (self.negativeZoneTimer !== null) {
+                        window.clearTimeout(self.negativeZoneTimer);
+                        self.negativeZoneTimer = null;
+                    }
+
+                    self.rtcStartTime = Date.now() - self.negativeZoneTime;
+
+                    self.negativeZoneTimer = window.setTimeout(function () {
+                        self.negativeZone = false;
+
+                        var ct = Date.now() - self.rtcStartTime;
+                        self.audioElement.currentTime = ct / 1000;
+                        self.audioElement.play();
+                    }, -self.negativeZoneTime);
+                } else {
+                    this.audioElement.play();
                 }
-
-                self.rtcStartTime = Date.now() - self.negativeZoneTime;
-
-                self.negativeZoneTimer = window.setTimeout(function () {
-                    self.negativeZone = false;
-
-                    var ct = Date.now() - self.rtcStartTime;
-                    self.audioElement.currentTime = ct / 1000;
-                    self.audioElement.play();
-                }, -self.negativeZoneTime);
             } else {
-                this.audioElement.play();
+                this.rtcStartTime = Date.now();
             }
 
             this.events.start.publish(this);
         },
 
         seek: function (time) {
-            if (time < 0) {
-                var self = this;
-                var paused = self.isPaused;
+            if (this.audioElement) {
+                if (time < 0) {
+                    var self = this;
+                    var paused = self.isPaused;
 
-                if (!paused) {
-                    self.pause();
+                    if (!paused) {
+                        self.pause();
+                    }
+
+                    self.negativeZone = true;
+                    self.negativeZoneTime = time;
+
+                    if (paused) {
+                        return;
+                    }
+
+                    self.play();
+                } else {
+                    var ct = time / 1000;
+                    this.audioElement.currentTime = ct;
                 }
-
-                self.negativeZone = true;
-                self.negativeZoneTime = time;
-
-                if (paused) {
-                    return;
-                }
-
-                self.play();
-            } else {
-                var ct = time / 1000;
-                this.audioElement.currentTime = ct;
             }
 
             this.events.seek.publish(this);
         },
 
         canSeek: function (time) {
+            if (!this.audioElement) {
+                return true;
+            }
+
             if (time < 0) {
                 return true;
             } else {
@@ -205,7 +223,11 @@ define('util/CoolAudio', [ 'util/PubSub' ], function (PubSub) {
         },
 
         rawCurrentTime: function () {
-            return this.audioElement.currentTime * 1000;
+            if (this.audioElement) {
+                return this.audioElement.currentTime * 1000;
+            } else {
+                return NaN;
+            }
         },
 
         setTimeout: function (callback, time, context) {

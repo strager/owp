@@ -30,13 +30,7 @@ define('game/RuleSet', [ 'util/util', 'game/mapObject', 'util/History', 'util/Cu
             ruleSet.approachRate = ruleSet.overallDifficulty;
         }
 
-        settings.timingPoints.forEach(function (timingPoint) {
-            if (timingPoint.isInherited) {
-                ruleSet.inheritedTimingPointHistory.add(timingPoint.time, timingPoint);
-            } else {
-                ruleSet.uninheritedTimingPointHistory.add(timingPoint.time, timingPoint);
-            }
-        });
+        settings.timingPoints.forEach(ruleSet.addTimingPoint, ruleSet);
 
         settings.breakRanges.forEach(function (breakRange) {
             ruleSet.breakTimeline.add(breakRange, breakRange.startTime, breakRange.endTime);
@@ -700,6 +694,14 @@ define('game/RuleSet', [ 'util/util', 'game/mapObject', 'util/History', 'util/Cu
                 return inherited.getEffectiveBPM(uninherited);
             } else {
                 return uninherited.getEffectiveBPM(null);
+            }
+        },
+
+        addTimingPoint: function (timingPoint) {
+            if (timingPoint.isInherited) {
+                this.inheritedTimingPointHistory.add(timingPoint.time, timingPoint);
+            } else {
+                this.uninheritedTimingPointHistory.add(timingPoint.time, timingPoint);
             }
         },
 
