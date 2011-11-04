@@ -1,10 +1,8 @@
-define('tutorial/Tutorial', [ 'q', 'Soundboard', 'game/RuleSet', 'game/MapState', 'util/PubSub', 'util/StateMachine', 'agentInfo', 'game/Combo', 'game/mapObject', 'util/History', 'util/ease', 'util/CoolAudio', 'util/Timeline', 'util/util', 'game/TimingPoint' ], function (Q, Soundboard, RuleSet, MapState, PubSub, StateMachine, agentInfo, Combo, mapObject, History, ease, CoolAudio, Timeline, util, TimingPoint) {
+define('tutorial/Tutorial', [ 'q', 'Soundboard', 'game/RuleSet', 'game/MapState', 'util/PubSub', 'util/StateMachine', 'agentInfo', 'game/Combo', 'game/mapObject', 'util/History', 'util/ease', 'util/CoolAudio', 'util/Timeline', 'util/util', 'game/TimingPoint', 'gfx/View' ], function (Q, Soundboard, RuleSet, MapState, PubSub, StateMachine, agentInfo, Combo, mapObject, History, ease, CoolAudio, Timeline, util, TimingPoint, View) {
     var TutorialStateMachine = StateMachine.create([
-        { name: 'start', from: 'none',   to: 'part_1' },
-
-        { name: 'next',  from: 'part_1',      to: 'part_2'      },
-        { name: 'next',  from: 'part_1_hint', to: 'part_2'      },
-        { name: 'hint',  from: 'part_1',      to: 'part_1_hint' }
+        { name: 'start', from: 'none',        to: 'show_1'      },
+        { name: 'next',  from: 'show_1',      to: 'play_1'      },
+        { name: 'complete', from: 'play_1', to: 'show_2' },
     ]);
 
     function Tutorial(skin) {
@@ -17,6 +15,31 @@ define('tutorial/Tutorial', [ 'q', 'Soundboard', 'game/RuleSet', 'game/MapState'
         var timeline = null, hintTimeline = null;
 
         var trackMouse = false;
+        var allowMouse = false;
+        var sourceObjects = null;
+
+        var isLeftDown = false, isRightDown = false;
+        mousePubSub.subscribe(function (e) {
+            var time = audio ? audio.currentTime() : null;
+
+            e = util.clone(e);
+            var pos = View.map.playfieldToView(e.x, e.y);
+            e.x = pos[0];
+            e.y = pos[1];
+
+            if (time !== null && trackMouse && mouseHistory) {
+                mouseHistory.add(time, e);
+            }
+
+            if (allowMouse) {
+                if (time !== null && mapState && e.left && !isLeftDown || e.right && !isRightDown) {
+                    mapState.clickAt(e.x, e.y, time);
+                }
+
+                isLeftDown = e.left;
+                isRightDown = e.right;
+            }
+        });
 
         var boundEvents = [ ];
         function clearBoundEvents() {
@@ -45,7 +68,7 @@ define('tutorial/Tutorial', [ 'q', 'Soundboard', 'game/RuleSet', 'game/MapState'
         ]), agentInfo.crash);
 
         var sm = new TutorialStateMachine('none', {
-            on_hint: function () {
+            on_next: function () {
                 hintMapState = mapState;
                 hintRuleSet = ruleSet;
                 hintMouseHistory = mouseHistory;
@@ -57,20 +80,8 @@ define('tutorial/Tutorial', [ 'q', 'Soundboard', 'game/RuleSet', 'game/MapState'
                 audio = null;
             },
 
-            on_next: function () {
-                hintMapState = null;
-                hintRuleSet = null;
-                hintMouseHistory = null;
-                hintAudio = null;
-
-                mapState = null;
-                ruleSet = null;
-                mouseHistory = null;
-                audio = null;
-            },
-
-            enter_part_1: function () {
-                var objects = [
+            enter_show_1: function () {
+                sourceObjects = [
                     util.extend(new mapObject.HitCircle(2300, 256, 192), {
                         combo: new Combo(),
                         comboIndex: 0,
@@ -90,8 +101,10 @@ define('tutorial/Tutorial', [ 'q', 'Soundboard', 'game/RuleSet', 'game/MapState'
 
                 audio = new CoolAudio(null);
                 timeline = new Timeline(audio);
-                mapState = new MapState(ruleSet, objects, timeline);
+                mapState = new MapState(ruleSet, sourceObjects.map(mapObject.proto), timeline);
 
+                trackMouse = false;
+                allowMouse = false;
                 mouseHistory = new History();
                 mouseHistory.easing = function (a, b, t) {
                     return {
@@ -106,6 +119,12 @@ define('tutorial/Tutorial', [ 'q', 'Soundboard', 'game/RuleSet', 'game/MapState'
                 mouseHistory.add(800, { x: 256, y: 192, left: false, right: false });
                 mouseHistory.add(2300, { x: 256, y: 192, left: true, right: false });
                 mouseHistory.add(2500, { x: 256, y: 192, left: false, right: false });
+
+                timeline.add('next', null, 3500);
+                timeline.subscribe('next', function () {
+                    // End condition: user waited long enough
+                    Q.fail(sm.next(), agentInfo.crash);
+                });
 
                 function playHitMarker(hitMarker) {
                     var hitSounds = ruleSet.getHitSoundNames(hitMarker);
@@ -127,9 +146,52 @@ define('tutorial/Tutorial', [ 'q', 'Soundboard', 'game/RuleSet', 'game/MapState'
                 audio.seek(0);
                 audio.play();
 
-                boundEvents.push(timeline.subscribe(MapState.HIT_MARKER_CREATION, function (hitMarker) {
+                timeline.subscribe(MapState.HIT_MARKER_CREATION, function (hitMarker) {
                     playHitMarker(hitMarker);
+                });
+            },
+
+            enter_play_1: function () {
+                ruleSet = hintRuleSet;
+                audio = new CoolAudio(null);
+                timeline = new Timeline(audio);
+                mapState = new MapState(ruleSet, sourceObjects.map(mapObject.proto), timeline);
+
+                trackMouse = false;
+                allowMouse = true;
+                mouseHistory = new History();
+
+                function playHitMarker(hitMarker) {
+                    var hitSounds = ruleSet.getHitSoundNames(hitMarker);
+                    var volume = ruleSet.getHitSoundVolume(hitMarker.hitObject.time);
+
+                    // Scale volume to how many hit sounds are being
+                    // played
+                    volume /= Math.sqrt(hitSounds.length);
+
+                    hitSounds.forEach(function (soundName) {
+                        soundboard.playSound(soundName, {
+                            volume: volume
+                        });
+                    });
+                }
+
+                audio.seek(2300);
+
+                boundEvents.push(mapState.events.hitMarker.subscribe(function (hitMarker) {
+                    playHitMarker(hitMarker);
+
+                    audio.play();
+
+                    // End condition: hit marker created
+                    setTimeout(function () {
+                        sm.complete();
+                    }, 1000);
                 }));
+            },
+
+            enter_show_2: function () {
+                console.log('TODO');
             }
         });
 

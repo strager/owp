@@ -45,6 +45,7 @@ define('util/CoolAudio', [ 'util/PubSub' ], function (PubSub) {
         this.negativeZoneTime = 0;
 
         if (!this.audioElement) {
+            this.rawCurrentTimeValue = 0;
             return;
         }
 
@@ -152,7 +153,7 @@ define('util/CoolAudio', [ 'util/PubSub' ], function (PubSub) {
                     this.audioElement.play();
                 }
             } else {
-                this.rtcStartTime = Date.now();
+                this.rtcStartTime = Date.now() - this.rawCurrentTimeValue;
             }
 
             this.events.start.publish(this);
@@ -180,6 +181,8 @@ define('util/CoolAudio', [ 'util/PubSub' ], function (PubSub) {
                     var ct = time / 1000;
                     this.audioElement.currentTime = ct;
                 }
+            } else {
+                this.rawCurrentTimeValue = time;
             }
 
             this.events.seek.publish(this);
@@ -187,6 +190,7 @@ define('util/CoolAudio', [ 'util/PubSub' ], function (PubSub) {
 
         canSeek: function (time) {
             if (!this.audioElement) {
+                this.rawCurrentTimeValue = time;
                 return true;
             }
 
@@ -226,7 +230,7 @@ define('util/CoolAudio', [ 'util/PubSub' ], function (PubSub) {
             if (this.audioElement) {
                 return this.audioElement.currentTime * 1000;
             } else {
-                return NaN;
+                return this.rawCurrentTimeValue;
             }
         },
 
