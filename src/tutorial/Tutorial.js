@@ -1,11 +1,17 @@
 define('tutorial/Tutorial', [ 'q', 'Soundboard', 'game/RuleSet', 'game/MapState', 'util/PubSub', 'util/StateMachine', 'agentInfo', 'game/Combo', 'game/mapObject', 'util/History', 'util/ease', 'util/CoolAudio', 'util/Timeline', 'util/util', 'game/TimingPoint', 'gfx/View' ], function (Q, Soundboard, RuleSet, MapState, PubSub, StateMachine, agentInfo, Combo, mapObject, History, ease, CoolAudio, Timeline, util, TimingPoint, View) {
-    var TutorialStateMachine = StateMachine.create([
-        { name: 'start', from: 'none',   to: 'step_5' },
-        { name: 'next',  from: 'step_1', to: 'step_2' },
-        { name: 'next',  from: 'step_2', to: 'step_3' },
-        { name: 'next',  from: 'step_3', to: 'step_4' },
-        { name: 'next',  from: 'step_4', to: 'step_5' }
-    ]);
+    var FIRST_STEP = 1; // Easily changable for debugging
+
+    var transitions = [ ];
+    var i;
+    for (i = 0; i < 10; ++i) {
+        if (i === 0) {
+            transitions.push({ name: 'start', from: 'none', to: 'step_' + FIRST_STEP });
+        } else {
+            transitions.push({ name: 'next', from: 'step_' + i, to: 'step_' + (i + 1) });
+        }
+    }
+
+    var TutorialStateMachine = StateMachine.create(transitions);
 
     function Tutorial(skin) {
         var mousePubSub = new PubSub();
