@@ -1,9 +1,10 @@
 define('tutorial/Tutorial', [ 'q', 'Soundboard', 'game/RuleSet', 'game/MapState', 'util/PubSub', 'util/StateMachine', 'agentInfo', 'game/Combo', 'game/mapObject', 'util/History', 'util/ease', 'util/CoolAudio', 'util/Timeline', 'util/util', 'game/TimingPoint', 'gfx/View' ], function (Q, Soundboard, RuleSet, MapState, PubSub, StateMachine, agentInfo, Combo, mapObject, History, ease, CoolAudio, Timeline, util, TimingPoint, View) {
     var TutorialStateMachine = StateMachine.create([
-        { name: 'start', from: 'none',   to: 'step_1' },
+        { name: 'start', from: 'none',   to: 'step_5' },
         { name: 'next',  from: 'step_1', to: 'step_2' },
         { name: 'next',  from: 'step_2', to: 'step_3' },
-        { name: 'next',  from: 'step_3', to: 'step_4' }
+        { name: 'next',  from: 'step_3', to: 'step_4' },
+        { name: 'next',  from: 'step_4', to: 'step_5' }
     ]);
 
     function Tutorial(skin) {
@@ -167,6 +168,61 @@ define('tutorial/Tutorial', [ 'q', 'Soundboard', 'game/RuleSet', 'game/MapState'
             ruleSet.getObjectEndAppearTime = function () {
                 return -Infinity;
             };
+
+            return ruleSet;
+        }
+
+        function objects3(ox, oy) {
+            var combo = new Combo();
+
+            return [
+                util.extend(new mapObject.HitCircle(2500, 192 + ox, 192 + oy), {
+                    combo: combo,
+                    comboIndex: 0,
+                    hitSounds: [ 'hitnormal' ]
+                }),
+                util.extend(new mapObject.HitCircle(5000, 320 + ox, 192 + oy), {
+                    combo: combo,
+                    comboIndex: 1,
+                    hitSounds: [ 'hitnormal' ]
+                })
+            ];
+        }
+
+        function mouse3(mouseHistory, ox, oy) {
+            var move = 800;
+            var hold = 200;
+            var wait = 900;
+
+            var t = 0;
+
+            mouseHistory.add(0, { x: 256 + ox, y: 192 + oy, left: false, right: false });
+            t += wait;
+
+            mouseHistory.add(t, { x: 256 + ox, y: 192 + oy, left: false, right: false });
+            t += move;
+            mouseHistory.add(t, { x: 192 + ox, y: 192 + oy, left: false, right: false });
+            t = 2500;
+            mouseHistory.add(t, { x: 192 + ox, y: 192 + oy, left: true,  right: false });
+            t += hold;
+            mouseHistory.add(t, { x: 192 + ox, y: 192 + oy, left: false, right: false });
+            t += wait;
+
+            mouseHistory.add(t, { x: 192 + ox, y: 192 + oy, left: false, right: false });
+            t += move;
+            mouseHistory.add(t, { x: 320 + ox, y: 192 + oy, left: false, right: false });
+            t = 5000;
+            mouseHistory.add(t, { x: 320 + ox, y: 192 + oy, left: true,  right: false });
+            t += hold;
+            mouseHistory.add(t, { x: 320 + ox, y: 192 + oy, left: false, right: false });
+            t += wait;
+        }
+
+        function ruleSet3() {
+            var ruleSet = new RuleSet();
+            ruleSet.circleSize = 3;
+            ruleSet.approachRate = 1;
+            ruleSet.addTimingPoint(TimingPoint.generic());
 
             return ruleSet;
         }
@@ -462,6 +518,47 @@ define('tutorial/Tutorial', [ 'q', 'Soundboard', 'game/RuleSet', 'game/MapState'
                     renderer.renderCurrentCursor({
                         ruleSet: ruleSet,
                         mouseHistory: mouseHistory,
+                        skin: skin
+                    }, time);
+                };
+            },
+
+            enter_step_5: function () {
+                var ruleSet = ruleSet3();
+                var audio = new CoolAudio(null);
+                var timeline = new Timeline(audio);
+                var mapState = new MapState(ruleSet, objects3(0, 0), timeline);
+
+                var mouseHistory = new History();
+                mouseHistory.easing = mouseEasing;
+                mouse3(mouseHistory, 0, 0);
+
+                mapState.processMouseHistory(mouseHistory);
+
+                timeline.add('next', null, 8500);
+                timeline.subscribe('next', function () {
+                    // End condition: user waited long enough
+                    Q.fail(sm.next(), agentInfo.crash);
+                });
+
+                audio.seek(0);
+                audio.play();
+
+                timeline.subscribe(MapState.HIT_MARKER_CREATION, function (hitMarker) {
+                    playHitMarker(hitMarker, ruleSet);
+                });
+
+                renderCallback = function (renderer) {
+                    var time = audio.currentTime();
+
+                    renderer.renderMap({
+                        ruleSet: ruleSet,
+                        objects: mapState.getVisibleObjects(time),
+                        skin: skin
+                    }, time);
+                    renderer.renderCursor({
+                        mouseHistory: mouseHistory,
+                        ruleSet: ruleSet,
                         skin: skin
                     }, time);
                 };
