@@ -1,5 +1,5 @@
 define('tutorial/Tutorial', [ 'q', 'Soundboard', 'game/RuleSet', 'game/MapState', 'util/PubSub', 'util/StateMachine', 'agentInfo', 'game/Combo', 'game/mapObject', 'util/History', 'util/ease', 'util/CoolAudio', 'util/Timeline', 'util/util', 'game/TimingPoint', 'gfx/View' ], function (Q, Soundboard, RuleSet, MapState, PubSub, StateMachine, agentInfo, Combo, mapObject, History, ease, CoolAudio, Timeline, util, TimingPoint, View) {
-    var FIRST_STEP = 6; // Easily changable for debugging
+    var FIRST_STEP = 1; // Easily changable for debugging
     var MAX_STEPS = 10;
 
     var transitions = [ ];
