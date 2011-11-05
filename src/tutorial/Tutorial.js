@@ -1,10 +1,9 @@
 define('tutorial/Tutorial', [ 'q', 'Soundboard', 'game/RuleSet', 'game/MapState', 'util/PubSub', 'util/StateMachine', 'agentInfo', 'game/Combo', 'game/mapObject', 'util/History', 'util/ease', 'util/CoolAudio', 'util/Timeline', 'util/util', 'game/TimingPoint', 'gfx/View' ], function (Q, Soundboard, RuleSet, MapState, PubSub, StateMachine, agentInfo, Combo, mapObject, History, ease, CoolAudio, Timeline, util, TimingPoint, View) {
     var TutorialStateMachine = StateMachine.create([
-        { name: 'start',    from: 'none',   to: 'show_1' },
-        { name: 'next',     from: 'show_1', to: 'play_1' },
-
-        { name: 'complete', from: 'play_1', to: 'show_2' },
-        { name: 'next',     from: 'show_2', to: 'play_2' }
+        { name: 'start', from: 'none',   to: 'step_1' },
+        { name: 'next',  from: 'step_1', to: 'step_2' },
+        { name: 'next',  from: 'step_2', to: 'step_3' },
+        { name: 'next',  from: 'step_3', to: 'step_4' }
     ]);
 
     function Tutorial(skin) {
@@ -198,9 +197,8 @@ define('tutorial/Tutorial', [ 'q', 'Soundboard', 'game/RuleSet', 'game/MapState'
 
         var sm = new TutorialStateMachine('none', {
             on_next: clearState,
-            on_complete: clearState,
 
-            enter_show_1: function () {
+            enter_step_1: function () {
                 var ruleSet = ruleSet1();
                 var audio = new CoolAudio(null);
                 var timeline = new Timeline(audio);
@@ -241,7 +239,7 @@ define('tutorial/Tutorial', [ 'q', 'Soundboard', 'game/RuleSet', 'game/MapState'
                 };
             },
 
-            enter_play_1: function () {
+            enter_step_2: function () {
                 var ruleSet = ruleSet1();
                 var audio = new CoolAudio(null);
                 var timeline = new Timeline(audio);
@@ -292,7 +290,7 @@ define('tutorial/Tutorial', [ 'q', 'Soundboard', 'game/RuleSet', 'game/MapState'
                     showHint = false;
                     audio.play();
                     setTimeout(function () {
-                        sm.complete();
+                        sm.next();
                     }, 1000);
                 }));
 
@@ -350,7 +348,7 @@ define('tutorial/Tutorial', [ 'q', 'Soundboard', 'game/RuleSet', 'game/MapState'
                 };
             },
 
-            enter_show_2: function () {
+            enter_step_3: function () {
                 var ruleSet = ruleSet2();
                 var audio = new CoolAudio(null);
                 var timeline = new Timeline(audio);
@@ -391,7 +389,7 @@ define('tutorial/Tutorial', [ 'q', 'Soundboard', 'game/RuleSet', 'game/MapState'
                 };
             },
 
-            enter_play_2: function () {
+            enter_step_4: function () {
                 var objects = objects2(0, 0);
                 objects.forEach(function (object) {
                     object.time = Infinity;
@@ -420,7 +418,7 @@ define('tutorial/Tutorial', [ 'q', 'Soundboard', 'game/RuleSet', 'game/MapState'
                     // End condition: No more hit objects
                     if (!currentObject) {
                         setTimeout(function () {
-                            sm.complete();
+                            sm.next();
                         }, 1000);
                     }
                 }));
