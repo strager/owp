@@ -183,6 +183,7 @@ define('util/CoolAudio', [ 'util/PubSub' ], function (PubSub) {
                 }
             } else {
                 this.rawCurrentTimeValue = time;
+                this.rtcStartTime = Date.now() - time;
             }
 
             this.events.seek.publish(this);

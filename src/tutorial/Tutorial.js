@@ -7,12 +7,15 @@ define('tutorial/Tutorial', [ 'q', 'Soundboard', 'game/RuleSet', 'game/MapState'
 
     function Tutorial(skin) {
         var mousePubSub = new PubSub();
+        var renderCallback = null;
 
         var mapState = null, hintMapState = null;
         var ruleSet = null, hintRuleSet = null;
         var mouseHistory = null, hintMouseHistory = null;
         var audio = null, hintAudio = null;
         var timeline = null, hintTimeline = null;
+
+        var showHint = false;
 
         var trackMouse = false;
         var allowMouse = false;
@@ -67,31 +70,77 @@ define('tutorial/Tutorial', [ 'q', 'Soundboard', 'game/RuleSet', 'game/MapState'
             'soft-slidertick.wav'
         ]), agentInfo.crash);
 
-        var sm = new TutorialStateMachine('none', {
-            on_next: function () {
-                hintMapState = mapState;
-                hintRuleSet = ruleSet;
-                hintMouseHistory = mouseHistory;
-                hintAudio = audio;
 
-                mapState = null;
-                ruleSet = null;
-                mouseHistory = null;
-                audio = null;
-            },
+        function clearState() {
+            hintMapState = null;
+            hintRuleSet = null;
+            hintMouseHistory = null;
+            hintAudio = null;
+            hintTimeline = null;
+
+            mapState = null;
+            ruleSet = null;
+            mouseHistory = null;
+            audio = null;
+            timeline = null;
+
+            showHint = false;
+        }
+
+        function objects1(ox, oy) {
+            return [
+                util.extend(new mapObject.HitCircle(2300, 256 + ox, 192 + oy), {
+                    combo: new Combo(),
+                    comboIndex: 0,
+                    hitSounds: [ 'hitnormal' ]
+                })
+            ];
+        }
+
+        function mouse1(mouseHistory, ox, oy) {
+            mouseHistory.add(0,    { x: 360 + ox, y: 120 + oy, left: false, right: false });
+            mouseHistory.add(800,  { x: 256 + ox, y: 192 + oy, left: false, right: false });
+            mouseHistory.add(2300, { x: 256 + ox, y: 192 + oy, left: true,  right: false });
+            mouseHistory.add(2500, { x: 256 + ox, y: 192 + oy, left: false, right: false });
+        }
+
+        function ruleSet1() {
+            var ruleSet = new RuleSet();
+            ruleSet.circleSize = 3;
+            ruleSet.addTimingPoint(TimingPoint.generic());
+            return ruleSet;
+        }
+
+        function playHitMarker(hitMarker, ruleSet) {
+            var hitSounds = ruleSet.getHitSoundNames(hitMarker);
+            var volume = ruleSet.getHitSoundVolume(hitMarker.hitObject.time);
+
+            // Scale volume to how many hit sounds are being
+            // played
+            volume /= Math.sqrt(hitSounds.length);
+
+            hitSounds.forEach(function (soundName) {
+                soundboard.playSound(soundName, {
+                    volume: volume
+                });
+            });
+        }
+
+        function mouseEasing(a, b, t) {
+            return {
+                x: ease.scale(a.x, b.x, ease.smoothstep(0, 1, t)),
+                y: ease.scale(a.y, b.y, ease.smoothstep(0, 1, t)),
+                left: a.left,
+                right: a.right
+            };
+        }
+
+        var sm = new TutorialStateMachine('none', {
+            on_next: clearState,
+            on_complete: clearState,
 
             enter_show_1: function () {
-                sourceObjects = [
-                    util.extend(new mapObject.HitCircle(2300, 256, 192), {
-                        combo: new Combo(),
-                        comboIndex: 0,
-                        hitSounds: [ 'hitnormal' ]
-                    })
-                ];
-
-                ruleSet = new RuleSet();
-                ruleSet.circleSize = 3;
-                ruleSet.addTimingPoint(TimingPoint.generic());
+                var ruleSet = ruleSet1();
                 ruleSet.getObjectStartAppearTime = function () {
                     return -Infinity;
                 };
@@ -99,26 +148,18 @@ define('tutorial/Tutorial', [ 'q', 'Soundboard', 'game/RuleSet', 'game/MapState'
                     return -Infinity;
                 };
 
-                audio = new CoolAudio(null);
-                timeline = new Timeline(audio);
-                mapState = new MapState(ruleSet, sourceObjects.map(mapObject.proto), timeline);
+                var audio = new CoolAudio(null);
+                var timeline = new Timeline(audio);
+                var mapState = new MapState(ruleSet, objects1(0, 0), timeline);
+
+                var mouseHistory = new History();
+                mouseHistory.easing = mouseEasing;
+                mouse1(mouseHistory, 0, 0);
+
+                mapState.processMouseHistory(mouseHistory);
 
                 trackMouse = false;
                 allowMouse = false;
-                mouseHistory = new History();
-                mouseHistory.easing = function (a, b, t) {
-                    return {
-                        x: ease.scale(a.x, b.x, ease.smoothstep(0, 1, t)),
-                        y: ease.scale(a.y, b.y, ease.smoothstep(0, 1, t)),
-                        left: a.left,
-                        right: a.right
-                    };
-                };
-
-                mouseHistory.add(0, { x: 360, y: 120, left: false, right: false });
-                mouseHistory.add(800, { x: 256, y: 192, left: false, right: false });
-                mouseHistory.add(2300, { x: 256, y: 192, left: true, right: false });
-                mouseHistory.add(2500, { x: 256, y: 192, left: false, right: false });
 
                 timeline.add('next', null, 3500);
                 timeline.subscribe('next', function () {
@@ -126,68 +167,117 @@ define('tutorial/Tutorial', [ 'q', 'Soundboard', 'game/RuleSet', 'game/MapState'
                     Q.fail(sm.next(), agentInfo.crash);
                 });
 
-                function playHitMarker(hitMarker) {
-                    var hitSounds = ruleSet.getHitSoundNames(hitMarker);
-                    var volume = ruleSet.getHitSoundVolume(hitMarker.hitObject.time);
-
-                    // Scale volume to how many hit sounds are being
-                    // played
-                    volume /= Math.sqrt(hitSounds.length);
-
-                    hitSounds.forEach(function (soundName) {
-                        soundboard.playSound(soundName, {
-                            volume: volume
-                        });
-                    });
-                }
-
-                mapState.processMouseHistory(mouseHistory);
-
                 audio.seek(0);
                 audio.play();
 
                 timeline.subscribe(MapState.HIT_MARKER_CREATION, function (hitMarker) {
-                    playHitMarker(hitMarker);
+                    playHitMarker(hitMarker, ruleSet);
                 });
+
+                renderCallback = function (renderer) {
+                    var time = audio.currentTime();
+
+                    renderer.renderMap({
+                        ruleSet: ruleSet,
+                        objects: mapState.getVisibleObjects(time),
+                        skin: skin
+                    }, time);
+                    renderer.renderCursor({
+                        mouseHistory: mouseHistory,
+                        ruleSet: ruleSet,
+                        skin: skin
+                    }, time);
+                };
             },
 
             enter_play_1: function () {
-                ruleSet = hintRuleSet;
-                audio = new CoolAudio(null);
-                timeline = new Timeline(audio);
-                mapState = new MapState(ruleSet, sourceObjects.map(mapObject.proto), timeline);
+                var ruleSet = ruleSet1();
+                var audio = new CoolAudio(null);
+                var timeline = new Timeline(audio);
+                var mapState = new MapState(ruleSet, objects1(0, 0), timeline);
+                var mouseHistory = new History();
 
                 trackMouse = false;
                 allowMouse = true;
-                mouseHistory = new History();
-
-                function playHitMarker(hitMarker) {
-                    var hitSounds = ruleSet.getHitSoundNames(hitMarker);
-                    var volume = ruleSet.getHitSoundVolume(hitMarker.hitObject.time);
-
-                    // Scale volume to how many hit sounds are being
-                    // played
-                    volume /= Math.sqrt(hitSounds.length);
-
-                    hitSounds.forEach(function (soundName) {
-                        soundboard.playSound(soundName, {
-                            volume: volume
-                        });
-                    });
-                }
 
                 audio.seek(2300);
 
-                boundEvents.push(mapState.events.hitMarker.subscribe(function (hitMarker) {
-                    playHitMarker(hitMarker);
+                var hintable = true;
+                var showHint = false;
 
-                    audio.play();
+                var hintRuleSet = ruleSet1();
+                hintRuleSet.getObjectStartAppearTime = function () {
+                    return -Infinity;
+                };
+                hintRuleSet.getObjectEndAppearTime = function () {
+                    return -Infinity;
+                };
+
+                var hintAudio = new CoolAudio(null);
+                var hintTimeline = new Timeline(hintAudio);
+                var hintMapState = new MapState(hintRuleSet, objects1(128, 0), hintTimeline);
+
+                var hintMouseHistory = new History();
+                hintMouseHistory.easing = mouseEasing;
+                mouse1(hintMouseHistory, 128, 0);
+
+                hintMapState.processMouseHistory(hintMouseHistory);
+
+                setTimeout(function () {
+                    if (hintable) {
+                        hintAudio.seek(0);
+                        hintAudio.play();
+                        showHint = true;
+                    }
+                }, 5000);
+
+                boundEvents.push(mapState.events.hitMarker.subscribe(function (hitMarker) {
+                    playHitMarker(hitMarker, ruleSet);
 
                     // End condition: hit marker created
+                    hintable = false;
+                    showHint = false;
+                    audio.play();
                     setTimeout(function () {
                         sm.complete();
                     }, 1000);
                 }));
+
+                renderCallback = function (renderer) {
+                    var time;
+
+                    renderer.renderColourOverlay([ 255, 255, 255, 255 ]);
+
+                    if (showHint) {
+                        time = hintAudio.currentTime();
+
+                        renderer.renderMap({
+                            ruleSet: hintRuleSet,
+                            objects: hintMapState.getVisibleObjects(time),
+                            skin: skin
+                        }, time);
+                        renderer.renderCursor({
+                            mouseHistory: hintMouseHistory,
+                            ruleSet: hintRuleSet,
+                            skin: skin
+                        }, time);
+
+                        renderer.renderColourOverlay([ 0, 0, 0, 64 ]);
+                    }
+
+                    time = audio.currentTime();
+
+                    renderer.renderMap({
+                        ruleSet: ruleSet,
+                        objects: mapState.getVisibleObjects(time),
+                        skin: skin
+                    }, time);
+                    renderer.renderCursor({
+                        mouseHistory: mouseHistory,
+                        ruleSet: ruleSet,
+                        skin: skin
+                    }, time);
+                };
             },
 
             enter_show_2: function () {
@@ -197,11 +287,30 @@ define('tutorial/Tutorial', [ 'q', 'Soundboard', 'game/RuleSet', 'game/MapState'
 
         return {
             render: function (renderer) {
-                if (!mapState) {
-                    return;
+                if (renderCallback) {
+                    return renderCallback(renderer);
+                } else {
+                    return null;
                 }
 
-                var time = audio.currentTime();
+                var time;
+
+                if (showHint) {
+                    time = hintAudio.currentTime();
+
+                    renderer.renderMap({
+                        ruleSet: hintRuleSet,
+                        objects: hintMapState.getVisibleObjects(time),
+                        skin: skin
+                    }, time);
+                    renderer.renderCursor({
+                        mouseHistory: hintMouseHistory,
+                        ruleSet: hintRuleSet,
+                        skin: skin
+                    }, time);
+                }
+
+                time = audio.currentTime();
 
                 renderer.renderMap({
                     ruleSet: ruleSet,
