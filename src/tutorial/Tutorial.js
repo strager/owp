@@ -1,48 +1,13 @@
 define('tutorial/Tutorial', [ 'q', 'Soundboard', 'game/RuleSet', 'game/MapState', 'util/PubSub', 'util/StateMachine', 'agentInfo', 'game/Combo', 'game/mapObject', 'util/History', 'util/ease', 'util/CoolAudio', 'util/Timeline', 'util/util', 'game/TimingPoint', 'gfx/View' ], function (Q, Soundboard, RuleSet, MapState, PubSub, StateMachine, agentInfo, Combo, mapObject, History, ease, CoolAudio, Timeline, util, TimingPoint, View) {
     var TutorialStateMachine = StateMachine.create([
-        { name: 'start', from: 'none',        to: 'show_1'      },
-        { name: 'next',  from: 'show_1',      to: 'play_1'      },
-        { name: 'complete', from: 'play_1', to: 'show_2' },
+        { name: 'start',    from: 'none',   to: 'show_1' },
+        { name: 'next',     from: 'show_1', to: 'play_1' },
+        { name: 'complete', from: 'play_1', to: 'show_2' }
     ]);
 
     function Tutorial(skin) {
         var mousePubSub = new PubSub();
         var renderCallback = null;
-
-        var mapState = null, hintMapState = null;
-        var ruleSet = null, hintRuleSet = null;
-        var mouseHistory = null, hintMouseHistory = null;
-        var audio = null, hintAudio = null;
-        var timeline = null, hintTimeline = null;
-
-        var showHint = false;
-
-        var trackMouse = false;
-        var allowMouse = false;
-        var sourceObjects = null;
-
-        var isLeftDown = false, isRightDown = false;
-        mousePubSub.subscribe(function (e) {
-            var time = audio ? audio.currentTime() : null;
-
-            e = util.clone(e);
-            var pos = View.map.playfieldToView(e.x, e.y);
-            e.x = pos[0];
-            e.y = pos[1];
-
-            if (time !== null && trackMouse && mouseHistory) {
-                mouseHistory.add(time, e);
-            }
-
-            if (allowMouse) {
-                if (time !== null && mapState && e.left && !isLeftDown || e.right && !isRightDown) {
-                    mapState.clickAt(e.x, e.y, time);
-                }
-
-                isLeftDown = e.left;
-                isRightDown = e.right;
-            }
-        });
 
         var boundEvents = [ ];
         function clearBoundEvents() {
@@ -158,9 +123,6 @@ define('tutorial/Tutorial', [ 'q', 'Soundboard', 'game/RuleSet', 'game/MapState'
 
                 mapState.processMouseHistory(mouseHistory);
 
-                trackMouse = false;
-                allowMouse = false;
-
                 timeline.add('next', null, 3500);
                 timeline.subscribe('next', function () {
                     // End condition: user waited long enough
@@ -197,9 +159,6 @@ define('tutorial/Tutorial', [ 'q', 'Soundboard', 'game/RuleSet', 'game/MapState'
                 var mapState = new MapState(ruleSet, objects1(0, 0), timeline);
                 var mouseHistory = new History();
 
-                trackMouse = false;
-                allowMouse = true;
-
                 audio.seek(2300);
 
                 var hintable = true;
@@ -223,13 +182,23 @@ define('tutorial/Tutorial', [ 'q', 'Soundboard', 'game/RuleSet', 'game/MapState'
 
                 hintMapState.processMouseHistory(hintMouseHistory);
 
-                setTimeout(function () {
-                    if (hintable) {
-                        hintAudio.seek(0);
-                        hintAudio.play();
-                        showHint = true;
-                    }
-                }, 5000);
+                function triggerHint() {
+                    setTimeout(function () {
+                        if (hintable) {
+                            hintAudio.seek(0);
+                            hintAudio.play();
+                            showHint = true;
+                        }
+                    }, 5000);
+                }
+
+                triggerHint();
+                hintTimeline.add('next', null, 3500);
+                hintTimeline.subscribe('next', function () {
+                    // Hint end condition: user waited long enough
+                    showHint = false;
+                    triggerHint();
+                });
 
                 boundEvents.push(mapState.events.hitMarker.subscribe(function (hitMarker) {
                     playHitMarker(hitMarker, ruleSet);
@@ -241,6 +210,23 @@ define('tutorial/Tutorial', [ 'q', 'Soundboard', 'game/RuleSet', 'game/MapState'
                     setTimeout(function () {
                         sm.complete();
                     }, 1000);
+                }));
+
+                var isLeftDown = false, isRightDown = false;
+                boundEvents.push(mousePubSub.subscribe(function (e) {
+                    var time = audio.currentTime();
+
+                    e = util.clone(e);
+                    var pos = View.map.playfieldToView(e.x, e.y);
+                    e.x = pos[0];
+                    e.y = pos[1];
+
+                    if (e.left && !isLeftDown || e.right && !isRightDown) {
+                        mapState.clickAt(e.x, e.y, time);
+                    }
+
+                    isLeftDown = e.left;
+                    isRightDown = e.right;
                 }));
 
                 renderCallback = function (renderer) {
@@ -272,9 +258,9 @@ define('tutorial/Tutorial', [ 'q', 'Soundboard', 'game/RuleSet', 'game/MapState'
                         objects: mapState.getVisibleObjects(time),
                         skin: skin
                     }, time);
-                    renderer.renderCursor({
-                        mouseHistory: mouseHistory,
+                    renderer.renderCurrentCursor({
                         ruleSet: ruleSet,
+                        mouseHistory: mouseHistory,
                         skin: skin
                     }, time);
                 };
