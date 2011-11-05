@@ -1,15 +1,18 @@
 define('tutorial/Tutorial', [ 'q', 'Soundboard', 'game/RuleSet', 'game/MapState', 'util/PubSub', 'util/StateMachine', 'agentInfo', 'game/Combo', 'game/mapObject', 'util/History', 'util/ease', 'util/CoolAudio', 'util/Timeline', 'util/util', 'game/TimingPoint', 'gfx/View' ], function (Q, Soundboard, RuleSet, MapState, PubSub, StateMachine, agentInfo, Combo, mapObject, History, ease, CoolAudio, Timeline, util, TimingPoint, View) {
-    var FIRST_STEP = 1; // Easily changable for debugging
+    var FIRST_STEP = 6; // Easily changable for debugging
+    var MAX_STEPS = 10;
 
     var transitions = [ ];
     var i;
-    for (i = 0; i < 10; ++i) {
+    for (i = 0; i < MAX_STEPS; ++i) {
         if (i === 0) {
             transitions.push({ name: 'start', from: 'none', to: 'step_' + FIRST_STEP });
         } else {
             transitions.push({ name: 'next', from: 'step_' + i, to: 'step_' + (i + 1) });
+            transitions.push({ name: 'reset', from: 'step_' + i, to: 'step_' + i });
         }
     }
+    transitions.push({ name: 'reset', from: 'step_' + MAX_STEPS, to: 'step_' + MAX_STEPS });
 
     var TutorialStateMachine = StateMachine.create(transitions);
 
@@ -229,6 +232,15 @@ define('tutorial/Tutorial', [ 'q', 'Soundboard', 'game/RuleSet', 'game/MapState'
             ruleSet.circleSize = 3;
             ruleSet.approachRate = 1;
             ruleSet.addTimingPoint(TimingPoint.generic());
+
+            ruleSet.getHitWindow = function (score) {
+                return ({
+                    300: 70,
+                    100: 70,
+                    50:  70,
+                    0:   260,
+                })[score];
+            };
 
             return ruleSet;
         }
@@ -565,6 +577,86 @@ define('tutorial/Tutorial', [ 'q', 'Soundboard', 'game/RuleSet', 'game/MapState'
                     renderer.renderCursor({
                         mouseHistory: mouseHistory,
                         ruleSet: ruleSet,
+                        skin: skin
+                    }, time);
+                };
+            },
+
+            enter_step_6: function () {
+                var objects = objects3(0, 0);
+                var ruleSet = ruleSet3();
+                var audio = new CoolAudio(null);
+                var timeline;
+                var mapState;
+                var mouseHistory;
+
+                var timeline = new Timeline(audio);
+                var mapState = new MapState(ruleSet, objects, timeline);
+                var mouseHistory = new History();
+
+                audio.seek(0);
+                audio.play();
+
+                boundEvents.push(mapState.events.hitMarker.subscribe(function (hitMarker) {
+                    playHitMarker(hitMarker, ruleSet);
+
+                    function hitObjectHit(object) {
+                        return !!object.hitMarker;
+                    }
+
+                    function hitObjectPerfect(object) {
+                        return object.hitMarker && object.hitMarker.score === 300;
+                    }
+
+                    // End or reset condition: All hit objects hit
+                    if (objects.every(hitObjectHit)) {
+                        if (objects.every(hitObjectPerfect)) {
+                            setTimeout(function () {
+                                sm.next();
+                            }, 1000);
+                        } else {
+                            setTimeout(function () {
+                                sm.reset();
+                            }, 1000);
+                        }
+                    }
+                }));
+
+                var isLeftDown = false, isRightDown = false;
+                boundEvents.push(mousePubSub.subscribe(function (e) {
+                    var time = audio.currentTime();
+
+                    e = util.clone(e);
+                    var pos = View.map.playfieldToView(e.x, e.y);
+                    e.x = pos[0];
+                    e.y = pos[1];
+
+                    if (e.left && !isLeftDown || e.right && !isRightDown) {
+                        mapState.clickAt(e.x, e.y, time);
+                    }
+
+                    isLeftDown = e.left;
+                    isRightDown = e.right;
+                }));
+
+                boundEvents.push(timeline.subscribe(MapState.HIT_SLIDE_CHECK, function (object) {
+                    mapState.processSlide(object, mouseHistory);
+                }));
+                boundEvents.push(timeline.subscribe(MapState.HIT_MISS_CHECK, function (object) {
+                    mapState.processMiss(object);
+                }));
+
+                renderCallback = function (renderer) {
+                    var time = audio.currentTime();
+
+                    renderer.renderMap({
+                        ruleSet: ruleSet,
+                        objects: mapState.getVisibleObjects(time),
+                        skin: skin
+                    }, time);
+                    renderer.renderCurrentCursor({
+                        ruleSet: ruleSet,
+                        mouseHistory: mouseHistory,
                         skin: skin
                     }, time);
                 };
