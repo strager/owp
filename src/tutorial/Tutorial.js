@@ -76,6 +76,84 @@ define('tutorial/Tutorial', [ 'q', 'Soundboard', 'game/RuleSet', 'game/MapState'
             return ruleSet;
         }
 
+        function objects2(ox, oy) {
+            var combo = new Combo();
+
+            return [
+                util.extend(new mapObject.HitCircle(2000, 192 + ox, 128 + oy), {
+                    combo: combo,
+                    comboIndex: 0,
+                    hitSounds: [ 'hitnormal' ]
+                }),
+                util.extend(new mapObject.HitCircle(4500, 320 + ox, 128 + oy), {
+                    combo: combo,
+                    comboIndex: 1,
+                    hitSounds: [ 'hitnormal' ]
+                }),
+                util.extend(new mapObject.HitCircle(7000, 320 + ox, 256 + oy), {
+                    combo: combo,
+                    comboIndex: 2,
+                    hitSounds: [ 'hitnormal' ]
+                }),
+                util.extend(new mapObject.HitCircle(9500, 192 + ox, 256 + oy), {
+                    combo: combo,
+                    comboIndex: 3,
+                    hitSounds: [ 'hitnormal' ]
+                })
+            ];
+        }
+
+        function mouse2(mouseHistory, ox, oy) {
+            var move = 800;
+            var hold = 200;
+            var wait = 700;
+
+            var t = 0;
+
+            mouseHistory.add(t, { x: 256 + ox, y: 192 + oy, left: false, right: false });
+            t += move;
+            mouseHistory.add(t, { x: 192 + ox, y: 128 + oy, left: false, right: false });
+            t = 2000;
+            mouseHistory.add(t, { x: 192 + ox, y: 128 + oy, left: true,  right: false });
+            t += hold;
+            mouseHistory.add(t, { x: 192 + ox, y: 128 + oy, left: false, right: false });
+            t += wait;
+
+            mouseHistory.add(t, { x: 192 + ox, y: 128 + oy, left: false, right: false });
+            t += move;
+            mouseHistory.add(t, { x: 320 + ox, y: 128 + oy, left: false, right: false });
+            t = 4500;
+            mouseHistory.add(t, { x: 320 + ox, y: 128 + oy, left: true,  right: false });
+            t += hold;
+            mouseHistory.add(t, { x: 320 + ox, y: 128 + oy, left: false, right: false });
+            t += wait;
+
+            mouseHistory.add(t, { x: 320 + ox, y: 128 + oy, left: false, right: false });
+            t += move;
+            mouseHistory.add(t, { x: 320 + ox, y: 256 + oy, left: false, right: false });
+            t = 7000;
+            mouseHistory.add(t, { x: 320 + ox, y: 256 + oy, left: true,  right: false });
+            t += hold;
+            mouseHistory.add(t, { x: 320 + ox, y: 256 + oy, left: false, right: false });
+            t += wait;
+
+            mouseHistory.add(t, { x: 320 + ox, y: 256 + oy, left: false, right: false });
+            t += move;
+            mouseHistory.add(t, { x: 192 + ox, y: 256 + oy, left: false, right: false });
+            t = 9500;
+            mouseHistory.add(t, { x: 192 + ox, y: 256 + oy, left: true,  right: false });
+            t += hold;
+            mouseHistory.add(t, { x: 192 + ox, y: 256 + oy, left: false, right: false });
+            t += wait;
+        }
+
+        function ruleSet2() {
+            var ruleSet = new RuleSet();
+            ruleSet.circleSize = 3;
+            ruleSet.addTimingPoint(TimingPoint.generic());
+            return ruleSet;
+        }
+
         function playHitMarker(hitMarker, ruleSet) {
             var hitSounds = ruleSet.getHitSoundNames(hitMarker);
             var volume = ruleSet.getHitSoundVolume(hitMarker.hitObject.time);
@@ -267,7 +345,51 @@ define('tutorial/Tutorial', [ 'q', 'Soundboard', 'game/RuleSet', 'game/MapState'
             },
 
             enter_show_2: function () {
-                console.log('TODO');
+                var ruleSet = ruleSet2();
+                ruleSet.getObjectStartAppearTime = function () {
+                    return -Infinity;
+                };
+                ruleSet.getObjectEndAppearTime = function () {
+                    return -Infinity;
+                };
+
+                var audio = new CoolAudio(null);
+                var timeline = new Timeline(audio);
+                var mapState = new MapState(ruleSet, objects2(0, 0), timeline);
+
+                var mouseHistory = new History();
+                mouseHistory.easing = mouseEasing;
+                mouse2(mouseHistory, 0, 0);
+
+                mapState.processMouseHistory(mouseHistory);
+
+                timeline.add('next', null, 8500);
+                timeline.subscribe('next', function () {
+                    // End condition: user waited long enough
+                    Q.fail(sm.next(), agentInfo.crash);
+                });
+
+                audio.seek(0);
+                audio.play();
+
+                timeline.subscribe(MapState.HIT_MARKER_CREATION, function (hitMarker) {
+                    playHitMarker(hitMarker, ruleSet);
+                });
+
+                renderCallback = function (renderer) {
+                    var time = audio.currentTime();
+
+                    renderer.renderMap({
+                        ruleSet: ruleSet,
+                        objects: mapState.getVisibleObjects(time),
+                        skin: skin
+                    }, time);
+                    renderer.renderCursor({
+                        mouseHistory: mouseHistory,
+                        ruleSet: ruleSet,
+                        skin: skin
+                    }, time);
+                };
             }
         });
 
