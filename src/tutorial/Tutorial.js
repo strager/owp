@@ -434,7 +434,7 @@ define('tutorial/Tutorial', [ 'q', 'Soundboard', 'game/RuleSet', 'game/MapState'
 
                 mapState.processMouseHistory(mouseHistory);
 
-                timeline.add('next', null, 8500);
+                timeline.add('next', null, 11500);
                 timeline.subscribe('next', function () {
                     // End condition: user waited long enough
                     Q.fail(sm.next(), agentInfo.crash);
@@ -553,7 +553,7 @@ define('tutorial/Tutorial', [ 'q', 'Soundboard', 'game/RuleSet', 'game/MapState'
 
                 mapState.processMouseHistory(mouseHistory);
 
-                timeline.add('next', null, 8500);
+                timeline.add('next', null, 6000);
                 timeline.subscribe('next', function () {
                     // End condition: user waited long enough
                     Q.fail(sm.next(), agentInfo.crash);
