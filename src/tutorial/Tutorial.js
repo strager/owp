@@ -2,7 +2,9 @@ define('tutorial/Tutorial', [ 'q', 'Soundboard', 'game/RuleSet', 'game/MapState'
     var TutorialStateMachine = StateMachine.create([
         { name: 'start',    from: 'none',   to: 'show_1' },
         { name: 'next',     from: 'show_1', to: 'play_1' },
-        { name: 'complete', from: 'play_1', to: 'show_2' }
+
+        { name: 'complete', from: 'play_1', to: 'show_2' },
+        { name: 'next',     from: 'show_2', to: 'play_2' }
     ]);
 
     function Tutorial(skin) {
@@ -73,6 +75,14 @@ define('tutorial/Tutorial', [ 'q', 'Soundboard', 'game/RuleSet', 'game/MapState'
             var ruleSet = new RuleSet();
             ruleSet.circleSize = 3;
             ruleSet.addTimingPoint(TimingPoint.generic());
+
+            ruleSet.getObjectStartAppearTime = function () {
+                return -Infinity;
+            };
+            ruleSet.getObjectEndAppearTime = function () {
+                return -Infinity;
+            };
+
             return ruleSet;
         }
 
@@ -151,6 +161,14 @@ define('tutorial/Tutorial', [ 'q', 'Soundboard', 'game/RuleSet', 'game/MapState'
             var ruleSet = new RuleSet();
             ruleSet.circleSize = 3;
             ruleSet.addTimingPoint(TimingPoint.generic());
+
+            ruleSet.getObjectStartAppearTime = function () {
+                return -Infinity;
+            };
+            ruleSet.getObjectEndAppearTime = function () {
+                return -Infinity;
+            };
+
             return ruleSet;
         }
 
@@ -184,13 +202,6 @@ define('tutorial/Tutorial', [ 'q', 'Soundboard', 'game/RuleSet', 'game/MapState'
 
             enter_show_1: function () {
                 var ruleSet = ruleSet1();
-                ruleSet.getObjectStartAppearTime = function () {
-                    return -Infinity;
-                };
-                ruleSet.getObjectEndAppearTime = function () {
-                    return -Infinity;
-                };
-
                 var audio = new CoolAudio(null);
                 var timeline = new Timeline(audio);
                 var mapState = new MapState(ruleSet, objects1(0, 0), timeline);
@@ -237,19 +248,14 @@ define('tutorial/Tutorial', [ 'q', 'Soundboard', 'game/RuleSet', 'game/MapState'
                 var mapState = new MapState(ruleSet, objects1(0, 0), timeline);
                 var mouseHistory = new History();
 
+                // We keep time paused, waiting for the user to
+                // press teh button.
                 audio.seek(2300);
 
                 var hintable = true;
                 var showHint = false;
 
                 var hintRuleSet = ruleSet1();
-                hintRuleSet.getObjectStartAppearTime = function () {
-                    return -Infinity;
-                };
-                hintRuleSet.getObjectEndAppearTime = function () {
-                    return -Infinity;
-                };
-
                 var hintAudio = new CoolAudio(null);
                 var hintTimeline = new Timeline(hintAudio);
                 var hintMapState = new MapState(hintRuleSet, objects1(128, 0), hintTimeline);
@@ -346,13 +352,6 @@ define('tutorial/Tutorial', [ 'q', 'Soundboard', 'game/RuleSet', 'game/MapState'
 
             enter_show_2: function () {
                 var ruleSet = ruleSet2();
-                ruleSet.getObjectStartAppearTime = function () {
-                    return -Infinity;
-                };
-                ruleSet.getObjectEndAppearTime = function () {
-                    return -Infinity;
-                };
-
                 var audio = new CoolAudio(null);
                 var timeline = new Timeline(audio);
                 var mapState = new MapState(ruleSet, objects2(0, 0), timeline);
@@ -387,6 +386,84 @@ define('tutorial/Tutorial', [ 'q', 'Soundboard', 'game/RuleSet', 'game/MapState'
                     renderer.renderCursor({
                         mouseHistory: mouseHistory,
                         ruleSet: ruleSet,
+                        skin: skin
+                    }, time);
+                };
+            },
+
+            enter_play_2: function () {
+                var objects = objects2(0, 0);
+                objects.forEach(function (object) {
+                    object.time = Infinity;
+                });
+
+                var ruleSet = ruleSet2();
+                var audio = new CoolAudio(null);
+                var timeline = new Timeline(audio);
+                var mapState = new MapState(ruleSet, objects, timeline);
+                var mouseHistory = new History();
+
+                audio.play();
+
+                var currentObjectIndex = -1;
+                var currentObject = null;
+                function nextObject() {
+                    ++currentObjectIndex;
+                    currentObject = objects[currentObjectIndex];
+                }
+                nextObject();
+
+                boundEvents.push(mapState.events.hitMarker.subscribe(function (hitMarker) {
+                    playHitMarker(hitMarker, ruleSet);
+                    nextObject();
+
+                    // End condition: No more hit objects
+                    if (!currentObject) {
+                        setTimeout(function () {
+                            sm.complete();
+                        }, 1000);
+                    }
+                }));
+
+                var isLeftDown = false, isRightDown = false;
+                boundEvents.push(mousePubSub.subscribe(function (e) {
+                    if (!currentObject) {
+                        return;
+                    }
+
+                    e = util.clone(e);
+                    var pos = View.map.playfieldToView(e.x, e.y);
+                    e.x = pos[0];
+                    e.y = pos[1];
+
+                    if (e.left && !isLeftDown || e.right && !isRightDown) {
+                        // Super hack
+                        var time = audio.currentTime();
+                        currentObject.time = time;
+                        mapState.getHittableObjects = function () {
+                            return [ currentObject ];
+                        };
+                        mapState.clickAt(e.x, e.y, time);
+                        if (currentObject && !currentObject.hitMarker) {
+                            currentObject.time = Infinity;
+                        }
+                    }
+
+                    isLeftDown = e.left;
+                    isRightDown = e.right;
+                }));
+
+                renderCallback = function (renderer) {
+                    var time = audio.currentTime();
+
+                    renderer.renderMap({
+                        ruleSet: ruleSet,
+                        objects: mapState.getVisibleObjects(time),
+                        skin: skin
+                    }, time);
+                    renderer.renderCurrentCursor({
+                        ruleSet: ruleSet,
+                        mouseHistory: mouseHistory,
                         skin: skin
                     }, time);
                 };
