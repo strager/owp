@@ -613,11 +613,11 @@ define('tutorial/Tutorial', [ 'q', 'Soundboard', 'game/RuleSet', 'game/MapState'
                         if (objects.every(hitObjectPerfect)) {
                             setTimeout(function () {
                                 sm.next();
-                            }, 1000);
+                            }, 1300);
                         } else {
                             setTimeout(function () {
                                 sm.reset();
-                            }, 1000);
+                            }, 1300);
                         }
                     }
                 }));
