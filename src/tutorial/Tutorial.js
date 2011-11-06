@@ -251,7 +251,7 @@ define('tutorial/Tutorial', [ 'q', 'Soundboard', 'game/RuleSet', 'game/MapState'
                     300: 90,
                     100: 90,
                     50:  90,
-                    0:   260,
+                    0:   260
                 })[score];
             };
 
