@@ -248,9 +248,9 @@ define('tutorial/Tutorial', [ 'q', 'Soundboard', 'game/RuleSet', 'game/MapState'
 
             ruleSet.getHitWindow = function (score) {
                 return ({
-                    300: 70,
-                    100: 70,
-                    50:  70,
+                    300: 90,
+                    100: 90,
+                    50:  90,
                     0:   260,
                 })[score];
             };
