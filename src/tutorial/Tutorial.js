@@ -312,7 +312,7 @@ define('tutorial/Tutorial', [ 'q', 'Soundboard', 'game/RuleSet', 'game/MapState'
 
                 mapState.processMouseHistory(mouseHistory);
 
-                timeline.add('next', null, 3500);
+                timeline.add('next', null, 4000);
                 timeline.subscribe('next', function () {
                     // End condition: user waited long enough
                     Q.fail(sm.next(), agentInfo.crash);
@@ -382,7 +382,7 @@ define('tutorial/Tutorial', [ 'q', 'Soundboard', 'game/RuleSet', 'game/MapState'
                 }
 
                 triggerHint();
-                hintTimeline.add('next', null, 3500);
+                hintTimeline.add('next', null, 4000);
                 hintTimeline.subscribe('next', function () {
                     // Hint end condition: user waited long enough
                     showHint = false;
@@ -398,7 +398,7 @@ define('tutorial/Tutorial', [ 'q', 'Soundboard', 'game/RuleSet', 'game/MapState'
                     audio.play();
                     setTimeout(function () {
                         sm.next();
-                    }, 1000);
+                    }, 1300);
                 }));
 
                 var isLeftDown = false, isRightDown = false;
@@ -469,7 +469,7 @@ define('tutorial/Tutorial', [ 'q', 'Soundboard', 'game/RuleSet', 'game/MapState'
 
                 mapState.processMouseHistory(mouseHistory);
 
-                timeline.add('next', null, 11500);
+                timeline.add('next', null, 11000);
                 timeline.subscribe('next', function () {
                     // End condition: user waited long enough
                     Q.fail(sm.next(), agentInfo.crash);
@@ -533,7 +533,7 @@ define('tutorial/Tutorial', [ 'q', 'Soundboard', 'game/RuleSet', 'game/MapState'
                     if (!currentObject) {
                         setTimeout(function () {
                             sm.next();
-                        }, 1000);
+                        }, 1300);
                     }
                 }));
 
@@ -598,7 +598,7 @@ define('tutorial/Tutorial', [ 'q', 'Soundboard', 'game/RuleSet', 'game/MapState'
 
                 mapState.processMouseHistory(mouseHistory);
 
-                timeline.add('next', null, 6000);
+                timeline.add('next', null, 6500);
                 timeline.subscribe('next', function () {
                     // End condition: user waited long enough
                     Q.fail(sm.next(), agentInfo.crash);
