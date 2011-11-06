@@ -554,13 +554,18 @@ define('game/Game', [ 'q', 'game/MapState', 'AssetManager', 'util/PubSub', 'Soun
             },
 
             enter_tutorial: function () {
+                renderCallback = function (renderer) {
+                    renderer.renderLoading(Date.now());
+                };
+
                 return Q.when(skin, function (skin) {
                     var tutorial = new Tutorial(skin);
-                    mousePubSub.pipeTo(tutorial.events.mouse);
-                    renderCallback = function (renderer) {
-                        tutorial.render(renderer);
-                    };
-                    return tutorial.start();
+                    return Q.when(tutorial.start(), function () {
+                        mousePubSub.pipeTo(tutorial.events.mouse);
+                        renderCallback = function (renderer) {
+                            tutorial.render(renderer);
+                        };
+                    });
                 });
             }
         });

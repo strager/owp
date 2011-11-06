@@ -2,31 +2,25 @@ define('tutorial/Tutorial', [ 'q', 'Soundboard', 'game/RuleSet', 'game/MapState'
     var FIRST_STEP = 1; // Easily changable for debugging
     var MAX_STEPS = 10;
 
-    var transitions = [ ];
+    var transitions = [
+        { name: 'ready', from: 'none', to: 'ready' },
+        { name: 'reset', from: 'step_' + MAX_STEPS, to: 'step_' + MAX_STEPS }
+    ];
     var i;
     for (i = 0; i < MAX_STEPS; ++i) {
         if (i === 0) {
-            transitions.push({ name: 'start', from: 'none', to: 'step_' + FIRST_STEP });
+            transitions.push({ name: 'start', from: 'ready', to: 'step_' + FIRST_STEP });
         } else {
             transitions.push({ name: 'next', from: 'step_' + i, to: 'step_' + (i + 1) });
             transitions.push({ name: 'reset', from: 'step_' + i, to: 'step_' + i });
         }
     }
-    transitions.push({ name: 'reset', from: 'step_' + MAX_STEPS, to: 'step_' + MAX_STEPS });
 
     var TutorialStateMachine = StateMachine.create(transitions);
 
     function Tutorial(skin) {
         var mousePubSub = new PubSub();
         var renderCallback = null;
-
-        var boundEvents = [ ];
-        function clearBoundEvents() {
-            boundEvents.forEach(function (be) {
-                be.unsubscribe();
-            });
-            boundEvents = [ ];
-        }
 
         var soundboard = new Soundboard(skin.assetManager);
         Q.fail(soundboard.preload([
@@ -46,6 +40,13 @@ define('tutorial/Tutorial', [ 'q', 'Soundboard', 'game/RuleSet', 'game/MapState'
             'soft-slidertick.wav'
         ]), agentInfo.crash);
 
+        var boundEvents = [ ];
+        function clearBoundEvents() {
+            boundEvents.forEach(function (be) {
+                be.unsubscribe();
+            });
+            boundEvents = [ ];
+        }
 
         function clearState() {
             hintMapState = null;
@@ -61,6 +62,8 @@ define('tutorial/Tutorial', [ 'q', 'Soundboard', 'game/RuleSet', 'game/MapState'
             timeline = null;
 
             showHint = false;
+
+            clearBoundEvents();
         }
 
         function objects1(ox, oy) {
@@ -271,6 +274,21 @@ define('tutorial/Tutorial', [ 'q', 'Soundboard', 'game/RuleSet', 'game/MapState'
 
         var sm = new TutorialStateMachine('none', {
             on_next: clearState,
+
+            enter_ready: function () {
+                renderCallback = function (renderer) {
+                    var time = 0;
+                    renderer.renderReadyToPlay(skin, time);
+                };
+
+                var started = false;
+                boundEvents.push(mousePubSub.subscribe(function (e) {
+                    if ((e.left || e.right) && !started) {
+                        started = true;
+                        Q.fail(sm.start(), agentInfo.crash);
+                    }
+                }));
+            },
 
             enter_step_1: function () {
                 var ruleSet = ruleSet1();
@@ -670,40 +688,10 @@ define('tutorial/Tutorial', [ 'q', 'Soundboard', 'game/RuleSet', 'game/MapState'
                 } else {
                     return null;
                 }
-
-                var time;
-
-                if (showHint) {
-                    time = hintAudio.currentTime();
-
-                    renderer.renderMap({
-                        ruleSet: hintRuleSet,
-                        objects: hintMapState.getVisibleObjects(time),
-                        skin: skin
-                    }, time);
-                    renderer.renderCursor({
-                        mouseHistory: hintMouseHistory,
-                        ruleSet: hintRuleSet,
-                        skin: skin
-                    }, time);
-                }
-
-                time = audio.currentTime();
-
-                renderer.renderMap({
-                    ruleSet: ruleSet,
-                    objects: mapState.getVisibleObjects(time),
-                    skin: skin
-                }, time);
-                renderer.renderCursor({
-                    mouseHistory: mouseHistory,
-                    ruleSet: ruleSet,
-                    skin: skin
-                }, time);
             },
 
             start: function () {
-                return sm.start();
+                return sm.ready();
             },
 
             events: {
