@@ -419,34 +419,31 @@ define('tutorial/Tutorial', [ 'q', 'Soundboard', 'game/RuleSet', 'game/MapState'
                 }));
 
                 renderCallback = function (renderer) {
-                    var time;
-
-                    renderer.renderColourOverlay([ 255, 255, 255, 255 ]);
-
-                    if (showHint) {
-                        time = hintAudio.currentTime();
-
-                        renderer.renderMap({
-                            ruleSet: hintRuleSet,
-                            objects: hintMapState.getVisibleObjects(time),
-                            skin: skin
-                        }, time);
-                        renderer.renderCursor({
-                            mouseHistory: hintMouseHistory,
-                            ruleSet: hintRuleSet,
-                            skin: skin
-                        }, time);
-
-                        renderer.renderColourOverlay([ 0, 0, 0, 64 ]);
-                    }
-
-                    time = audio.currentTime();
+                    var time = audio.currentTime();
 
                     renderer.renderStoryboard({
                         storyboard: interactStoryboard,
                         assetManager: null,
                         breakiness: 0
                     }, time);
+
+                    if (showHint) {
+                        var hintTime = hintAudio.currentTime();
+
+                        renderer.renderMap({
+                            ruleSet: hintRuleSet,
+                            objects: hintMapState.getVisibleObjects(hintTime),
+                            skin: skin
+                        }, hintTime);
+                        renderer.renderCursor({
+                            mouseHistory: hintMouseHistory,
+                            ruleSet: hintRuleSet,
+                            skin: skin
+                        }, hintTime);
+
+                        renderer.renderColourOverlay([ 0, 0, 0, 64 ]);
+                    }
+
                     renderer.renderMap({
                         ruleSet: ruleSet,
                         objects: mapState.getVisibleObjects(time),
