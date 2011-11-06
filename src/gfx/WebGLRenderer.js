@@ -935,11 +935,8 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/Cache', '
 
         // Storyboard rendering {{{
         function renderBackground() {
-            reset();
-
             var bg = storyboard.getBackgroundFilename(time);
             if (!bg) {
-                clear(1, 1, 1, 1);
                 return;
             }
 
@@ -1032,6 +1029,9 @@ define('gfx/WebGLRenderer', [ 'game/MapState', 'game/mapObject', 'util/Cache', '
             */
 
             view(View.storyboard, function () {
+                var color = storyboard.getColorAtTime(time);
+                clear(color[0] / 255, color[1] / 255, color[2] / 255, 1);
+
                 renderBackground();
 
                 var objects;

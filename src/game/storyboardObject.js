@@ -1,4 +1,9 @@
 define('game/storyboardObject', [ 'util/util', 'util/ease', 'util/CueList' ], function (util, ease, CueList) {
+    function BaseColor(color, time) {
+        this.color = color.slice();
+        this.time = time;
+    }
+
     function Background(filename, time) {
         this.layer = 'Background'; // Like, obviously~
         this.filename = filename;
@@ -194,6 +199,7 @@ define('game/storyboardObject', [ 'util/util', 'util/ease', 'util/CueList' ], fu
     };
 
     return {
+        BaseColor: BaseColor,
         Background: Background,
         Video: Video,
         Sprite: Sprite,

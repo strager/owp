@@ -113,12 +113,14 @@ define('game/MapState', [ 'game/mapObject', 'util/Timeline', 'util/Map', 'util/P
                 object = hittableObjects[i];
 
                 if (this.ruleSet.canHitObject(object, x, y, time)) {
+                    var score = this.ruleSet.getHitScore(object, time);
+
                     hitMarker = new mapObject.HitMarker(
                         object,
                         time,
-                        this.ruleSet.getHitScore(object, time),
-                        true,
-                        false
+                        score,
+                        score !== 0, // hit
+                        score === 0  // miss
                     );
 
                     this.applyHitMarker(hitMarker);

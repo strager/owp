@@ -8,6 +8,7 @@ define('game/Storyboard', [ 'game/storyboardObject', 'util/Timeline', 'util/Hist
 
         var objectTimeline = new Timeline();
         var backgroundHistory = new History();
+        var colorHistory = new History();
 
         objects.forEach(function (object) {
             if (ENABLE_STORYBOARDS) {
@@ -19,6 +20,10 @@ define('game/Storyboard', [ 'game/storyboardObject', 'util/Timeline', 'util/Hist
 
                     images.push(object.filename);
                 }
+            }
+
+            if (object instanceof storyboardObject.BaseColor) {
+                colorHistory.add(object.time, object.color);
             }
 
             if (object instanceof storyboardObject.Background) {
@@ -42,9 +47,14 @@ define('game/Storyboard', [ 'game/storyboardObject', 'util/Timeline', 'util/Hist
 
         this.objectTimeline = objectTimeline;
         this.backgroundHistory = backgroundHistory;
+        this.colorHistory = colorHistory;
     }
 
     Storyboard.prototype = {
+        getColorAtTime: function (time) {
+            return this.colorHistory.getDataAtTime(time) || this.colorHistory.getFirst([ 255, 255, 255 ]);
+        },
+
         getBackgroundFilename: function (time) {
             var bg = this.backgroundHistory.getDataAtTime(time) || this.backgroundHistory.getFirst(null);
             return bg && bg.filename;

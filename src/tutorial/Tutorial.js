@@ -1,4 +1,4 @@
-define('tutorial/Tutorial', [ 'q', 'Soundboard', 'game/RuleSet', 'game/MapState', 'util/PubSub', 'util/StateMachine', 'agentInfo', 'game/Combo', 'game/mapObject', 'util/History', 'util/ease', 'util/CoolAudio', 'util/Timeline', 'util/util', 'game/TimingPoint', 'gfx/View' ], function (Q, Soundboard, RuleSet, MapState, PubSub, StateMachine, agentInfo, Combo, mapObject, History, ease, CoolAudio, Timeline, util, TimingPoint, View) {
+define('tutorial/Tutorial', [ 'q', 'Soundboard', 'game/RuleSet', 'game/MapState', 'util/PubSub', 'util/StateMachine', 'agentInfo', 'game/Combo', 'game/mapObject', 'util/History', 'util/ease', 'util/CoolAudio', 'util/Timeline', 'util/util', 'game/TimingPoint', 'gfx/View', 'game/Storyboard', 'game/storyboardObject' ], function (Q, Soundboard, RuleSet, MapState, PubSub, StateMachine, agentInfo, Combo, mapObject, History, ease, CoolAudio, Timeline, util, TimingPoint, View, Storyboard, storyboardObject) {
     var FIRST_STEP = 1; // Easily changable for debugging
     var MAX_STEPS = 10;
 
@@ -39,6 +39,16 @@ define('tutorial/Tutorial', [ 'q', 'Soundboard', 'game/RuleSet', 'game/MapState'
             'soft-sliderslide.wav',
             'soft-slidertick.wav'
         ]), agentInfo.crash);
+
+        // Shown when an AI is demonstrating
+        var watchStoryboard = new Storyboard([
+            new storyboardObject.BaseColor([ 224, 220, 220 ], 0)
+        ]);
+
+        // Shown when the player should be playing
+        var interactStoryboard = new Storyboard([
+            new storyboardObject.BaseColor([ 216, 224, 216 ], 0)
+        ]);
 
         var boundEvents = [ ];
         function clearBoundEvents() {
@@ -318,6 +328,11 @@ define('tutorial/Tutorial', [ 'q', 'Soundboard', 'game/RuleSet', 'game/MapState'
                 renderCallback = function (renderer) {
                     var time = audio.currentTime();
 
+                    renderer.renderStoryboard({
+                        storyboard: watchStoryboard,
+                        assetManager: null,
+                        breakiness: 0
+                    }, time);
                     renderer.renderMap({
                         ruleSet: ruleSet,
                         objects: mapState.getVisibleObjects(time),
@@ -427,6 +442,11 @@ define('tutorial/Tutorial', [ 'q', 'Soundboard', 'game/RuleSet', 'game/MapState'
 
                     time = audio.currentTime();
 
+                    renderer.renderStoryboard({
+                        storyboard: interactStoryboard,
+                        assetManager: null,
+                        breakiness: 0
+                    }, time);
                     renderer.renderMap({
                         ruleSet: ruleSet,
                         objects: mapState.getVisibleObjects(time),
@@ -468,6 +488,11 @@ define('tutorial/Tutorial', [ 'q', 'Soundboard', 'game/RuleSet', 'game/MapState'
                 renderCallback = function (renderer) {
                     var time = audio.currentTime();
 
+                    renderer.renderStoryboard({
+                        storyboard: watchStoryboard,
+                        assetManager: null,
+                        breakiness: 0
+                    }, time);
                     renderer.renderMap({
                         ruleSet: ruleSet,
                         objects: mapState.getVisibleObjects(time),
@@ -546,6 +571,11 @@ define('tutorial/Tutorial', [ 'q', 'Soundboard', 'game/RuleSet', 'game/MapState'
                 renderCallback = function (renderer) {
                     var time = audio.currentTime();
 
+                    renderer.renderStoryboard({
+                        storyboard: interactStoryboard,
+                        assetManager: null,
+                        breakiness: 0
+                    }, time);
                     renderer.renderMap({
                         ruleSet: ruleSet,
                         objects: mapState.getVisibleObjects(time),
@@ -587,6 +617,11 @@ define('tutorial/Tutorial', [ 'q', 'Soundboard', 'game/RuleSet', 'game/MapState'
                 renderCallback = function (renderer) {
                     var time = audio.currentTime();
 
+                    renderer.renderStoryboard({
+                        storyboard: watchStoryboard,
+                        assetManager: null,
+                        breakiness: 0
+                    }, time);
                     renderer.renderMap({
                         ruleSet: ruleSet,
                         objects: mapState.getVisibleObjects(time),
@@ -604,10 +639,6 @@ define('tutorial/Tutorial', [ 'q', 'Soundboard', 'game/RuleSet', 'game/MapState'
                 var objects = objects3(0, 0);
                 var ruleSet = ruleSet3();
                 var audio = new CoolAudio(null);
-                var timeline;
-                var mapState;
-                var mouseHistory;
-
                 var timeline = new Timeline(audio);
                 var mapState = new MapState(ruleSet, objects, timeline);
                 var mouseHistory = new History();
@@ -667,6 +698,11 @@ define('tutorial/Tutorial', [ 'q', 'Soundboard', 'game/RuleSet', 'game/MapState'
                 renderCallback = function (renderer) {
                     var time = audio.currentTime();
 
+                    renderer.renderStoryboard({
+                        storyboard: interactStoryboard,
+                        assetManager: null,
+                        breakiness: 0
+                    }, time);
                     renderer.renderMap({
                         ruleSet: ruleSet,
                         objects: mapState.getVisibleObjects(time),
